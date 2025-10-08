@@ -246,7 +246,10 @@
     },
     "android": {
       "package": "com.dailybread.dailyfaithbible",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-2813380177518944~4613013173"
+      }
     }
   }
 }
