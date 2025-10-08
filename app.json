@@ -5,19 +5,12 @@
       "expo-font",
       "expo-web-browser",
       [
-        "react-native-google-mobile-ads",
-        {
-          "android_app_id": "ca-app-pub-2813380177518944~4613013173",
-          "ios_app_id": "ca-app-pub-2813380177518944~5140638548"
-        }
-      ],
-      [
         "expo-splash-screen",
         {
           "backgroundColor": "#000000",
-          "image": "./assets/dailyfaith.png",
+          "image": "./assets/icon.png",
           "dark": {
-            "image": "./assets/dailyfaith.png",
+            "image": "./assets/icon.png",
             "backgroundColor": "#000000"
           },
           "imageWidth": 200
