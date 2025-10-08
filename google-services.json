@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "2813380177518944",
+    "project_id": "daily-bread-88f42",
+    "storage_bucket": "daily-bread-88f42.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2813380177518944:android:7484ecb8076d9ee686ffa2",
+        "android_client_info": {
+          "package_name": "com.dailybread.dailyfaithbible"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "2813380177518944-abc123def456.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbcPSejp8kJKEJBomRtAvPsWCAz9HSCCg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "2813380177518944-abc123def456.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
