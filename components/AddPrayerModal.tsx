@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Dimensions,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/DesignTokens';
 import { Plus, X } from 'lucide-react-native';
@@ -20,11 +23,26 @@ interface AddPrayerModalProps {
     onAddPrayer: (title: string, description: string, category: string, priority: string) => void;
 }
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const isSmallScreen = screenWidth < 375;
+const isTablet = screenWidth >= 768;
+
 const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ isVisible, onClose, onAddPrayer }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-  const [formCategory, setFormCategory] = useState('personal');
-  const [formPriority, setFormPriority] = useState('medium');
+    const [formCategory, setFormCategory] = useState('personal');
+    const [formPriority, setFormPriority] = useState('medium');
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+    // Reset form when modal opens
+    useEffect(() => {
+        if (isVisible) {
+            setTitle('');
+            setDescription('');
+            setFormCategory('personal');
+            setFormPriority('medium');
+        }
+    }, [isVisible]);
 
   const categories = [
     { id: 'personal', label: 'Personal', icon: '🙏', color: Colors.primary[500] },
@@ -62,29 +80,24 @@ const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ isVisible, onClose, onA
     <Modal
       visible={isVisible}
       animationType="slide"
-      transparent={true}
-      statusBarTranslucent={true}
+      transparent={false}
+      statusBarTranslucent={false}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.modalOverlay}
-      >
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={onClose}
+      <SafeAreaView style={styles.modalContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
+        
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoidingView}
         >
-          <TouchableOpacity
-            style={styles.modalContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
           >
-            <ScrollView
-              style={styles.modalContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
             {/* Header */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add New Prayer</Text>
@@ -156,107 +169,116 @@ const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ isVisible, onClose, onA
                 <Text style={styles.submitButtonText}>Add Prayer</Text>
               </TouchableOpacity>
             </View>
-            </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
   modalContainer: {
+    flex: 1,
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '85%',
-    marginTop: Platform.OS === 'ios' ? 40 : 0,
   },
-  modalContent: {
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20, // Account for home indicator
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
+    paddingHorizontal: isSmallScreen ? Spacing.md : Spacing.lg,
+    paddingVertical: isSmallScreen ? Spacing.md : Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
+    backgroundColor: Colors.white,
+    ...Shadows.sm,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: isSmallScreen ? 18 : 20,
     fontWeight: '600',
     color: Colors.neutral[900],
+    flex: 1,
   },
   closeButton: {
-    padding: 4,
+    padding: isSmallScreen ? 8 : 12,
+    borderRadius: 20,
+    backgroundColor: Colors.neutral[100],
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   formContainer: {
-    padding: Spacing.lg,
+    padding: isSmallScreen ? Spacing.md : Spacing.lg,
+    flex: 1,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: isSmallScreen ? 15 : 16,
     fontWeight: '600',
     color: Colors.neutral[900],
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
+    marginBottom: isSmallScreen ? Spacing.xs : Spacing.sm,
+    marginTop: isSmallScreen ? Spacing.sm : Spacing.md,
   },
   input: {
     backgroundColor: Colors.neutral[50],
     borderRadius: 12,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    fontSize: 16,
+    paddingVertical: isSmallScreen ? Spacing.sm : Spacing.md,
+    paddingHorizontal: isSmallScreen ? Spacing.sm : Spacing.md,
+    fontSize: isSmallScreen ? 15 : 16,
     color: Colors.neutral[900],
-    marginBottom: Spacing.md,
+    marginBottom: isSmallScreen ? Spacing.sm : Spacing.md,
     borderWidth: 1,
     borderColor: Colors.neutral[200],
+    minHeight: isSmallScreen ? 44 : 48, // Better touch target
   },
   textArea: {
     backgroundColor: Colors.neutral[50],
     borderRadius: 12,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    fontSize: 16,
+    paddingVertical: isSmallScreen ? Spacing.sm : Spacing.md,
+    paddingHorizontal: isSmallScreen ? Spacing.sm : Spacing.md,
+    fontSize: isSmallScreen ? 15 : 16,
     color: Colors.neutral[900],
-    marginBottom: Spacing.md,
+    marginBottom: isSmallScreen ? Spacing.sm : Spacing.md,
     textAlignVertical: 'top',
     borderWidth: 1,
     borderColor: Colors.neutral[200],
-    minHeight: 100,
+    minHeight: isSmallScreen ? 80 : 100,
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
-    gap: Spacing.sm,
+    marginBottom: isSmallScreen ? Spacing.md : Spacing.lg,
+    gap: isSmallScreen ? Spacing.xs : Spacing.sm,
   },
   categoryButton: {
     backgroundColor: Colors.neutral[100],
     borderRadius: 12,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    width: '48%',
+    paddingVertical: isSmallScreen ? Spacing.xs : Spacing.sm,
+    paddingHorizontal: isSmallScreen ? Spacing.sm : Spacing.md,
+    width: isSmallScreen ? '47%' : '48%',
     borderWidth: 1,
     borderColor: Colors.neutral[200],
+    minHeight: isSmallScreen ? 44 : 48, // Better touch target
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectedCategory: {
     backgroundColor: Colors.primary[50],
     borderColor: Colors.primary[500],
+    borderWidth: 2,
   },
   categoryText: {
-    fontSize: 14,
+    fontSize: isSmallScreen ? 13 : 14,
     color: Colors.neutral[700],
     textAlign: 'center',
     fontWeight: '500',
@@ -265,24 +287,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
-    gap: Spacing.sm,
+    marginBottom: isSmallScreen ? Spacing.md : Spacing.lg,
+    gap: isSmallScreen ? Spacing.xs : Spacing.sm,
   },
   priorityButton: {
     backgroundColor: Colors.neutral[100],
     borderRadius: 12,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    width: '48%',
+    paddingVertical: isSmallScreen ? Spacing.xs : Spacing.sm,
+    paddingHorizontal: isSmallScreen ? Spacing.sm : Spacing.md,
+    width: isSmallScreen ? '47%' : '48%',
     borderWidth: 1,
     borderColor: Colors.neutral[200],
+    minHeight: isSmallScreen ? 44 : 48, // Better touch target
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectedPriority: {
     backgroundColor: Colors.primary[50],
     borderColor: Colors.primary[500],
+    borderWidth: 2,
   },
   priorityText: {
-    fontSize: 14,
+    fontSize: isSmallScreen ? 13 : 14,
     color: Colors.neutral[700],
     textAlign: 'center',
     fontWeight: '500',
@@ -290,12 +316,15 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: Colors.primary[500],
     borderRadius: 12,
-    paddingVertical: Spacing.md,
+    paddingVertical: isSmallScreen ? Spacing.sm : Spacing.md,
     alignItems: 'center',
-    marginTop: Spacing.md,
+    marginTop: isSmallScreen ? Spacing.sm : Spacing.md,
+    minHeight: isSmallScreen ? 48 : 52, // Better touch target
+    justifyContent: 'center',
+    ...Shadows.sm,
   },
   submitButtonText: {
-    fontSize: 16,
+    fontSize: isSmallScreen ? 15 : 16,
     fontWeight: '600',
     color: Colors.white,
   },

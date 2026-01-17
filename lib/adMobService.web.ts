@@ -18,8 +18,11 @@ export class RewardedAdService {
 }
 
 export class AdManager {
+  static async initialize() {}
   static getInterstitial(unitId: string): InterstitialAdService { return new InterstitialAdService(unitId); }
   static getRewarded(unitId: string): RewardedAdService { return new RewardedAdService(unitId); }
+  static destroyAll() {}
+  static isAvailable(): boolean { return false; }
 }
 
 

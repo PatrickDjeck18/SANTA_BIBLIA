@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Animated } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
+import { ModernHeader } from './components/ModernHeader';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,13 +16,13 @@ function BibleReaderScreen({ onBack }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>📖 Bible Reader</Text>
-      </View>
+    <View style={styles.container}>
+      <ModernHeader
+        title="Bible Reader"
+        showBackButton={true}
+        onBackPress={onBack}
+        variant="default"
+      />
 
       <ScrollView style={styles.content}>
         <View style={styles.verseCard}>
@@ -51,56 +52,17 @@ function BibleReaderScreen({ onBack }) {
   );
 }
 
-function PrayerJournalScreen({ onBack }) {
-  const insets = useSafeAreaInsets();
-  const [prayers] = useState([
-    { id: 1, title: "Family Health", date: "Today", content: "Praying for my family's health and wellbeing" },
-    { id: 2, title: "Work Guidance", date: "Yesterday", content: "Seeking God's guidance in my career decisions" },
-    { id: 3, title: "Peace", date: "2 days ago", content: "Asking for peace during difficult times" }
-  ]);
-
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>🙏 Prayer Journal</Text>
-      </View>
-
-      <ScrollView style={styles.content}>
-        <TouchableOpacity
-          style={styles.addPrayerButton}
-          onPress={() => Alert.alert('Add Prayer', 'Prayer entry feature coming soon!')}
-        >
-          <Text style={styles.addPrayerText}>+ Add New Prayer</Text>
-        </TouchableOpacity>
-
-        {prayers.map(prayer => (
-          <View key={prayer.id} style={styles.prayerCard}>
-            <View style={styles.prayerHeader}>
-              <Text style={styles.prayerTitle}>{prayer.title}</Text>
-              <Text style={styles.prayerDate}>{prayer.date}</Text>
-            </View>
-            <Text style={styles.prayerContent}>{prayer.content}</Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
 function DailyVerseScreen({ onBack }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>✨ Daily Verse</Text>
-      </View>
+    <View style={styles.container}>
+      <ModernHeader
+        title="Daily Verse"
+        showBackButton={true}
+        onBackPress={onBack}
+        variant="default"
+      />
 
       <View style={styles.content}>
         <View style={styles.dailyVerseContainer}>
@@ -136,45 +98,166 @@ function DailyVerseScreen({ onBack }) {
 function HomeScreen({ onNavigate }) {
   const insets = useSafeAreaInsets();
 
+  const quickActions = [
+    {
+      id: 'bible',
+      icon: '📖',
+      title: 'Bible Reader',
+      description: 'Continue in John 3',
+      onPress: () => onNavigate('bible'),
+    },
+    {
+      id: 'verse',
+      icon: '✨',
+      title: 'Daily Verse',
+      description: "Today's inspiration",
+      onPress: () => onNavigate('verse'),
+    },
+    {
+      id: 'focus',
+      icon: '🕊️',
+      title: 'Quiet Time',
+      description: 'Schedule reminders',
+      onPress: () => Alert.alert('Coming Soon', 'Quiet time reminders arrive shortly.'),
+    },
+  ];
+
+  const insightCards = [
+    {
+      id: 'journal',
+      icon: '📝',
+      title: 'Prayer Journal',
+      description: "Capture today's gratitude and petitions.",
+    },
+    {
+      id: 'plan',
+      icon: '📅',
+      title: 'Reading Plan',
+      description: '3-day “Peace & Hope” plan in progress.',
+    },
+  ];
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>🙏 Daily Bread</Text>
-        <Text style={styles.subtitle}>Bible Companion App</Text>
-      </View>
+    <View style={styles.container}>
+      <ModernHeader
+        title="Daily Bible KJV"
+        showNotificationButton={true}
+        badgeCount={2}
+        onNotificationPress={() => Alert.alert('Notifications', 'You have 2 unread reminders')}
+        showProfileButton={true}
+        onProfilePress={() => Alert.alert('Profile', 'Profile settings coming soon')}
+        variant="default"
+      />
+      <ScrollView
+        contentContainerStyle={styles.homeScroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Modern Hero Section with Solid Color */}
+        <View style={styles.hero}>
+          <View style={styles.heroInner}>
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroTextBlock}>
+                <View style={styles.heroBadgeContainer}>
+                  <Text style={styles.heroBadge}>KJV Bible</Text>
+                </View>
+                <Text style={styles.heroHeading}>Modern quiet time hub</Text>
+                <Text style={styles.heroSubHeading}>
+                  Stay rooted in scripture with curated flows and streak tracking.
+                </Text>
+              </View>
+              <View style={styles.streakPill}>
+                <Text style={styles.streakNumber}>12</Text>
+                <Text style={styles.streakLabel}>day streak</Text>
+              </View>
+            </View>
 
-      <View style={styles.content}>
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => onNavigate('bible')}
-        >
-          <Text style={styles.cardIcon}>📖</Text>
-          <Text style={styles.cardTitle}>Read Bible</Text>
-          <Text style={styles.cardSubtitle}>Discover God's Word</Text>
-        </TouchableOpacity>
+            <View style={styles.heroStatsRow}>
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatValue}>03</Text>
+                <Text style={styles.heroStatLabel}>Plans active</Text>
+              </View>
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatValue}>15m</Text>
+                <Text style={styles.heroStatLabel}>Avg prayer</Text>
+              </View>
+              <View style={styles.heroStat}>
+                <Text style={styles.heroStatValue}>24</Text>
+                <Text style={styles.heroStatLabel}>Verses saved</Text>
+              </View>
+            </View>
+          </View>
 
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => onNavigate('prayer')}
-        >
-          <Text style={styles.cardIcon}>🙏</Text>
-          <Text style={styles.cardTitle}>Prayer Journal</Text>
-          <Text style={styles.cardSubtitle}>Track your prayers</Text>
-        </TouchableOpacity>
+          {/* Decorative Elements */}
+          <View style={styles.heroDecor1} />
+          <View style={styles.heroDecor2} />
+        </View>
 
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => onNavigate('verse')}
-        >
-          <Text style={styles.cardIcon}>✨</Text>
-          <Text style={styles.cardTitle}>Daily Verse</Text>
-          <Text style={styles.cardSubtitle}>Inspiration for today</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.mainSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Quick actions</Text>
+            <TouchableOpacity
+              onPress={() => Alert.alert('Coming Soon', 'More actions are on the way.')}
+            >
+              <Text style={styles.sectionLink}>View all</Text>
+            </TouchableOpacity>
+          </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Ready for Google Play Store</Text>
-      </View>
+          <View style={styles.actionGrid}>
+            {quickActions.map((action) => (
+              <TouchableOpacity
+                key={action.id}
+                style={styles.actionCard}
+                onPress={action.onPress}
+              >
+                <View style={styles.actionIconWrap}>
+                  <Text style={styles.actionIcon}>{action.icon}</Text>
+                </View>
+                <View style={styles.actionTextWrap}>
+                  <Text style={styles.actionCardTitle}>{action.title}</Text>
+                  <Text style={styles.actionCardDescription}>{action.description}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.featureCard}>
+            <Text style={styles.featureCardLabel}>Verse of the day</Text>
+            <Text style={styles.featureCardReference}>Philippians 4:13</Text>
+            <Text style={styles.featureCardText}>
+              “I can do all things through Christ which strengtheneth me.”
+            </Text>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => onNavigate('verse')}
+            >
+              <Text style={styles.primaryButtonText}>Open devotion</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.dualCardRow}>
+            {insightCards.map((card) => (
+              <View key={card.id} style={styles.miniCard}>
+                <Text style={styles.miniCardIcon}>{card.icon}</Text>
+                <Text style={styles.miniCardTitle}>{card.title}</Text>
+                <Text style={styles.miniCardDescription}>{card.description}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.scheduleCard}>
+            <View>
+              <Text style={styles.scheduleTitle}>Next quiet time</Text>
+              <Text style={styles.scheduleSubtitle}>Tonight · 9:00 PM · Psalms 27</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => Alert.alert('Reminder', 'Scheduling controls coming soon.')}
+            >
+              <Text style={styles.secondaryButtonText}>Adjust</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
       <StatusBar style="light" />
     </View>
   );
@@ -199,8 +282,6 @@ export default function App() {
     switch (currentScreen) {
       case 'bible':
         return <BibleReaderScreen onBack={navigateBack} />;
-      case 'prayer':
-        return <PrayerJournalScreen onBack={navigateBack} />;
       case 'verse':
         return <DailyVerseScreen onBack={navigateBack} />;
       default:
@@ -218,50 +299,349 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#0A0A0F', // Deep dark modern background
   },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    backgroundColor: '#6366f1',
+  // Removed custom header styles as we now use ModernHeader
+  homeScroll: {
+    paddingBottom: 40,
+    paddingTop: 16,
+  },
+  // Modern Hero Section
+  hero: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 28,
+    backgroundColor: '#1A1A2E',
+    borderRadius: 32,
+    overflow: 'hidden',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  backButton: {
+  heroInner: {
+    padding: 24,
+    zIndex: 2,
+  },
+  heroDecor1: {
     position: 'absolute',
-    left: 20,
-    top: 40,
-    padding: 10,
+    top: -50,
+    right: -50,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#7C3AED',
+    opacity: 0.15,
   },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  heroDecor2: {
+    position: 'absolute',
+    bottom: -30,
+    left: -30,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#EC4899',
+    opacity: 0.1,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  heroTextBlock: {
+    flex: 1,
+    marginRight: 16,
+  },
+  heroBadgeContainer: {
+    backgroundColor: 'rgba(124, 58, 237, 0.2)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.3)',
+  },
+  heroBadge: {
+    color: '#A78BFA',
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+  },
+  heroHeading: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    letterSpacing: -0.5,
+    lineHeight: 34,
+  },
+  heroSubHeading: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.6)',
+    lineHeight: 22,
+    letterSpacing: 0.2,
+  },
+  streakPill: {
+    backgroundColor: 'rgba(236, 72, 153, 0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(236, 72, 153, 0.25)',
+  },
+  streakNumber: {
+    fontSize: 28,
+    color: '#F472B6',
+    fontWeight: '800',
+  },
+  streakLabel: {
+    color: 'rgba(244, 114, 182, 0.8)',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 10,
+  },
+  heroStat: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  heroStatValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  heroStatLabel: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
     fontWeight: '600',
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
+  mainSection: {
+    paddingHorizontal: 16,
   },
-  subtitle: {
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
     fontSize: 18,
-    color: '#e0e7ff',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  sectionLink: {
+    color: '#A78BFA',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 28,
+    gap: 12,
+  },
+  actionCard: {
+    width: '48%',
+    backgroundColor: '#16162A',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  actionIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.2)',
+  },
+  actionIcon: {
+    fontSize: 24,
+  },
+  actionTextWrap: {
+    marginTop: 14,
+  },
+  actionCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  },
+  actionCardDescription: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  featureCard: {
+    backgroundColor: '#16162A',
+    borderRadius: 28,
+    padding: 24,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  featureCardLabel: {
+    color: '#A78BFA',
+    textTransform: 'uppercase',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    fontWeight: '700',
+  },
+  featureCardReference: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginVertical: 10,
+    letterSpacing: -0.5,
+  },
+  featureCardText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    lineHeight: 26,
+    letterSpacing: 0.2,
+  },
+  primaryButton: {
+    marginTop: 20,
+    backgroundColor: '#7C3AED',
+    alignSelf: 'flex-start',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+  dualCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 28,
+    gap: 12,
+  },
+  miniCard: {
+    width: '48%',
+    backgroundColor: '#16162A',
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  miniCardIcon: {
+    fontSize: 28,
+    marginBottom: 10,
+  },
+  miniCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 6,
+    letterSpacing: -0.2,
+  },
+  miniCardDescription: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+    lineHeight: 18,
+  },
+  scheduleCard: {
+    backgroundColor: '#16162A',
+    borderRadius: 24,
+    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  scheduleTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  scheduleSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 4,
+  },
+  secondaryButton: {
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.3)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+  },
+  secondaryButtonText: {
+    color: '#A78BFA',
+    fontWeight: '700',
+    fontSize: 14,
   },
   content: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#0A0A0F',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#16162A',
     padding: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   cardIcon: {
     fontSize: 48,
@@ -270,12 +650,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   cardSubtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
   },
   footer: {
@@ -284,132 +664,153 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: 'rgba(255,255,255,0.5)',
     fontStyle: 'italic',
   },
   // Bible Reader Styles
   verseCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#16162A',
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 20,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   verseReference: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#6366f1',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: '#A78BFA',
+    marginBottom: 10,
+    letterSpacing: 0.3,
   },
   verseText: {
     fontSize: 16,
-    lineHeight: 24,
-    color: '#374151',
+    lineHeight: 26,
+    color: 'rgba(255,255,255,0.85)',
   },
   // Prayer Journal Styles
   addPrayerButton: {
-    backgroundColor: '#6366f1',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: '#7C3AED',
+    padding: 18,
+    borderRadius: 16,
     alignItems: 'center',
     marginBottom: 20,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   addPrayerText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   prayerCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: '#16162A',
+    padding: 18,
+    borderRadius: 18,
+    marginBottom: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   prayerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   prayerTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   prayerDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: 'rgba(255,255,255,0.5)',
   },
   prayerContent: {
     fontSize: 14,
-    color: '#4b5563',
-    lineHeight: 20,
+    color: 'rgba(255,255,255,0.7)',
+    lineHeight: 22,
   },
   // Daily Verse Styles
   dailyVerseContainer: {
     alignItems: 'center',
   },
   dateText: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 20,
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.5)',
+    marginBottom: 24,
+    letterSpacing: 0.5,
   },
   featuredVerse: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 16,
+    backgroundColor: '#16162A',
+    padding: 28,
+    borderRadius: 24,
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    marginBottom: 28,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
     width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   featuredVerseText: {
-    fontSize: 18,
-    lineHeight: 28,
-    color: '#1f2937',
+    fontSize: 19,
+    lineHeight: 30,
+    color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
     fontStyle: 'italic',
   },
   reflectionCard: {
-    backgroundColor: '#fef3c7',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 24,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    padding: 22,
+    borderRadius: 20,
+    marginBottom: 28,
     width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
   },
   reflectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#92400e',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: '#FCD34D',
+    marginBottom: 10,
+    letterSpacing: 0.3,
   },
   reflectionText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#78350f',
+    fontSize: 15,
+    lineHeight: 24,
+    color: 'rgba(252, 211, 77, 0.85)',
   },
   shareButton: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 16,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   shareButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

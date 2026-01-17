@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/DesignTokens';
 import { useUnifiedMoodTracker } from '@/hooks/useUnifiedMoodTracker';
-import type { WeeklyMoodData } from '@/hooks/useMoodTracker';
+import type { WeeklyMoodData } from '@/hooks/useGuestMoodTracker';
 import { router } from 'expo-router';
 import { onMoodEntrySaved, offMoodEntrySaved } from '@/lib/eventEmitter';
 
@@ -40,6 +40,10 @@ export default function MoodTrackerCard({ onPress, compact = false }: MoodTracke
   const [showInsights, setShowInsights] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [lastRefetchTime, setLastRefetchTime] = useState(0);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const todaysMood = moodStats.todaysMood;
   const todayDate = new Date().toISOString().split('T')[0];
@@ -49,18 +53,85 @@ export default function MoodTrackerCard({ onPress, compact = false }: MoodTracke
   console.log('🔴 MOOD CARD: moodStats:', moodStats);
   console.log('🔴 MOOD CARD: loading:', loading);
 
-  const weeklyMoods = moodStats.weeklyData.map((d: { date: string; mood: string | null; mood_id: string | null; rating: number | null; emoji: string | null }) => ({
-    ...d,
-    day: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
-    isToday: d.date === todayDate
-  }));
+  // Timeout mechanism to prevent infinite loading
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    let progressInterval: ReturnType<typeof setInterval>;
+
+    if (loading) {
+      // Reset progress when loading starts
+      setLoadingProgress(0);
+
+      // Simulate progress
+      progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          const newProgress = prev + 10;
+          return newProgress > 90 ? 90 : newProgress;
+        });
+      }, 200);
+
+      timeout = setTimeout(() => {
+        console.log('🔴 MOOD CARD: Loading timeout reached');
+        setLoadingTimeout(true);
+        setHasError(true);
+        setLoadingProgress(100);
+      }, 5000); // 5 second timeout - reduced for better UX
+    } else {
+      setLoadingTimeout(false);
+      setHasError(false);
+      setLoadingProgress(100);
+    }
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+    };
+  }, [loading]);
+
+  // Auto-open mood tracker only if user explicitly wants to start tracking
+  // Removed automatic redirect to prevent unwanted navigation on page reload
+  // Users can manually navigate to mood tracker when they're ready
+
+  const weeklyMoods = useMemo(() => {
+    return moodStats.weeklyData.map((d: { date: string; mood: string | null; mood_id: string | null; rating: number | null; emoji: string | null }) => ({
+      ...d,
+      day: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+      isToday: d.date === todayDate
+    }));
+  }, [moodStats.weeklyData, todayDate]);
+
+  // Debounced refetch function
+  const debouncedRefetch = useCallback(async () => {
+    const now = Date.now();
+    const timeSinceLastRefetch = now - lastRefetchTime;
+
+    // Debounce refetch calls by 2 seconds
+    if (timeSinceLastRefetch < 2000) {
+      console.log('🔴 MOOD CARD: Debouncing refetch call');
+      return;
+    }
+
+    setLastRefetchTime(now);
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error('Error refreshing mood data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch, lastRefetchTime]);
 
   // Listen for mood entry saved events and refresh data
   useEffect(() => {
     const handleMoodSaved = async (data?: any) => {
-      setRefreshing(true);
-      await refetch();
-      setRefreshing(false);
+      if (!refreshing) {
+        await debouncedRefetch();
+      }
     };
 
     // Use cross-platform event emitter
@@ -77,35 +148,7 @@ export default function MoodTrackerCard({ onPress, compact = false }: MoodTracke
         window.removeEventListener('moodEntrySaved', handleMoodSaved);
       }
     };
-  }, [refetch]);
-
-  // Additional effect to refresh data when component becomes visible
-  // This helps with mobile platforms where events might not work
-  useEffect(() => {
-    const refreshData = async () => {
-      if (!loading) {
-        await refetch();
-      }
-    };
-
-    // Refresh data when component mounts
-    refreshData();
-  }, []);
-
-  // Refresh data when the component comes into focus (for mobile navigation)
-  useEffect(() => {
-    const handleFocus = () => {
-      if (!loading) {
-        refetch();
-      }
-    };
-
-    // This will be called when the component comes into focus
-    // You can add navigation focus listeners here if needed
-    return () => {
-      // Cleanup if needed
-    };
-  }, [refetch, loading]);
+  }, [debouncedRefetch, refreshing]);
 
   // Helper functions
   const getMoodGradient = (moodId: string | null | undefined) => {
@@ -235,11 +278,66 @@ export default function MoodTrackerCard({ onPress, compact = false }: MoodTracke
     setShowInsights(!showInsights);
   };
 
-  if (loading) {
+  if (loading && !loadingTimeout) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="small" color={Colors.primary[600]} />
         <Text style={styles.loadingText}>Loading mood data...</Text>
+
+        {/* Progress bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${loadingProgress}%` }
+              ]}
+            />
+          </View>
+          <Text style={styles.progressText}>{loadingProgress}%</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.manualRefreshButton}
+          onPress={() => router.push('/(tabs)/mood-tracker')}
+        >
+          <Text style={styles.manualRefreshButtonText}>Open Mood Tracker</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (hasError || loadingTimeout) {
+    return (
+      <View style={[styles.container, styles.errorContainer]}>
+        <View style={styles.errorContent}>
+          <Text style={styles.errorText}>Failed to load mood data</Text>
+          <Text style={styles.errorSubtext}>Unable to connect to mood tracker</Text>
+
+          <View style={styles.errorActions}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={async () => {
+                setHasError(false);
+                setLoadingTimeout(false);
+                try {
+                  await debouncedRefetch();
+                } catch (error) {
+                  console.error('Error retrying:', error);
+                }
+              }}
+            >
+              <Text style={styles.retryButtonText}>Refresh</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.openMoodTrackerButton}
+              onPress={() => router.push('/(tabs)/mood-tracker')}
+            >
+              <Text style={styles.openMoodTrackerButtonText}>Open Mood Tracker</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     );
   }
@@ -263,42 +361,60 @@ export default function MoodTrackerCard({ onPress, compact = false }: MoodTracke
       >
         {/* Header Section */}
         <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.iconContainer}>
-                {todaysMood?.emoji ? (
-                  <Text style={styles.moodEmoji}>{todaysMood.emoji}</Text>
-                ) : (
-                  <Smile size={compact ? 20 : 24} color={Colors.primary[600]} />
-                )}
-              </View>
-              <View>
-                <Text style={styles.title}>Today's Mood</Text>
-                <Text style={styles.subtitle}>
-                 {todaysMood ?
-    `${getMoodDisplayName(todaysMood.mood_id ?? null, todaysMood.mood_type)} • ${getMoodMessage(todaysMood.intensity_rating)}` :
-    'Track your mood today'
- }
-                </Text>
-                {todaysMood?.created_at && (
-                  <Text style={styles.moodTime}>
-                    Recorded at {new Date(todaysMood.created_at).toLocaleTimeString('en-US', {
+          <View style={styles.headerLeft}>
+            <View style={styles.iconContainer}>
+              {todaysMood?.emoji ? (
+                <Text style={styles.moodEmoji}>{todaysMood.emoji}</Text>
+              ) : (
+                <Smile size={compact ? 20 : 24} color={Colors.primary[600]} />
+              )}
+            </View>
+            <View>
+              <Text style={styles.title}>Today's Mood</Text>
+              <Text style={styles.subtitle}>
+                {todaysMood ?
+                  `${getMoodDisplayName(todaysMood.mood_id ?? null, todaysMood.mood_type)} • ${getMoodMessage(todaysMood.intensity_rating)}` :
+                  'Track your mood today'
+                }
+              </Text>
+              {todaysMood?.created_at && (
+                <Text style={styles.moodTime}>
+                  Recorded at {(() => {
+                    // Handle different timestamp formats
+                    let entryDate;
+                    if (typeof todaysMood.created_at === 'number') {
+                      // Firebase timestamp (milliseconds)
+                      entryDate = new Date(todaysMood.created_at);
+                    } else if (typeof todaysMood.created_at === 'string') {
+                      // ISO string or other string format
+                      entryDate = new Date(todaysMood.created_at);
+                    } else if (todaysMood.created_at && typeof (todaysMood.created_at as any).toDate === 'function') {
+                      // Firebase Timestamp object
+                      entryDate = (todaysMood.created_at as any).toDate();
+                    } else {
+                      // Fallback to current time
+                      entryDate = new Date();
+                    }
+
+                    return entryDate.toLocaleTimeString('en-US', {
                       hour: 'numeric',
                       minute: '2-digit',
                       hour12: true
-                    })}
-                  </Text>
-                )}
-              </View>
+                    });
+                  })()}
+                </Text>
+              )}
             </View>
+          </View>
 
-            <View style={styles.headerRight}>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => router.push('/(tabs)/mood-tracker')}
-              >
-                <Plus size={16} color={Colors.primary[600]} />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => router.push('/(tabs)/mood-tracker')}
+            >
+              <Plus size={16} color={Colors.primary[600]} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Stats Section */}
@@ -364,7 +480,6 @@ export default function MoodTrackerCard({ onPress, compact = false }: MoodTracke
 const styles = StyleSheet.create({
   container: {
     borderRadius: BorderRadius.lg,
-    marginHorizontal: Spacing.md,
     marginVertical: Spacing.sm,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -391,6 +506,96 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
     color: Colors.neutral[600],
     marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  manualRefreshButton: {
+    backgroundColor: Colors.primary[600],
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
+  },
+  manualRefreshButtonText: {
+    color: 'white',
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'center',
+  },
+  progressContainer: {
+    width: '100%',
+    marginVertical: Spacing.md,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: Colors.neutral[200],
+    borderRadius: BorderRadius.sm,
+    overflow: 'hidden',
+    marginBottom: Spacing.xs,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary[600],
+    borderRadius: BorderRadius.sm,
+  },
+  progressText: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.medium,
+    color: Colors.neutral[600],
+    textAlign: 'center',
+  },
+  errorContainer: {
+    padding: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.neutral[50],
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+  },
+  errorContent: {
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    color: Colors.neutral[700],
+    marginBottom: Spacing.xs,
+  },
+  errorSubtext: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.regular,
+    color: Colors.neutral[500],
+    marginBottom: Spacing.md,
+  },
+  errorActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  retryButton: {
+    backgroundColor: Colors.primary[600],
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    flex: 1,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'center',
+  },
+  openMoodTrackerButton: {
+    backgroundColor: Colors.neutral[200],
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    flex: 1,
+  },
+  openMoodTrackerButtonText: {
+    color: Colors.neutral[700],
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'center',
   },
   refreshOverlay: {
     position: 'absolute',
@@ -404,11 +609,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   gradient: {
-    padding: Spacing.lg,
+    padding: Spacing['3xl'],
     minHeight: 200,
   },
   compactGradient: {
-    padding: Spacing.md,
+    padding: Spacing.lg,
     minHeight: 160,
   },
   header: {

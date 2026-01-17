@@ -1,5 +1,5 @@
 // AIBibleChatScreen.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,12 +20,16 @@ import {
 import { useContext } from 'react';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Send, Bot, Book, Heart, Cross, Users, Sparkles, CircleHelp as HelpCircle, MessageCircle, Star, Leaf, User, Info, Clock, ChevronRight, Play, Star as PremiumStar, Zap } from 'lucide-react-native';
+import { ArrowLeft, Send, Book, Heart, Cross, Users, Sparkles, CircleHelp as HelpCircle, MessageCircle, Star, Leaf, User, Info, Clock, ChevronRight, Play, Star as PremiumStar, Zap } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { Colors } from '@/constants/DesignTokens';
+import { Colors, Shadows } from '@/constants/DesignTokens';
 import { useAIBibleChat } from '@/hooks/useAIBibleChat';
 import type { ChatMessage, ChatCategory } from '@/hooks/useAIBibleChat';
 import { ChatMessage as ChatMessageComponent } from '@/components/ChatMessage';
+import { ModernHeader } from '@/components/ModernHeader';
+import BannerAd from '@/components/BannerAd';
+import { useInterstitialAds } from '@/hooks/useInterstitialAds';
+import { getPromptsForCategory } from '@/lib/data/bibleChatPrompts';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,94 +43,11 @@ interface RecentConversation {
   color: string;
 }
 
-// Real AdMob Rewarded Ad Service
-import { AdManager } from '../lib/adMobService';
-import { ADS_CONFIG } from '../lib/adsConfig';
 
-const rewardedAdService = AdManager.getRewarded(ADS_CONFIG.ADMOB.REWARDED_ID);
-
-// =================================================================================
-// Access Modal Component - The Paywall
-// =================================================================================
-const AccessModal = ({
-  visible,
-  onClose,
-  adsWatchedCount,
-  onWatchAd,
-  onUpgrade,
-  isAdLoading,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  adsWatchedCount: number;
-  onWatchAd: () => void;
-  onUpgrade: () => void;
-  isAdLoading: boolean;
-}) => (
-  <Modal
-    animationType="fade"
-    transparent={true}
-    visible={visible}
-    onRequestClose={onClose}
-  >
-    <View style={accessModalStyles.overlay}>
-      <View style={accessModalStyles.modalContainer}>
-        {/* CORRECTED: The content is now wrapped inside the LinearGradient container */}
-        <LinearGradient
-          colors={Colors.gradients.spiritualLight as any}
-          style={accessModalStyles.modalGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <View style={accessModalStyles.modalHeader}>
-            <Zap size={36} color="white" style={{ marginBottom: 12 }} />
-            <Text style={accessModalStyles.modalTitle}>Unlock AI Bible Chat</Text>
-            <Text style={accessModalStyles.modalSubtitle}>
-              Watch a few short video ads for unlimited access.
-            </Text>
-          </View>
-          
-          <View style={accessModalStyles.counterContainer}>
-            <Text style={accessModalStyles.counterText}>
-              Ads Watched: <Text style={accessModalStyles.counterNumber}>{adsWatchedCount}</Text> / 2
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={accessModalStyles.watchAdButton}
-            onPress={onWatchAd}
-            disabled={isAdLoading}
-          >
-            {isAdLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <View style={accessModalStyles.buttonContent}>
-                <Play size={20} color="white" />
-                <Text style={accessModalStyles.watchAdButtonText}>
-                  Watch Video Ad ({2 - adsWatchedCount} left)
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <View style={accessModalStyles.divider} />
-
-          <TouchableOpacity
-            style={accessModalStyles.upgradeButton}
-            onPress={onUpgrade}
-          >
-            <View style={accessModalStyles.buttonContent}>
-              <PremiumStar size={20} color="#3B82F6" />
-              <Text style={accessModalStyles.upgradeButtonText}>Premium Unavailable</Text>
-            </View>
-          </TouchableOpacity>
-        </LinearGradient>
-      </View>
-    </View>
-  </Modal>
-);
+// Removed AccessModal component - no longer needed
 
 export default function AIBibleChatScreen() {
+  const { showInterstitialAd } = useInterstitialAds('bible');
 
   const {
     messages,
@@ -142,15 +63,11 @@ export default function AIBibleChatScreen() {
     clearConversation,
     getRecentConversations,
     deleteConversation,
+    deleteMessage,
     formatTimeAgo,
   } = useAIBibleChat();
   
   const [inputText, setInputText] = useState('');
-  
-  // State for ad-based access
-  const [adsWatchedCount, setAdsWatchedCount] = useState(0);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [isAdLoading, setIsAdLoading] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -161,7 +78,28 @@ export default function AIBibleChatScreen() {
   // Ref for the scroll view to auto-scroll to the bottom
   const scrollViewRef = useRef<ScrollView>(null);
   
-
+  // Initialize animations on component mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   // Typing animation
   useEffect(() => {
@@ -200,8 +138,8 @@ export default function AIBibleChatScreen() {
       title: 'Bible Study',
       subtitle: 'Scripture insights & interpretation',
       icon: <Book size={24} color="white" />,
-      color: '#F59E0B',
-      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      color: '#3B82F6',
+      gradient: ['#3B82F6', '#1D4ED8'],
     },
     {
       id: 'prayer-life',
@@ -209,31 +147,31 @@ export default function AIBibleChatScreen() {
       subtitle: 'Prayer guidance & support',
       icon: <Heart size={24} color="white" />,
       color: '#10B981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+      gradient: ['#10B981', '#059669'],
     },
     {
       id: 'faith-life',
       title: 'Faith & Life',
       subtitle: 'Living out your faith daily',
       icon: <Sparkles size={24} color="white" />,
-      color: '#3B82F6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      color: '#8B5CF6',
+      gradient: ['#8B5CF6', '#7C3AED'],
     },
     {
       id: 'theology',
       title: 'Theology',
       subtitle: 'Deep theological discussions',
       icon: <Cross size={24} color="white" />,
-      color: '#8B5CF6',
-      backgroundColor: 'rgba(139, 92, 246, 0.1)',
+      color: '#EF4444',
+      gradient: ['#EF4444', '#DC2626'],
     },
     {
       id: 'relationships',
       title: 'Relationships',
       subtitle: 'Biblical relationship advice',
       icon: <Users size={24} color="white" />,
-      color: '#EF4444',
-      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      color: '#F59E0B',
+      gradient: ['#F59E0B', '#D97706'],
     },
     {
       id: 'spiritual-growth',
@@ -241,7 +179,7 @@ export default function AIBibleChatScreen() {
       subtitle: 'Growing in your faith journey',
       icon: <Leaf size={24} color="white" />,
       color: '#06B6D4',
-      backgroundColor: 'rgba(6, 182, 212, 0.1)',
+      gradient: ['#06B6D4', '#0891B2'],
     },
     {
       id: 'life-questions',
@@ -249,7 +187,7 @@ export default function AIBibleChatScreen() {
       subtitle: 'Biblical answers to life\'s questions',
       icon: <HelpCircle size={24} color="white" />,
       color: '#F59E0B',
-      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      gradient: ['#F59E0B', '#D97706'],
     },
     {
       id: 'holy-spirit',
@@ -257,7 +195,7 @@ export default function AIBibleChatScreen() {
       subtitle: 'Understanding spiritual gifts',
       icon: <Sparkles size={24} color="white" />,
       color: '#8B5CF6',
-      backgroundColor: 'rgba(139, 92, 246, 0.1)',
+      gradient: ['#8B5CF6', '#7C3AED'],
     },
     {
       id: 'service',
@@ -265,7 +203,7 @@ export default function AIBibleChatScreen() {
       subtitle: 'Serving God & others',
       icon: <Heart size={24} color="white" />,
       color: '#10B981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+      gradient: ['#10B981', '#059669'],
     },
     {
       id: 'general-chat',
@@ -273,7 +211,7 @@ export default function AIBibleChatScreen() {
       subtitle: 'Open faith conversations',
       icon: <Star size={24} color="white" />,
       color: '#EC4899',
-      backgroundColor: 'rgba(236, 72, 153, 0.1)',
+      gradient: ['#EC4899', '#DB2777'],
     },
   ];
 
@@ -294,11 +232,22 @@ export default function AIBibleChatScreen() {
   };
 
   const handleCategorySelect = async (categoryData: any) => {
-    // Wait for the new conversation to be created and set
-    const conversationId = await startNewConversation(categoryData.id);
-    if (conversationId) {
-      // You may need to handle a specific state for showing chat vs categories
-      // but with the paywall logic, this handles it automatically
+    try {
+      console.log('Category clicked:', categoryData.title);
+      
+      // Start the conversation
+      console.log('Starting new conversation for category:', categoryData.id);
+      const conversationId = await startNewConversation(categoryData.id);
+      console.log('Conversation created with ID:', conversationId);
+      
+      if (conversationId) {
+        console.log('Category selected successfully:', categoryData.title);
+      } else {
+        throw new Error('Failed to create conversation');
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      Alert.alert('Error', 'Failed to start conversation. Please try again.');
     }
   };
 
@@ -307,86 +256,200 @@ export default function AIBibleChatScreen() {
     const messageText = inputText.trim();
     setInputText('');
     
+    console.log('🚀 Sending message from UI:', { messageText: messageText.substring(0, 50), currentCategory, currentConversationId });
+    
     if (currentCategory) {
       await sendMessage(messageText, currentCategory);
+    } else {
+      console.warn('❌ No current category set, cannot send message');
     }
   };
+
+  // Use a safe back navigation to avoid callback errors when there's no history
+  const safeBack = useCallback(() => {
+    try {
+      // @ts-ignore expo-router provides canGoBack at runtime
+      if (typeof router?.canGoBack === 'function' ? router.canGoBack() : false) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch {
+      router.replace('/(tabs)');
+    }
+  }, []);
 
   const handleBackToCategories = () => {
-    // This now simply changes the state to show the categories again
-    // The paywall logic will take over if the user isn't subscribed
-    setShowPaywall(false);
     clearConversation();
+    safeBack();
   };
   
-  const handleWatchAd = async () => {
-    if (adsWatchedCount < 2) {
-      setIsAdLoading(true);
-      try {
-        const result = await rewardedAdService.showAd();
-        if (result.success) {
-          setAdsWatchedCount(prev => prev + 1);
-          Alert.alert('Video Ad Watched!', 'You\'re one step closer to unlocking the chat.', [{ text: 'OK' }]);
-        } else {
-          Alert.alert('Ad Error', 'Failed to load the ad. Please try again.', [{ text: 'OK' }]);
-        }
-      } catch (error) {
-        console.error('Error showing rewarded ad:', error);
-        Alert.alert('Ad Error', 'Failed to load the ad. Please try again.', [{ text: 'OK' }]);
-      } finally {
-        setIsAdLoading(false);
-      }
-    }
-  };
 
-  const handleUpgradeSubscription = async () => {
-    Alert.alert('Premium Unavailable', 'Premium subscriptions are not currently available. Please use the ad-based access for now.');
-  };
-  
-  // Conditionally render the paywall or the main screen content
+  // Show category selection if no conversation is active
+  if (!currentConversationId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.whiteBackground}>
+          {/* Header - Outside ScrollView for full width */}
+          <View style={styles.headerContainer}>
+            <ModernHeader
+              title="AI Bible Chat"
+              variant="simple"
+              showBackButton={true}
+              showReaderButton={false}
+              onBackPress={safeBack}
+              readerText="AI Bible Chat. Choose a topic to start your conversation with our AI Bible assistant."
+            />
+          </View>
 
+          {/* Banner Ad */}
+          <BannerAd placement="bible" />
 
-  // Main UI
+          <Animated.ScrollView 
+            style={[styles.scrollView, { opacity: fadeAnim }]}
+            showsVerticalScrollIndicator={false}
+          >
+
+            {/* Main Chat Card */}
+            <Animated.View style={[styles.mainChatCard, { transform: [{ scale: scaleAnim }] }]}>
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
+                style={styles.mainChatGradient}
+              >
+                <View style={styles.aiAvatarContainer}>
+                  <LinearGradient
+                    colors={['#8B5CF6', '#7C3AED']}
+                    style={styles.aiAvatar}
+                  >
+                    <Book size={32} color="white" />
+                  </LinearGradient>
+                  <View style={styles.onlineIndicator} />
+                </View>
+                <Text style={styles.mainChatTitle}>AI Bible Assistant</Text>
+                <Text style={styles.mainChatSubtitle}>
+                  Your intelligent companion for Bible study, prayer guidance, and spiritual growth
+                </Text>
+              </LinearGradient>
+            </Animated.View>
+
+            {/* Categories Section */}
+            <Animated.View style={[styles.categoriesSection, { transform: [{ translateY: slideAnim }] }]}>
+              <Text style={styles.sectionTitle}>Choose Your Topic</Text>
+              <View style={styles.categoriesGrid}>
+                {categoryDisplayData.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={styles.categoryCardContainer}
+                    onPress={() => handleCategorySelect(category)}
+                  >
+                    <View style={[styles.categoryCard, { backgroundColor: '#FFFFFF' }]}>
+                      <View style={styles.categoryContent}>
+                        <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
+                          {category.icon}
+                        </View>
+                        <Text style={styles.categoryTitle}>{category.title}</Text>
+                        <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+
+            {/* Recent Conversations */}
+            {recentConversations.length > 0 && (
+              <Animated.View style={[styles.recentSection, { transform: [{ translateY: slideAnim }] }]}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Recent Conversations</Text>
+                  <Text style={styles.viewAll}>View All</Text>
+                </View>
+                <View style={styles.recentList}>
+                  {recentConversations.map((conversation) => (
+                    <TouchableOpacity
+                      key={conversation.id}
+                      style={styles.recentItem}
+                      onPress={() => openExistingConversation(conversation.id)}
+                    >
+                      <LinearGradient
+                        colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
+                        style={styles.recentGradient}
+                      >
+                        <View style={styles.recentLeft}>
+                          <View style={[styles.recentIcon, { backgroundColor: getCategoryColor(conversation.category) + '20' }]}>
+                            {getCategoryIcon(conversation.category)}
+                          </View>
+                          <View style={styles.recentContent}>
+                            <Text style={styles.recentCategory}>
+                              {getCategoryDisplayData(conversation.category)?.title || 'General Chat'}
+                            </Text>
+                            <Text style={styles.recentTitle}>{conversation.title}</Text>
+                            <Text style={styles.recentPreview}>{conversation.preview}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.recentRight}>
+                          <Text style={styles.recentTime}>{formatTimeAgo(conversation.lastMessageTime)}</Text>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Empty Recent State */}
+            {recentConversations.length === 0 && (
+              <Animated.View style={[styles.emptyRecentSection, { transform: [{ translateY: slideAnim }] }]}>
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
+                  style={styles.emptyRecentGradient}
+                >
+                  <Book size={48} color="#9CA3AF" />
+                  <Text style={styles.emptyRecentTitle}>No Recent Conversations</Text>
+                  <Text style={styles.emptyRecentSubtitle}>
+                    Start a new conversation by selecting a topic above
+                  </Text>
+                </LinearGradient>
+              </Animated.View>
+            )}
+
+            <View style={styles.bottomSpacing} />
+          </Animated.ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Main Chat UI
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <LinearGradient
-        colors={Colors.gradients.spiritualLight as any}
-        style={styles.gradient}
-      >
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.whiteBackground}>
         <KeyboardAvoidingView 
           style={styles.chatContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           {/* Chat Header */}
-          <Animated.View style={[styles.chatHeader, { opacity: fadeAnim }]}>
-            <TouchableOpacity
-              style={styles.chatBackButton}
-              onPress={handleBackToCategories}
-            >
-              <ArrowLeft size={24} color="white" />
-            </TouchableOpacity>
-            <View style={styles.chatHeaderCenter}>
-              <View style={styles.chatAvatarSmall}>
-                <Bot size={20} color="white" />
-              </View>
-              <View style={styles.chatHeaderInfo}>
-                <Text style={styles.chatHeaderTitle}>AI Bible Assistant</Text>
-                <Text style={styles.chatHeaderSubtitle}>
-                  {currentCategory ? chatCategories.find(c => c.id === currentCategory)?.title : 'Online'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.chatInfoButton}>
-              <Info size={24} color="white" />
-            </TouchableOpacity>
-          </Animated.View>
+          <View style={styles.headerContainer}>
+            <ModernHeader
+              title="AI Bible Assistant"
+              variant="simple"
+              showBackButton={true}
+              showReaderButton={false}
+              onBackPress={handleBackToCategories}
+              readerText={`AI Bible Assistant. ${currentCategory ? chatCategories.find(c => c.id === currentCategory)?.title : 'Online'}. Chat with our AI to explore biblical topics.`}
+            />
+          </View>
+
+          {/* Banner Ad */}
+          <BannerAd placement="bible" />
 
           {/* Messages */}
           <Animated.ScrollView 
             style={[styles.messagesContainer, { opacity: fadeAnim }]}
             showsVerticalScrollIndicator={false}
             ref={scrollViewRef}
+            contentContainerStyle={styles.messagesContainerEmpty}
           >
             {messages.map((message) => (
               <ChatMessageComponent
@@ -394,14 +457,44 @@ export default function AIBibleChatScreen() {
                 message={message}
                 onCopy={(text) => console.log('Copied:', text)}
                 onShare={(text) => console.log('Shared:', text)}
+                onDelete={deleteMessage}
+                showDeleteButton={true}
               />
             ))}
+
+            {/* Prompts Section - Show when no user messages exist */}
+            {messages.filter(m => m.isUser).length === 0 && currentCategory && (
+              <View style={styles.promptsContainerWrapper}>
+                <Animated.View style={[styles.promptsContainer]}>
+                  <Text style={styles.promptsTitle}>💡 Suggested Questions</Text>
+                  <View style={styles.promptsScrollContent}>
+                    {getPromptsForCategory(currentCategory).map((prompt, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.promptChip}
+                        onPress={() => {
+                          setInputText(prompt.text);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.promptChipContent}>
+                          <View style={styles.promptNumber}>
+                            <Text style={styles.promptNumberText}>{index + 1}</Text>
+                          </View>
+                          <Text style={styles.promptText}>{prompt.text}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </Animated.View>
+              </View>
+            )}
 
             {/* Typing Indicator */}
             {isTyping && (
               <Animated.View style={[styles.typingContainer, { opacity: typingAnim }]}>
                 <View style={styles.aiMessageAvatar}>
-                  <Bot size={16} color="white" />
+                  <Book size={16} color="white" />
                 </View>
                 <View style={styles.typingBubble}>
                   <View style={styles.typingDots}>
@@ -446,7 +539,7 @@ export default function AIBibleChatScreen() {
             </LinearGradient>
           </Animated.View>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 }
@@ -458,9 +551,24 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
   },
+  whiteBackground: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  headerContainer: {
+    backgroundColor: Colors.white,
+    zIndex: 1000,
+    elevation: 4,
+    shadowColor: Colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[200],
+    position: 'relative',
+  },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
     paddingBottom: 120, // Space for floating tab bar
   },
   
@@ -476,7 +584,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -486,28 +594,27 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: 'white',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    color: '#1A1A1A',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#6B7280',
     lineHeight: 20,
   },
   infoButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // Main Chat Card
   mainChatCard: {
+    marginHorizontal: 20,
+    marginTop: 24,
     marginBottom: 32,
     borderRadius: 24,
     overflow: 'hidden',
@@ -563,16 +670,15 @@ const styles = StyleSheet.create({
 
   // Categories Section
   categoriesSection: {
+    marginHorizontal: 20,
+    marginTop: 16,
     marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: 'white',
+    color: '#1A1A1A',
     marginBottom: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   categoriesGrid: {
     flexDirection: 'row',
@@ -593,6 +699,12 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   categoryGradient: {
+    padding: 20,
+    alignItems: 'center',
+    minHeight: 140,
+    justifyContent: 'center',
+  },
+  categoryContent: {
     padding: 20,
     alignItems: 'center',
     minHeight: 140,
@@ -626,6 +738,8 @@ const styles = StyleSheet.create({
 
   // Recent Section
   recentSection: {
+    marginHorizontal: 20,
+    marginTop: 16,
     marginBottom: 32,
   },
   sectionHeader: {
@@ -636,7 +750,7 @@ const styles = StyleSheet.create({
   },
   viewAll: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#6B7280',
     fontWeight: '600',
   },
   recentList: {
@@ -751,7 +865,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
   },
   chatHeaderCenter: {
     flexDirection: 'row',
@@ -773,17 +888,17 @@ const styles = StyleSheet.create({
   chatHeaderTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: 'white',
+    color: '#1A1A1A',
   },
   chatHeaderSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#6B7280',
   },
   chatBackButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -796,7 +911,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -806,6 +921,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 16,
+  },
+  messagesContainerEmpty: {
+    flexGrow: 1,
   },
   aiMessageAvatar: {
     width: 32,
@@ -860,35 +978,120 @@ const styles = StyleSheet.create({
   inputGradient: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 28,
     gap: 12,
+    backgroundColor: 'white',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1A1A1A',
+    color: '#111827',
     maxHeight: 100,
     lineHeight: 22,
+    fontWeight: '400',
   },
   sendButton: {
-    borderRadius: 20,
+    borderRadius: 22,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sendButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   sendButtonGradient: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Prompts Section
+  promptsContainerWrapper: {
+    marginBottom: 16,
+  },
+  promptsContainer: {
+    borderRadius: 24,
+    backgroundColor: 'white',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  promptsScrollContent: {
+    paddingBottom: 16,
+  },
+  promptsTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 16,
+    letterSpacing: -0.5,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  promptChip: {
+    backgroundColor: 'rgba(139, 92, 246, 0.06)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
+    shadowColor: 'rgba(139, 92, 246, 0.25)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  promptChipContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  promptNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#8B5CF6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  promptNumberText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: 'white',
+  },
+  promptText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#6B21A8',
+    lineHeight: 22,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
 
   bottomSpacing: {
@@ -896,97 +1099,4 @@ const styles = StyleSheet.create({
   },
 });
 
-const accessModalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '90%',
-    maxWidth: 400,
-    borderRadius: 24,
-    overflow: 'hidden',
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-  },
-  modalGradient: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  modalHeader: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: 'white',
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  counterContainer: {
-    marginBottom: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-  },
-  counterText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-  },
-  counterNumber: {
-    fontWeight: '800',
-  },
-  watchAdButton: {
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  watchAdButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  divider: {
-    width: '80%',
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    marginBottom: 20,
-  },
-  upgradeButton: {
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  upgradeButtonText: {
-    color: '#3B82F6',
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
+// Removed accessModalStyles - no longer needed

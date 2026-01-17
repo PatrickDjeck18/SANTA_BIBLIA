@@ -16,6 +16,7 @@ import {
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/DesignTokens';
+import { AppTheme } from '@/constants/AppTheme';
 import {
   ArrowLeft,
   Trophy,
@@ -29,9 +30,11 @@ import {
   Zap,
   Play,
 } from 'lucide-react-native';
-import { useSupabaseQuiz } from '@/hooks/useSupabaseQuiz';
+import { useQuizDatabase } from '@/hooks/useQuizDatabase';
 import { AdManager } from '../lib/adMobService';
 import { ADS_CONFIG } from '../lib/adsConfig';
+import BannerAd from '@/components/BannerAd';
+import { useInterstitialAds } from '@/hooks/useInterstitialAds';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -47,6 +50,7 @@ interface QuizStats {
 const rewardedAdService = AdManager.getRewarded(ADS_CONFIG.ADMOB.REWARDED_ID);
 
 export default function BibleQuizScreen() {
+  const { showInterstitialAd } = useInterstitialAds('quiz');
   const {
     quizState,
     startQuiz,
@@ -57,16 +61,15 @@ export default function BibleQuizScreen() {
     getProgress,
     stats,
     loading,
-    resetUserProgress
-  } = useSupabaseQuiz();
-  
+  } = useQuizDatabase();
+
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const scoreAnim = useRef(new Animated.Value(0)).current;
-  
+
   // State
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -188,12 +191,9 @@ export default function BibleQuizScreen() {
       setStartTime(Date.now());
       console.log('Initializing quiz...');
 
-      // Reset used questions to ensure fresh randomization for each new session
-      await resetUserProgress();
-
       // Start in level mode so questions vary by level and difficulty
       await startQuiz({
-        gameMode: 'level'
+        questionCount: 10
       });
       // Reset local stats/time; actual counts/time come from level config in hook
       setTimeRemaining(30);
@@ -214,10 +214,10 @@ export default function BibleQuizScreen() {
 
   const handleTimeout = () => {
     if (selectedAnswer !== null) return;
-    
+
     setSelectedAnswer(-1); // -1 indicates timeout
     setShowResult(true);
-    
+
     setTimeout(() => {
       handleNextQuestion();
     }, 2000);
@@ -228,7 +228,7 @@ export default function BibleQuizScreen() {
 
     setSelectedAnswer(answerIndex);
     setShowResult(true);
-    
+
     const isCorrect = answerIndex === currentQuestion?.correctAnswer;
     const timeBonus = Math.floor((timeRemaining / 30) * 50);
     const basePoints = isCorrect ? 100 : 0;
@@ -363,43 +363,43 @@ export default function BibleQuizScreen() {
 
   const getAnswerStyle = (index: number) => {
     if (!showResult) return styles.optionButton;
-    
+
     if (index === currentQuestion?.correctAnswer) {
       return [styles.optionButton, styles.correctOption];
     }
-    
+
     if (selectedAnswer === index && selectedAnswer !== currentQuestion?.correctAnswer) {
       return [styles.optionButton, styles.incorrectOption];
     }
-    
+
     return [styles.optionButton, styles.disabledOption];
   };
 
   const getAnswerTextStyle = (index: number) => {
     if (!showResult) return styles.optionText;
-    
+
     if (index === currentQuestion?.correctAnswer) {
       return [styles.optionText, styles.correctText];
     }
-    
+
     if (selectedAnswer === index && selectedAnswer !== currentQuestion?.correctAnswer) {
       return [styles.optionText, styles.incorrectText];
     }
-    
+
     return [styles.optionText, styles.disabledText];
   };
 
   const renderResultIcon = (index: number) => {
     if (!showResult) return null;
-    
+
     if (index === currentQuestion?.correctAnswer) {
       return <CheckCircle size={24} color="#10B981" />;
     }
-    
+
     if (selectedAnswer === index && selectedAnswer !== currentQuestion?.correctAnswer) {
       return <XCircle size={24} color="#EF4444" />;
     }
-    
+
     return null;
   };
 
@@ -407,7 +407,7 @@ export default function BibleQuizScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient
-          colors={Colors.gradients.spiritualLight}
+          colors={AppTheme.gradients.background}
           style={StyleSheet.absoluteFillObject}
         />
         <View style={styles.loadingContainer}>
@@ -421,7 +421,7 @@ export default function BibleQuizScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient
-          colors={Colors.gradients.spiritualLight}
+          colors={AppTheme.gradients.background}
           style={StyleSheet.absoluteFillObject}
         />
         <View style={styles.errorContainer}>
@@ -438,7 +438,7 @@ export default function BibleQuizScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient
-          colors={Colors.gradients.spiritualLight}
+          colors={AppTheme.gradients.background}
           style={StyleSheet.absoluteFillObject}
         />
         <View style={styles.loadingContainer}>
@@ -649,7 +649,7 @@ export default function BibleQuizScreen() {
 
       {/* Background Gradient */}
       <LinearGradient
-        colors={Colors.gradients.spiritualLight}
+        colors={AppTheme.gradients.background}
         style={StyleSheet.absoluteFillObject}
       />
 
@@ -659,23 +659,20 @@ export default function BibleQuizScreen() {
       {/* Header */}
       <View style={styles.hero}>
         <LinearGradient
-          colors={Colors.gradients.spiritualLight || ['#fdfcfb', '#e2d1c3', '#c9d6ff']}
+          colors={AppTheme.gradients.background}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.heroGradient}
         >
           <View style={styles.heroContent}>
             <TouchableOpacity
-              style={styles.heroActionButton}
+              style={styles.heroBackButton}
               onPress={() => router.replace('/')}
             >
-              <ArrowLeft size={20} color={Colors.primary[600]} />
+              <ArrowLeft size={20} color={AppTheme.accent.primary} />
             </TouchableOpacity>
             <View style={styles.heroTextBlock}>
               <Text style={styles.heroTitle}>Bible Quiz</Text>
-              <Text style={styles.heroSubtitle}>
-                Test your knowledge of God's Word
-              </Text>
             </View>
             <View style={styles.heroActions}>
               {/* Space for future actions */}
@@ -685,24 +682,26 @@ export default function BibleQuizScreen() {
       </View>
 
       <View style={styles.headerStats}>
-          <View style={styles.statItem}>
-            <Target size={16} color={Colors.primary[600]} />
-            <Text style={styles.statText}>{progress.current}/{progress.total}</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <Trophy size={16} color={Colors.warning[600]} />
-            <Text style={styles.statText}>{quizStats.score}</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <Clock size={16} color={timeRemaining <= 10 ? Colors.error[600] : Colors.success[600]} />
-            <Text style={[styles.statText, { color: timeRemaining <= 10 ? Colors.error[600] : Colors.success[600] }]}>
-              {timeRemaining}s
-            </Text>
-          </View>
+        <View style={styles.statItem}>
+          <Target size={16} color={AppTheme.accent.primary} />
+          <Text style={styles.statText}>{progress.current}/{progress.total}</Text>
         </View>
 
+        <View style={styles.statItem}>
+          <Trophy size={16} color={Colors.warning[600]} />
+          <Text style={styles.statText}>{quizStats.score}</Text>
+        </View>
+
+        <View style={styles.statItem}>
+          <Clock size={16} color={timeRemaining <= 10 ? Colors.error[600] : Colors.success[600]} />
+          <Text style={[styles.statText, { color: timeRemaining <= 10 ? Colors.error[600] : Colors.success[600] }]}>
+            {timeRemaining}s
+          </Text>
+        </View>
+      </View>
+
+      {/* Banner Ad */}
+      <BannerAd placement="quiz" />
 
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
@@ -724,7 +723,7 @@ export default function BibleQuizScreen() {
         </Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
@@ -830,14 +829,14 @@ export default function BibleQuizScreen() {
             ]}
           >
             <LinearGradient
-              colors={selectedAnswer === currentQuestion?.correctAnswer 
+              colors={selectedAnswer === currentQuestion?.correctAnswer
                 ? [Colors.success[400], Colors.success[600]]
                 : [Colors.error[400], Colors.error[600]]
               }
               style={styles.scorePopupGradient}
             >
               <Text style={styles.scorePopupText}>
-                {selectedAnswer === currentQuestion?.correctAnswer 
+                {selectedAnswer === currentQuestion?.correctAnswer
                   ? `+${100 + Math.floor((timeRemaining / 30) * 50)} points!`
                   : 'Try again!'
                 }
@@ -853,23 +852,26 @@ export default function BibleQuizScreen() {
             <Text style={styles.statCardLabel}>Streak</Text>
             <Text style={styles.statCardValue}>{quizStats.currentStreak}</Text>
           </View>
-          
+
           <View style={styles.statCard}>
             <TrendingUp size={20} color={Colors.success[600]} />
             <Text style={styles.statCardLabel}>Accuracy</Text>
             <Text style={styles.statCardValue}>
-              {quizStats.totalQuestions > 0 
+              {quizStats.totalQuestions > 0
                 ? Math.round((quizStats.correctAnswers / quizStats.totalQuestions) * 100)
                 : 0}%
             </Text>
           </View>
-          
+
           <View style={styles.statCard}>
             <Award size={20} color={Colors.primary[600]} />
             <Text style={styles.statCardLabel}>Best Score</Text>
             <Text style={styles.statCardValue}>{stats.totalScore}</Text>
           </View>
         </View>
+
+        {/* Banner Ad below stats */}
+        <BannerAd placement="quiz" />
       </ScrollView>
     </SafeAreaView>
   );
@@ -1117,6 +1119,7 @@ const styles = StyleSheet.create({
   },
   heroTextBlock: {
     flex: 1,
+    alignItems: 'center',
   },
   heroTitle: {
     fontSize: Typography.sizes['3xl'],
@@ -1133,6 +1136,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+  },
+  heroBackButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.sm,
   },
   heroActionButton: {
     width: 44,

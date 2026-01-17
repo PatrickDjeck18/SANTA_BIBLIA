@@ -58,32 +58,32 @@ export const ColorfulCard: React.FC<ColorfulCardProps> = ({
 }) => {
   const cardColors = {
     orange: {
-      gradient: Colors.gradients.card.orange,
-      solid: Colors.cardColors.orange,
+      gradient: Colors.gradients.card.gold,
+      solid: Colors.gradients.card.gold[0],
     },
     green: {
       gradient: Colors.gradients.card.green,
-      solid: Colors.cardColors.green,
+      solid: Colors.gradients.card.green[0],
     },
     blue: {
       gradient: Colors.gradients.card.blue,
-      solid: Colors.cardColors.blue,
+      solid: Colors.gradients.card.blue[0],
     },
     purple: {
       gradient: Colors.gradients.card.purple,
-      solid: Colors.cardColors.purple,
+      solid: Colors.gradients.card.purple[0],
     },
     pink: {
       gradient: Colors.gradients.card.pink,
-      solid: Colors.cardColors.pink,
+      solid: Colors.gradients.card.pink[0],
     },
     red: {
-      gradient: ['#FF3B30', '#FF453A'] as const,
-      solid: Colors.cardColors.red,
+      gradient: Colors.gradients.card.pink,
+      solid: Colors.gradients.card.pink[0],
     },
     teal: {
-      gradient: ['#5AC8FA', '#64D2FF'] as const,
-      solid: Colors.cardColors.teal,
+      gradient: Colors.gradients.card.blue,
+      solid: Colors.gradients.card.blue[0],
     },
   };
 

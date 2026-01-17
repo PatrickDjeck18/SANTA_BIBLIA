@@ -12,16 +12,15 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Heart, Users, Share, Trash2 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { usePrayers } from '@/hooks/usePrayers';
-import type { Prayer } from '@/lib/supabase';
+import { useUnifiedPrayers, LocalPrayer } from '@/hooks/useUnifiedPrayers';
 
 export default function EditPrayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { prayers, updatePrayer } = usePrayers();
-  const [prayer, setPrayer] = useState<Prayer | null>(null);
+  const { prayers, updatePrayer } = useUnifiedPrayers();
+  const [prayer, setPrayer] = useState<LocalPrayer | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
+  const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
   const [isShared, setIsShared] = useState(false);
   const [isCommunity, setIsCommunity] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,7 +58,7 @@ export default function EditPrayerScreen() {
     if (!prayer) return;
 
     setLoading(true);
-    
+
     const { error } = await updatePrayer(prayer.id, {
       title: title.trim(),
       description: description.trim() || null,
@@ -134,7 +133,7 @@ export default function EditPrayerScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.backButton}
               onPress={() => router.back()}
             >
@@ -148,7 +147,7 @@ export default function EditPrayerScreen() {
             </View>
             <View style={styles.headerRight}>
               {prayer.status === 'active' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.answeredButton}
                   onPress={handleMarkAsAnswered}
                 >
@@ -241,7 +240,7 @@ export default function EditPrayerScreen() {
             {/* Prayer Options */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Prayer Options</Text>
-              
+
               <TouchableOpacity
                 style={[styles.optionRow, prayer.status === 'answered' && styles.disabledOption]}
                 onPress={() => prayer.status === 'active' && setIsShared(!isShared)}

@@ -18,9 +18,20 @@ export interface MoodAnalysis {
     relevance: string;
   }>;
   trendPrediction: string;
+  verseRecommendations?: Array<{
+    verse: {
+      reference: string;
+      text: string;
+      category: string;
+    };
+    relevanceScore: number;
+    reason: string;
+    aiInsight?: string;
+  }>;
 }
 
 import { config } from '../config';
+import BibleVerseService, { VerseRecommendation } from './bibleVerseService';
 
 export interface MoodAnalysisRequest {
   moodHistory: MoodEntry[];
@@ -37,9 +48,16 @@ export class MoodAnalysisService {
 
   static async analyzeMoodPatterns(request: MoodAnalysisRequest): Promise<MoodAnalysis> {
     try {
-      // If no API key, return basic analysis
+      // Get Bible verse recommendations first
+      const verseRecommendations = this.getBibleVerseRecommendations(request);
+      
+      // If no API key, return enhanced analysis with verse recommendations
       if (!config.deepseek.apiKey) {
-        return this.getBasicAnalysis(request);
+        const basicAnalysis = this.getBasicAnalysis(request);
+        return {
+          ...basicAnalysis,
+          verseRecommendations
+        };
       }
 
       const systemPrompt = `You are a Christian mental health and spiritual wellness AI assistant. Analyze mood patterns and provide:
@@ -57,9 +75,10 @@ Guidelines:
 - Focus on hope and growth
 - Keep responses concise (max 3 paragraphs per section)
 - Use modern, accessible language
-- Emphasize God's grace and love`;
+- Emphasize God's grace and love
+- Reference the specific mood patterns and verses provided`;
 
-      const userPrompt = this.buildUserPrompt(request);
+      const userPrompt = this.buildEnhancedUserPrompt(request, verseRecommendations);
 
       const response = await fetch(config.deepseek.apiUrl, {
         method: 'POST',
@@ -79,7 +98,7 @@ Guidelines:
               content: userPrompt
             }
           ],
-          max_tokens: 1000,
+          max_tokens: 1200,
           temperature: 0.7,
         }),
       });
@@ -92,14 +111,62 @@ Guidelines:
       const analysisText = data.choices[0]?.message?.content;
 
       if (!analysisText) {
-        return this.getBasicAnalysis(request);
+        const basicAnalysis = this.getBasicAnalysis(request);
+        return {
+          ...basicAnalysis,
+          verseRecommendations
+        };
       }
 
-      return this.parseAnalysisResponse(analysisText, request);
+      return this.parseAnalysisResponse(analysisText, request, verseRecommendations);
 
     } catch (error) {
       console.error('Mood analysis error:', error);
-      return this.getBasicAnalysis(request);
+      const basicAnalysis = this.getBasicAnalysis(request);
+      const verseRecommendations = this.getBibleVerseRecommendations(request);
+      return {
+        ...basicAnalysis,
+        verseRecommendations
+      };
+    }
+  }
+
+  /**
+   * Get Bible verse recommendations based on mood analysis
+   */
+  private static getBibleVerseRecommendations(request: MoodAnalysisRequest): Array<{
+    verse: {
+      reference: string;
+      text: string;
+      category: string;
+    };
+    relevanceScore: number;
+    reason: string;
+    aiInsight?: string;
+  }> {
+    try {
+      const { moodHistory, currentMood } = request;
+      
+      // Get the most recent mood for recommendations
+      const recentMood = currentMood || (moodHistory.length > 0 ? moodHistory[0].mood_type : 'Peaceful');
+      const intensity = 5; // Default intensity
+      
+      // Get verse recommendations from Bible service
+      const recommendations = BibleVerseService.getVersesForMood(recentMood, intensity, 3);
+      
+      return recommendations.map(rec => ({
+        verse: {
+          reference: rec.verse.reference,
+          text: rec.verse.text,
+          category: rec.verse.category
+        },
+        relevanceScore: rec.relevanceScore,
+        reason: rec.reason,
+        aiInsight: rec.reason // Use reason as AI insight for now
+      }));
+    } catch (error) {
+      console.error('Error getting verse recommendations:', error);
+      return [];
     }
   }
 
@@ -143,7 +210,28 @@ Guidelines:
     return prompt;
   }
 
-  private static parseAnalysisResponse(text: string, request: MoodAnalysisRequest): MoodAnalysis {
+  private static buildEnhancedUserPrompt(
+    request: MoodAnalysisRequest,
+    verseRecommendations: any[]
+  ): string {
+    const basePrompt = this.buildUserPrompt(request);
+    
+    if (verseRecommendations.length > 0) {
+      const versesText = verseRecommendations.map((rec, index) =>
+        `${index + 1}. ${rec.verse.reference}: "${rec.verse.text}" (${rec.reason})`
+      ).join('\n');
+      
+      return `${basePrompt}\n\nRecommended Scriptures:\n${versesText}\n\nPlease reference and build upon these scripture recommendations in your analysis.`;
+    }
+    
+    return basePrompt;
+  }
+
+  private static parseAnalysisResponse(
+    text: string,
+    request: MoodAnalysisRequest,
+    verseRecommendations?: any[]
+  ): MoodAnalysis {
     // Simple parsing logic - in a real implementation, you might use more sophisticated parsing
     // or structure the AI response with specific sections
     
@@ -155,7 +243,8 @@ Guidelines:
       biblicalWisdom: sections[2] || 'Seeking biblical wisdom...',
       improvementSuggestions: sections[3] || 'Preparing suggestions...',
       recommendedScriptures: this.extractScriptures(text),
-      trendPrediction: sections[4] || 'Observing trends...'
+      trendPrediction: sections[4] || 'Observing trends...',
+      verseRecommendations
     };
   }
 
@@ -182,16 +271,19 @@ Guidelines:
   }
 
   private static getBasicAnalysis(request: MoodAnalysisRequest): MoodAnalysis {
-    const positiveCount = request.moodHistory.filter(entry => 
+    const positiveCount = request.moodHistory.filter(entry =>
       ['Happy', 'Joyful', 'Peaceful', 'Grateful'].includes(entry.mood_type)
     ).length;
 
-    const negativeCount = request.moodHistory.filter(entry => 
+    const negativeCount = request.moodHistory.filter(entry =>
       ['Sad', 'Anxious', 'Stressed', 'Angry'].includes(entry.mood_type)
     ).length;
 
-    const positivityRatio = request.moodHistory.length > 0 ? 
+    const positivityRatio = request.moodHistory.length > 0 ?
       (positiveCount / request.moodHistory.length) * 100 : 0;
+
+    // Get verse recommendations for basic analysis
+    const verseRecommendations = this.getBibleVerseRecommendations(request);
 
     return {
       overallPattern: `You've recorded ${request.moodHistory.length} mood entries with ${positivityRatio.toFixed(0)}% positive moods.`,
@@ -210,7 +302,8 @@ Guidelines:
           relevance: 'Peace and rejoicing'
         }
       ],
-      trendPrediction: 'Continue tracking to see patterns emerge. Your awareness is the first step toward growth.'
+      trendPrediction: 'Continue tracking to see patterns emerge. Your awareness is the first step toward growth.',
+      verseRecommendations
     };
   }
 

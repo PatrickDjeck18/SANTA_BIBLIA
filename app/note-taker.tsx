@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   Dimensions,
@@ -15,35 +14,40 @@ import {
   FlatList,
   StatusBar,
   RefreshControl,
+  Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeft,
   Plus,
-  Edit3,
   Trash2,
   Search,
   Calendar,
   Clock,
   BookOpen,
-  Save,
   X,
   FileText,
-  Smile,
+  BarChart3,
+  TrendingUp,
+  Star,
+  Target,
+  CheckCircle2,
 } from 'lucide-react-native';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/DesignTokens';
 import { router } from 'expo-router';
 import BackgroundGradient from '@/components/BackgroundGradient';
-import { HeaderCard } from '@/components/HeaderCard';
-import { useAuth } from '@/hooks/useAuth';
-import { useNotesOptimized as useNotes, Note } from '@/hooks/useNotesOptimized'; // Import the correct Note type from your hook
-import AuthGuard from '@/components/auth/AuthGuard';
+import { ModernHeader } from '@/components/ModernHeader';
+import AddNoteModal from '@/components/AddNoteModal';
+import { useNotesUnified as useNotes, Note } from '@/hooks/useNotesUnified'; // Import the correct Note type from your hook
+import BannerAd from '@/components/BannerAd';
+import { useInterstitialAds } from '@/hooks/useInterstitialAds';
 
 const { width, height } = Dimensions.get('window');
 
 
 export default function NoteTakerScreen() {
-  const { user } = useAuth();
+  const { showInterstitialAd } = useInterstitialAds('notes');
   const {
     notes,
     loading,
@@ -56,17 +60,15 @@ export default function NoteTakerScreen() {
     hasMore,
   } = useNotes();
 
-  const [currentNote, setCurrentNote] = useState<Note | null>(null);
-  const [savedNote, setSavedNote] = useState<Note | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const titleInputRef = useRef<TextInput>(null);
-  const contentInputRef = useRef<TextInput>(null);
-  const isTransitioningRef = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   // Use a safe back navigation to avoid GO_BACK warning when there's no history
   const safeBack = useCallback(() => {
@@ -83,19 +85,55 @@ export default function NoteTakerScreen() {
   }, []);
 
   useEffect(() => {
-    if (user?.uid) { // Use uid for consistency with Firebase
-      refetch();
-    }
-  }, [user?.uid, refetch]);
+    refetch();
+  }, [refetch]);
+
+  // Animation effects
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // Calculate stats
+  const stats = useMemo(() => ({
+    total: notes.length,
+    recent: notes.filter(note => {
+      const noteDate = new Date(note.created_at);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return noteDate >= weekAgo;
+    }).length,
+    categories: new Set(notes.map(note => note.category || 'general')).size,
+  }), [notes]);
+
+  // Filter notes based on search
+  const filteredNotes = useMemo(() => {
+    if (!searchText.trim()) return notes;
+    return notes.filter(note =>
+      note.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [notes, searchText]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
 
   const saveNote = async (note: Note) => {
-    if (!user?.uid) {
-      console.error('❌ User not authenticated for saving note');
-      Alert.alert('Error', 'You must be logged in to save notes');
-      return false;
-    }
-
     console.log('💾 Saving note:', { id: note.id, title: note.title, hasId: !!note.id });
 
     try {
@@ -141,19 +179,10 @@ export default function NoteTakerScreen() {
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!user?.uid) {
-      Alert.alert('Error', 'You must be logged in to delete notes');
-      return false;
-    }
-
     try {
       const success = await deleteNote(noteId);
       if (success) {
         console.log('Note deleted successfully');
-        if (currentNote?.id === noteId) {
-          setCurrentNote(null);
-          setShowNoteModal(false);
-        }
         Alert.alert('Success', 'Note deleted successfully!');
         return true;
       } else {
@@ -168,92 +197,58 @@ export default function NoteTakerScreen() {
   };
 
   const createNewNote = () => {
-    if (!user?.uid) {
-      Alert.alert('Error', 'You must be logged in to create notes');
-      return;
-    }
+    setShowAddModal(true);
+  };
 
-    console.log('Creating new note...');
-    
-    const newNote: Note = {
-  id: '',
-  title: '',
-  content: '',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  tags: [],
-  background_color: '#FFFFFF',
-  category: 'reflection',
-  is_private: true,
-  is_favorite: false,
-  user_id: ''
-};
-    
-    console.log('Setting note state:', { newNote, isEditing: true });
-    setCurrentNote(newNote);
-    setIsEditing(true); 
-    setShowNoteModal(true);
+  const handleAddNote = async (title: string, content: string, category: string, priority: string) => {
+    try {
+      console.log('=== Starting note creation ===');
+      console.log('Creating note with data:', { title, content, category, priority });
+
+      const newNoteData = {
+        title: title.trim(),
+        content: content.trim(),
+        category: category as any,
+        tags: [],
+        background_color: '#FFFFFF',
+        is_private: true,
+        is_favorite: false,
+      };
+
+      console.log('Calling createNote with:', newNoteData);
+      const createdNote = await createNote(newNoteData);
+      console.log('Note created successfully:', createdNote);
+
+      if (createdNote) {
+        console.log('Note was created, checking if it appears in notes list...');
+        console.log('Current notes count:', notes.length);
+        console.log('Current notes:', notes.map(n => ({ id: n.id, title: n.title })));
+
+        // Force a manual refresh as fallback
+        console.log('Forcing manual refresh...');
+        await refetch();
+        console.log('Notes after manual refresh:', notes.map(n => ({ id: n.id, title: n.title })));
+
+        // Wait a moment for real-time subscription to update
+        setTimeout(() => {
+          console.log('Notes after 2 seconds:', notes.map(n => ({ id: n.id, title: n.title })));
+        }, 2000);
+      } else {
+        console.log('Note creation returned null - there might be an error');
+      }
+
+      Alert.alert('Success', '📝 Note added successfully!');
+    } catch (error: any) {
+      console.error('Error adding note:', error);
+      console.error('Error details:', error);
+      Alert.alert('Error', `Failed to add note: ${error.message || 'Unknown error'}`);
+    }
   };
 
   const openNote = (note: Note) => {
-    setCurrentNote(note);
-    setSavedNote(note);
-    setIsEditing(false); // Open in view mode first
-    setShowNoteModal(true);
+    router.push(`/note-viewer?noteId=${note.id}`);
   };
 
-  const editNote = useCallback(() => {
-    setIsEditing(true);
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setShowNoteModal(false);
-    setCurrentNote(null);
-    setSavedNote(null);
-    setIsEditing(false);
-    setShowEmojiPicker(false);
-    isTransitioningRef.current = false;
-  }, []);
-
-  const saveCurrentNote = async () => {
-    if (!currentNote || isTransitioningRef.current) return;
-
-    isTransitioningRef.current = true;
-
-    const noteToSave = {
-      ...currentNote,
-      updated_at: new Date().toISOString(), // Update timestamp
-    };
-
-    const success = await saveNote(noteToSave);
-    if (success) {
-      setSavedNote(noteToSave);
-      setIsEditing(false);
-      setTimeout(() => {
-        setCurrentNote(noteToSave);
-        isTransitioningRef.current = false;
-        // Close the modal after successful save
-        setShowNoteModal(false);
-        setCurrentNote(null);
-        setSavedNote(null);
-      }, 200);
-      refetch();
-    } else {
-      isTransitioningRef.current = false;
-      Alert.alert('Error', 'Failed to save note');
-    }
-  };
-
-  const updateNoteField = useCallback((field: 'title' | 'content', value: string) => {
-    setCurrentNote(prev => {
-      if (!prev) return prev;
-      if (prev[field] === value) return prev;
-      return {
-        ...prev,
-        [field]: value,
-      };
-    });
-  }, []);
 
   const formatDate = (date: string) => {
     try {
@@ -261,7 +256,7 @@ export default function NoteTakerScreen() {
       const now = new Date();
       const diffTime = Math.abs(now.getTime() - jsDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays === 1) return 'Today';
       if (diffDays === 2) return 'Yesterday';
       if (diffDays <= 7) return `${diffDays - 1} days ago`;
@@ -280,38 +275,13 @@ export default function NoteTakerScreen() {
     }
   };
 
-  const insertEmoji = (emoji: string) => {
-    if (!currentNote) return;
-    
-    const newContent = (currentNote.content || '') + emoji;
-    setCurrentNote({
-      ...currentNote,
-      content: newContent,
-    });
-    setShowEmojiPicker(false);
-  };
 
-  const popularEmojis = [
-    '😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🙏', '😍',
-    '😭', '🤔', '👏', '💪', '🎯', '🚀', '💡', '🌟', '💎', '🏆',
-    '📚', '✍️', '🎨', '🎵', '🍕', '☕', '🌺', '🌈', '⭐', '💫'
-  ];
-
-  const filteredNotes = notes.filter(note => {
-    if (!note || !note.title || !note.content) {
-      return false;
-    }
-    
-    const searchLower = searchText.toLowerCase();
-    return note.title.toLowerCase().includes(searchLower) ||
-           note.content.toLowerCase().includes(searchLower);
-  });
 
   const renderNoteItem = ({ item }: { item: Note }) => {
     if (!item) {
       return null;
     }
-    
+
     return (
       <View>
         <View style={[
@@ -339,7 +309,7 @@ export default function NoteTakerScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-            
+
             <View style={styles.noteActions}>
               <TouchableOpacity
                 style={styles.deleteButton}
@@ -354,7 +324,7 @@ export default function NoteTakerScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          
+
           <View style={styles.noteFooter}>
             <View style={styles.noteMeta}>
               <Calendar size={12} color={Colors.neutral[500]} />
@@ -371,218 +341,170 @@ export default function NoteTakerScreen() {
   };
 
   return (
-    <AuthGuard
-      message="Sign in to save and organize your spiritual notes. Your insights will be securely stored and accessible across all your devices."
-      showGuestWarning={true}
-    >
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" />
-        
-        <BackgroundGradient>
-        {/* Header */}
-        <HeaderCard
-          title="Notes"
-          subtitle="Capture your thoughts and insights"
-          showBackButton={true}
-          onBackPress={safeBack}
-          rightActions={
-            <TouchableOpacity
-              style={styles.heroActionButton}
-              onPress={createNewNote}
-            >
-              <Plus size={20} color={Colors.primary[600]} />
-            </TouchableOpacity>
-          }
-          gradientColors={['#fdfcfb', '#e2d1c3', '#c9d6ff']}
-        />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color={Colors.neutral[500]} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search notes..."
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholderTextColor={Colors.neutral[500]}
-            />
-            {searchText.trim() ? (
-              <TouchableOpacity onPress={() => setSearchText('')}>
-                <X size={20} color={Colors.neutral[500]} />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+      <BackgroundGradient>
+        {/* Header Container with proper styling */}
+        <View style={styles.headerContainer}>
+          <ModernHeader
+            title="Notes"
+            variant="simple"
+            showBackButton={true}
+            showReaderButton={false}
+            onBackPress={safeBack}
+            readerText="Notes. Capture your thoughts and insights. Write down your spiritual reflections and important thoughts."
+          />
         </View>
 
-        {/* Notes List */}
-        {loading ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Loading notes...</Text>
-          </View>
-        ) : filteredNotes.length === 0 ? (
-          <View style={styles.emptyState}>
-            <BookOpen size={48} color={Colors.neutral[400]} />
-            <Text style={styles.emptyTitle}>
-              {searchText ? 'No notes found' : 'No notes yet'}
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              {searchText 
-                ? 'Try adjusting your search terms'
-                : 'Create your first note to get started'
-              }
-            </Text>
-            {!searchText && (
-              <TouchableOpacity
-              style={styles.createFirstButton}
-              onPress={createNewNote}
-              >
-              <Plus size={20} color="white" />
-              <Text style={styles.createFirstButtonText}>Create Note</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <FlatList
-            data={filteredNotes}
-            renderItem={renderNoteItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.notesContent}
-            refreshControl={
-              <RefreshControl refreshing={loading} onRefresh={refetch} />
-            }
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.5}
-          />
-        )}
-        {loading && hasMore && <Text>Loading more notes...</Text>}
-
-        {/* Note Modal - Mobile Optimized */}
-        <Modal
-          visible={showNoteModal}
-          animationType="slide"
-          transparent={true}
-          statusBarTranslucent={true}
-          onRequestClose={closeModal}
+        {/* Enhanced Notes List with ScrollView */}
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.primary[500]}
+              colors={[Colors.primary[500]]}
+              progressBackgroundColor={Colors.white}
+            />
+          }
+          contentContainerStyle={[styles.scrollViewContent, { paddingBottom: Spacing['4xl'] + 100 }]}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalOverlay}
-          >
-            <TouchableOpacity
-              style={styles.modalOverlayTouchable}
-              activeOpacity={1}
-              onPress={closeModal}
-            >
-              <TouchableOpacity
-                style={styles.modalContainer}
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-              >
-                <LinearGradient
-                  colors={['#ffffff', '#ffffff']}
-                  style={StyleSheet.absoluteFillObject}
-                />
-                
-                <View style={styles.modalHeader}>
-                  <TouchableOpacity
-                    style={styles.modalCloseButton}
-                    onPress={closeModal}
-                  >
-                    <ArrowLeft size={24} color={Colors.neutral[700]} />
-                  </TouchableOpacity>
-
-                  <Text style={styles.modalTitle}>
-                    {isEditing ? 'Edit Note' : 'View Note'}
-                  </Text>
-
-                  {isEditing ? (
-                    <TouchableOpacity
-                      style={styles.saveButton}
-                      onPress={saveCurrentNote}
-                    >
-                      <Save size={24} color={Colors.neutral[700]} />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={editNote}
-                    >
-                      <Edit3 size={24} color={Colors.neutral[700]} />
-                    </TouchableOpacity>
-                  )}
+          {/* Stats Card */}
+          <View style={styles.statsCardContainer}>
+            <View style={styles.statsCard}>
+              <View style={styles.statsHeader}>
+                <View style={styles.statsIcon}>
+                  <BarChart3 size={24} color={Colors.primary[500]} />
                 </View>
+                <View style={styles.statsTitleContainer}>
+                  <Text style={styles.statsTitle}>Note Statistics</Text>
+                  <Text style={styles.statsSubtitle}>Track your spiritual insights</Text>
+                </View>
+              </View>
 
-                <ScrollView
-                  style={styles.modalContent}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  <TextInput
-                    style={styles.noteTitleInput}
-                    placeholder="Note Title"
-                    value={currentNote?.title || ''}
-                    onChangeText={(text) => updateNoteField('title', text)}
-                    editable={isEditing}
-                    placeholderTextColor={Colors.neutral[500]}
-                  />
+              <View style={styles.quickStatsContainer}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{stats.total}</Text>
+                  <Text style={styles.statLabel}>Total</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={[styles.statNumber, { color: Colors.primary[500] }]}>{stats.recent}</Text>
+                  <Text style={styles.statLabel}>Recent</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={[styles.statNumber, { color: Colors.warning[500] }]}>{stats.categories}</Text>
+                  <Text style={styles.statLabel}>Categories</Text>
+                </View>
+              </View>
+            </View>
+          </View>
 
-                  <>
-                    <View style={styles.contentSection}>
-                      <View style={styles.contentHeader}>
-                        <Text style={styles.contentText}>Content</Text>
-                        {isEditing && (
-                          <TouchableOpacity
-                            style={styles.emojiButton}
-                            onPress={() => setShowEmojiPicker(!showEmojiPicker)}
-                          >
-                            <Smile size={20} color={Colors.primary[600]} />
-                          </TouchableOpacity>
-                        )}
-                      </View>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Search size={20} color={Colors.neutral[400]} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search notes..."
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholderTextColor={Colors.neutral[400]}
+              />
+              {searchText.trim() ? (
+                <TouchableOpacity onPress={() => setSearchText('')}>
+                  <X size={20} color={Colors.neutral[400]} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
 
-                      <TextInput
-                        style={styles.noteContentInput}
-                        multiline
-                        placeholder="Start writing your note..."
-                        value={currentNote?.content || ''}
-                        onChangeText={(text) => updateNoteField('content', text)}
-                        editable={isEditing}
-                        placeholderTextColor={Colors.neutral[500]}
-                      />
+          {/* Banner Ad */}
+          <BannerAd placement="notes" />
 
-                      {showEmojiPicker && (
-                        <View style={styles.emojiPicker}>
-                          <View style={styles.emojiGrid}>
-                            {popularEmojis.map((emoji, index) => (
-                              <TouchableOpacity
-                                key={index}
-                                style={styles.emojiItem}
-                                onPress={() => {
-                                  insertEmoji(emoji);
-                                }}
-                              >
-                                <Text style={styles.emojiText}>{emoji}</Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  </>
+          <Animated.View
+            style={[
+              styles.notesList,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            {loading && filteredNotes.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.primary[500]} />
+                <Text style={styles.loadingText}>Loading notes...</Text>
+              </View>
+            ) : filteredNotes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <BookOpen size={48} color={Colors.neutral[400]} />
+                <Text style={styles.emptyTitle}>
+                  {searchText ? 'No notes found' : 'No notes yet'}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {searchText
+                    ? 'Try adjusting your search terms'
+                    : 'Create your first note to get started'
+                  }
+                </Text>
+                {!searchText && (
+                  <TouchableOpacity
+                    style={styles.createFirstButton}
+                    onPress={createNewNote}
+                  >
+                    <Plus size={20} color="white" />
+                    <Text style={styles.createFirstButtonText}>Create Note</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              filteredNotes.map((note, index) => (
+                <View key={note.id}>
+                  <Animated.View
+                    style={[
+                      styles.noteCard,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{
+                          translateY: fadeAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [30 + (index * 10), 0],
+                          }),
+                        }],
+                      },
+                    ]}
+                  >
+                    {renderNoteItem({ item: note })}
+                  </Animated.View>
+                  {index < filteredNotes.length - 1 && <View style={styles.itemSeparator} />}
+                </View>
+              ))
+            )}
+          </Animated.View>
+        </ScrollView>
 
-                  <View style={styles.noteViewMeta}>
-                    <Text style={styles.noteViewDate}>
-                      Last updated: {currentNote?.updated_at ? formatDate(currentNote.updated_at) : 'N/A'}
-                    </Text>
-                    <Text style={styles.noteViewTime}>
-                      {currentNote?.updated_at ? formatTime(currentNote.updated_at) : 'N/A'}
-                    </Text>
-                  </View>
-                </ScrollView>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </KeyboardAvoidingView>
-        </Modal>
+        {/* Floating Add Note Button */}
+        <View style={styles.floatingAddButton}>
+          <TouchableOpacity
+            style={styles.floatingAddButtonInner}
+            onPress={createNewNote}
+            activeOpacity={0.8}
+          >
+            <Plus size={24} color={Colors.white} strokeWidth={2.5} />
+          </TouchableOpacity>
+        </View>
+
+        <AddNoteModal
+          isVisible={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onAddNote={handleAddNote}
+        />
+
 
         {/* Delete Confirmation Modal */}
         <Modal
@@ -621,8 +543,7 @@ export default function NoteTakerScreen() {
         </Modal>
       </BackgroundGradient>
     </View>
-  </AuthGuard>
-);
+  );
 }
 
 const styles = StyleSheet.create({
@@ -630,61 +551,103 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  
-  // Hero Header
-  hero: {
-    paddingTop: Platform.OS === 'ios' ? 60 : 24,
+  headerContainer: {
+    backgroundColor: Colors.white,
+    zIndex: 1000,
+    elevation: 4,
+    shadowColor: Colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[200],
+    position: 'relative',
   },
-  heroGradient: {
-    borderBottomLeftRadius: BorderRadius['3xl'],
-    borderBottomRightRadius: BorderRadius['3xl'],
-    overflow: 'hidden',
-  },
-  heroContent: {
+
+
+  // Stats Card
+  statsCardContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['2xl'],
-    paddingTop: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    backgroundColor: Colors.white,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+    zIndex: 10,
+    elevation: 2,
+  },
+  statsCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...Shadows.md,
+    borderWidth: 1,
+    borderColor: Colors.neutral[100],
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  statsIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.primary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  statsTitleContainer: {
+    flex: 1,
+  },
+  statsTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    color: Colors.neutral[900],
+    marginBottom: Spacing.xs,
+  },
+  statsSubtitle: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.neutral[600],
+  },
+  quickStatsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  statItem: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-    ...Shadows.sm,
-  },
-  heroTextBlock: {
     flex: 1,
   },
-  heroTitle: {
-    fontSize: Typography.sizes['3xl'],
+  statNumber: {
+    fontSize: Typography.sizes['2xl'],
     fontWeight: Typography.weights.bold,
     color: Colors.neutral[900],
+    marginBottom: Spacing.xs,
   },
-  heroSubtitle: {
-    marginTop: Spacing.xs,
-    fontSize: Typography.sizes.base,
+  statLabel: {
+    fontSize: Typography.sizes.sm,
     color: Colors.neutral[600],
+    fontWeight: Typography.weights.medium,
   },
-  heroActionButton: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.sm,
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: Colors.neutral[200],
+    marginHorizontal: Spacing.sm,
   },
 
   // Search
   searchContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingVertical: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[200],
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+    zIndex: 10,
+    elevation: 2,
   },
   searchBar: {
     flexDirection: 'row',
@@ -701,6 +664,34 @@ const styles = StyleSheet.create({
     color: Colors.neutral[700],
   },
 
+  // Scroll View
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+  },
+  notesList: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing['4xl'],
+  },
+  loadingText: {
+    fontSize: Typography.sizes.base,
+    color: Colors.neutral[600],
+    marginTop: Spacing.md,
+    fontWeight: Typography.weights.medium,
+  },
+  itemSeparator: {
+    height: 1,
+    backgroundColor: Colors.neutral[100],
+    marginVertical: Spacing.md,
+  },
+
   // Notes List
   notesContainer: {
     flex: 1,
@@ -709,11 +700,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   noteCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
-    ...Shadows.sm,
+    ...Shadows.md,
+    borderWidth: 1,
+    borderColor: Colors.neutral[100],
   },
   noteHeader: {
     flexDirection: 'row',
@@ -743,9 +736,6 @@ const styles = StyleSheet.create({
   },
   noteActions: {
     flexDirection: 'row',
-  },
-  editButton: {
-    padding: Spacing.xs,
   },
   deleteButton: {
     padding: Spacing.xs,
@@ -813,115 +803,6 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
 
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalOverlayTouchable: {
-    flex: 1,
-  },
-  modalContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderTopLeftRadius: BorderRadius['3xl'],
-    borderTopRightRadius: BorderRadius['3xl'],
-    padding: Spacing.lg,
-    paddingBottom: Spacing['4xl'],
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  modalTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[800],
-  },
-  modalCloseButton: {
-    padding: Spacing.sm,
-  },
-  saveButton: {
-    padding: Spacing.sm,
-    backgroundColor: Colors.primary[600],
-    borderRadius: BorderRadius.md,
-  },
-  modalContent: {
-    flex: 1,
-  },
-  noteTitleInput: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[800],
-    marginBottom: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[200],
-  },
-  contentSection: {
-    marginBottom: Spacing.lg,
-  },
-  contentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  contentText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.medium,
-    color: Colors.neutral[700],
-  },
-  emojiButton: {
-    padding: Spacing.sm,
-  },
-  noteContentInput: {
-    fontSize: Typography.sizes.base,
-    color: Colors.neutral[700],
-    lineHeight: Typography.lineHeights.relaxed * Typography.sizes.base,
-    paddingVertical: Spacing.sm,
-    textAlignVertical: 'top',
-    minHeight: 120,
-  },
-  emojiPicker: {
-    marginTop: Spacing.md,
-  },
-  emojiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  emojiItem: {
-    width: '20%',
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
-  emojiText: {
-    fontSize: Typography.sizes.xl,
-  },
-  noteViewMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.md,
-  },
-  noteViewDate: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.neutral[500],
-  },
-  noteViewTime: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.neutral[500],
-  },
 
   // Delete Modal Styles
   deleteModalOverlay: {
@@ -969,5 +850,23 @@ const styles = StyleSheet.create({
   deleteModalDeleteText: {
     color: 'white',
     fontSize: Typography.sizes.base,
+  },
+
+  // Floating Add Button Styles
+  floatingAddButton: {
+    position: 'absolute',
+    bottom: 100, // Above tab bar
+    right: 20,
+    zIndex: 1000,
+  },
+  floatingAddButtonInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.lg,
+    elevation: 8,
   },
 });

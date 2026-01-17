@@ -1,20 +1,65 @@
 import { MobileAds, AdEventType, TestIds, InterstitialAd, RewardedAd } from 'react-native-google-mobile-ads';
 import { ADS_CONFIG } from './adsConfig';
+import { attService } from './attService';
+import { Platform } from 'react-native';
 
 // Initialize AdMob
 export const initializeAdMob = async () => {
   try {
-    // Check if AdMob is available on this platform
-    if (!MobileAds) {
-      console.warn('AdMob is not available on this platform');
-      return;
+    console.log('🔧 Initializing AdMob service...');
+
+    // Skip on web platform
+    if (Platform.OS === 'web') {
+      console.log('⚠️ AdMob not supported on web platform');
+      return false;
     }
 
-    await MobileAds().initialize();
-    console.log('AdMob initialized successfully');
+    // Check if AdMob is available on this platform
+    if (!MobileAds) {
+      console.warn('⚠️ AdMob is not available on this platform');
+      return false;
+    }
+
+    // Initialize ATT service first with error handling (iOS only)
+    if (Platform.OS === 'ios') {
+      try {
+        console.log('🔐 Initializing ATT service...');
+        await attService.initialize();
+        console.log('✅ ATT service initialized');
+      } catch (attError) {
+        console.warn('⚠️ ATT initialization failed, continuing without ATT:', attError);
+      }
+    }
+
+    // Initialize MobileAds with timeout and additional error handling
+    console.log('📱 Initializing MobileAds...');
+
+    let mobileAdsInstance;
+    try {
+      mobileAdsInstance = MobileAds();
+    } catch (instanceError) {
+      console.error('❌ Failed to get MobileAds instance:', instanceError);
+      return false;
+    }
+
+    if (!mobileAdsInstance) {
+      console.warn('⚠️ MobileAds instance is null');
+      return false;
+    }
+
+    const initPromise = mobileAdsInstance.initialize();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('AdMob initialization timeout')), 10000)
+    );
+
+    await Promise.race([initPromise, timeoutPromise]);
+    console.log('✅ AdMob initialized successfully');
+
+    return true;
   } catch (error) {
-    console.error('Error initializing AdMob:', error);
+    console.error('❌ Error initializing AdMob:', error);
     // Don't throw error to prevent app crash
+    return false;
   }
 };
 
@@ -44,14 +89,16 @@ export class InterstitialAdService {
 
       // Clean up existing ad instance
       if (this.interstitial) {
-        this.interstitial.destroy();
+        if (typeof this.interstitial.destroy === 'function') {
+          this.interstitial.destroy();
+        }
         this.interstitial = null;
       }
 
       this.interstitial = InterstitialAd.createForAdRequest(
         __DEV__ ? TestIds.INTERSTITIAL : this.unitId,
         {
-          requestNonPersonalizedAdsOnly: true,
+          requestNonPersonalizedAdsOnly: attService.getNonPersonalizedAdsSetting(),
           keywords: ['bible', 'prayer', 'christian', 'faith', 'religion'],
         }
       );
@@ -157,7 +204,9 @@ export class InterstitialAdService {
   destroy() {
     if (this.interstitial) {
       try {
-        this.interstitial.destroy();
+        if (typeof this.interstitial.destroy === 'function') {
+          this.interstitial.destroy();
+        }
       } catch (error) {
         console.error('Error destroying interstitial ad:', error);
       }
@@ -187,16 +236,25 @@ export class RewardedAdService {
     try {
       this.isLoading = true;
 
+      // Check if AdMob is available
+      if (!MobileAds) {
+        console.warn('AdMob not available on this platform');
+        this.isLoading = false;
+        return;
+      }
+
       // Clean up existing ad instance
       if (this.rewarded) {
-        this.rewarded.destroy();
+        if (typeof this.rewarded.destroy === 'function') {
+          this.rewarded.destroy();
+        }
         this.rewarded = null;
       }
 
       this.rewarded = RewardedAd.createForAdRequest(
         __DEV__ ? TestIds.REWARDED : this.unitId,
         {
-          requestNonPersonalizedAdsOnly: true,
+          requestNonPersonalizedAdsOnly: attService.getNonPersonalizedAdsSetting(),
           keywords: ['bible', 'prayer', 'christian', 'faith', 'religion'],
         }
       );
@@ -229,9 +287,17 @@ export class RewardedAdService {
 
   async showAd(): Promise<{ success: boolean; reward?: any }> {
     try {
+      // Check if AdMob is available
+      if (!MobileAds) {
+        console.warn('AdMob not available on this platform');
+        return { success: false };
+      }
+
       if (!this.rewarded) {
         await this.loadRewarded();
-        return { success: false };
+        if (!this.rewarded) {
+          return { success: false };
+        }
       }
 
       return new Promise((resolve) => {
@@ -312,7 +378,9 @@ export class RewardedAdService {
   destroy() {
     if (this.rewarded) {
       try {
-        this.rewarded.destroy();
+        if (typeof this.rewarded.destroy === 'function') {
+          this.rewarded.destroy();
+        }
       } catch (error) {
         console.error('Error destroying rewarded ad:', error);
       }
@@ -330,17 +398,56 @@ export class RewardedAdService {
 export class AdManager {
   private static instances: Map<string, InterstitialAdService | RewardedAdService> = new Map();
   private static isInitialized: boolean = false;
+  private static initializationPromise: Promise<boolean> | null = null;
 
-  static async initialize() {
-    if (this.isInitialized) return;
-
-    try {
-      await initializeAdMob();
-      this.isInitialized = true;
-      console.log('AdManager initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize AdManager:', error);
+  static async initialize(): Promise<boolean> {
+    // If already initialized, return true
+    if (this.isInitialized) {
+      console.log('✅ AdManager already initialized');
+      return true;
     }
+
+    // If initialization is in progress, wait for it
+    if (this.initializationPromise) {
+      console.log('⏳ AdManager initialization in progress, waiting...');
+      return this.initializationPromise;
+    }
+
+    // Start new initialization
+    this.initializationPromise = this.performInitialization();
+    return this.initializationPromise;
+  }
+
+  private static async performInitialization(): Promise<boolean> {
+    try {
+      console.log('🚀 Starting AdManager initialization...');
+      const success = await initializeAdMob();
+
+      if (success) {
+        this.isInitialized = true;
+        console.log('✅ AdManager initialized successfully');
+        return true;
+      } else {
+        console.warn('⚠️ AdManager initialization failed, but app will continue');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize AdManager:', error);
+      return false;
+    } finally {
+      // Clear the promise so we can retry if needed
+      this.initializationPromise = null;
+    }
+  }
+
+  // Check if AdManager is initialized
+  static getInitializationStatus(): boolean {
+    return this.isInitialized;
+  }
+
+  // Get initialization promise if in progress
+  static getInitializationPromise(): Promise<boolean> | null {
+    return this.initializationPromise;
   }
 
   static getInterstitial(unitId: string): InterstitialAdService {

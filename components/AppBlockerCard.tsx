@@ -35,7 +35,7 @@ export const AppBlockerCard: React.FC<AppBlockerCardProps> = ({
   return (
     <View style={[styles.container, style]}>
       <LinearGradient
-        colors={Colors.gradients.card.orange}
+        colors={Colors.gradients.card.green}
         style={styles.gradientBackground}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

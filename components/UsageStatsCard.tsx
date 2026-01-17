@@ -36,7 +36,7 @@ export const UsageStatsCard: React.FC<UsageStatsCardProps> = ({
   return (
     <View style={[styles.container, style]}>
       <LinearGradient
-        colors={Colors.gradients.card.blue}
+        colors={Colors.gradients.card.purple}
         style={styles.gradientBackground}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

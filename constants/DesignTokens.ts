@@ -1,17 +1,17 @@
 /**
- * Modern Design System Tokens
- * Following iOS 18 and Material You design principles
+ * Modern Design System Tokens - Enhanced Christian App Theme
+ * Following iOS 18 and Material You design principles with vibrant, attractive colors
  */
 
 export const Colors = {
-  // Primary Brand Colors - Vibrant Pink/Purple Theme
+  // Primary Brand Colors - Prayer Tracker Colors
   primary: {
     50: '#FDF2F8',
     100: '#FCE7F3',
     200: '#FBCFE8',
     300: '#F9A8D4',
     400: '#F472B6',
-    500: '#EC4899', // Primary - Vibrant Pink
+    500: '#EC4899', // Primary - Pink (matching prayer tracker)
     600: '#DB2777',
     700: '#BE185D',
     800: '#9D174D',
@@ -19,14 +19,14 @@ export const Colors = {
     950: '#500724',
   },
 
-  // Secondary Colors - Purple Accent
+  // Secondary Colors - Prayer Tracker Colors
   secondary: {
     50: '#F5F3FF',
     100: '#EDE9FE',
     200: '#DDD6FE',
     300: '#C4B5FD',
     400: '#A78BFA',
-    500: '#8B5CF6', // Secondary - Purple
+    500: '#8B5CF6', // Secondary - Purple (matching prayer tracker)
     600: '#7C3AED',
     700: '#6D28D9',
     800: '#5B21B6',
@@ -34,13 +34,28 @@ export const Colors = {
     950: '#2E1065',
   },
 
-  // Neutral Colors - Warm Grays
+  // Accent Colors - Prayer Tracker Colors
+  accent: {
+    50: '#FFFBEB',
+    100: '#FEF3C7',
+    200: '#FDE68A',
+    300: '#FCD34D',
+    400: '#FBBF24',
+    500: '#F59E0B', // Accent - Golden Yellow (matching prayer tracker)
+    600: '#D97706',
+    700: '#B45309',
+    800: '#92400E',
+    900: '#78350F',
+    950: '#451A03',
+  },
+
+  // Neutral Colors - Warm & Inviting
   neutral: {
     50: '#FAFAF9',
     100: '#F5F5F4',
     200: '#E7E5E4',
     300: '#D6D3D1',
-    400: '#A8A29E',
+    400: '#A8A8A8',
     500: '#78716C',
     600: '#57534E',
     700: '#44403C',
@@ -49,14 +64,67 @@ export const Colors = {
     950: '#0C0A09',
   },
 
-  // Semantic Colors
+  // Faith Colors - Prayer Tracker Colors
+  faith: {
+    50: '#F0FDF4',
+    100: '#DCFCE7',
+    200: '#BBF7D0',
+    300: '#86EFAC',
+    400: '#4ADE80',
+    500: '#22C55E', // Faith Green (matching prayer tracker)
+    600: '#16A34A',
+    700: '#15803D',
+    800: '#166534',
+    900: '#14532D',
+  },
+
+  peace: {
+    50: '#EFF6FF',
+    100: '#DBEAFE',
+    200: '#BFDBFE',
+    300: '#93C5FD',
+    400: '#60A5FA',
+    500: '#3B82F6', // Peace Blue (calm, serenity)
+    600: '#2563EB',
+    700: '#1D4ED8',
+    800: '#1E40AF',
+    900: '#1E3A8A',
+  },
+
+  hope: {
+    50: '#FFFBEB',
+    100: '#FEF3C7',
+    200: '#FDE68A',
+    300: '#FCD34D',
+    400: '#FBBF24',
+    500: '#F59E0B', // Hope Yellow (matching prayer tracker)
+    600: '#D97706',
+    700: '#B45309',
+    800: '#92400E',
+    900: '#78350F',
+  },
+
+  love: {
+    50: '#FDF2F8',
+    100: '#FCE7F3',
+    200: '#FBCFE8',
+    300: '#F9A8D4',
+    400: '#F472B6',
+    500: '#EC4899', // Love Pink (matching prayer tracker)
+    600: '#DB2777',
+    700: '#BE185D',
+    800: '#9D174D',
+    900: '#831843',
+  },
+
+  // Semantic Colors - Prayer Tracker Colors
   success: {
     50: '#F0FDF4',
     100: '#DCFCE7',
     200: '#BBF7D0',
     300: '#86EFAC',
     400: '#4ADE80',
-    500: '#22C55E',
+    500: '#22C55E', // Success Green (matching prayer tracker)
     600: '#16A34A',
     700: '#15803D',
     800: '#166534',
@@ -69,7 +137,7 @@ export const Colors = {
     200: '#FDE68A',
     300: '#FCD34D',
     400: '#FBBF24',
-    500: '#F59E0B',
+    500: '#F59E0B', // Warning Yellow (matching prayer tracker)
     600: '#D97706',
     700: '#B45309',
     800: '#92400E',
@@ -93,90 +161,110 @@ export const Colors = {
   white: '#FFFFFF',
   black: '#000000',
 
-  // Colorful Card Colors - Matching screenshot vibrant design
-  cardColors: {
-    orange: '#FF9500',
-    yellow: '#FFCC00',
-    green: '#34C759',
-    blue: '#007AFF',
-    purple: '#AF52DE',
-    pink: '#FF2D70',
-    red: '#FF3B30',
-    teal: '#5AC8FA',
+  // Border colors
+  border: {
+    primary: '#E7E5E4',
+    secondary: '#D6D3D1',
+    subtle: '#F5F5F4',
+    strong: '#A8A29E',
   },
 
-  // Modern Vibrant Gradients - Matching screenshot colorful design
+  // Card Colors - Prayer Tracker Colors
+  cardColors: {
+    primaryPink: '#EC4899',
+    secondaryPurple: '#8B5CF6',
+    goldenLight: '#F59E0B',
+    successGreen: '#22C55E',
+    peaceBlue: '#3B82F6',
+    lovePink: '#EC4899',
+    sunrise: '#FDE68A',
+    hopeYellow: '#FCD34D',
+    royalty: '#A855F7',
+    divineGold: '#FBBF24',
+    blessed: '#86EFAC',
+    serene: '#93C5FD',
+    spirit: '#C4B5FD',
+    grace: '#FCE7F3',
+    glory: '#FCD34D',
+  },
+
+  // Gradients - Prayer Tracker Colors
   gradients: {
-    primary: ['#EC4899', '#DB2777', '#BE185D'] as const,
-    secondary: ['#8B5CF6', '#7C3AED', '#6D28D9'] as const,
-    warm: ['#FF9500', '#FFCC00', '#FF3B30'] as const,
-    sunset: ['#FF2D70', '#EC4899', '#FF9500'] as const,
-    ocean: ['#007AFF', '#5AC8FA', '#34C759'] as const,
-    purple: ['#8B5CF6', '#A78BFA', '#C4B5FD'] as const,
-    spiritual: ['#EC4899', '#8B5CF6', '#FF9500'] as const,
-    // New colorful gradients inspired by screenshot
-    colorful: ['#FF6B6B', '#4ECDC4', '#45B7D1'] as const,
-    vibrant: ['#FF9500', '#FF2D70', '#8B5CF6'] as const,
-    nature: ['#34C759', '#5AC8FA', '#007AFF'] as const,
-    fire: ['#FF3B30', '#FF9500', '#FFCC00'] as const,
-    ice: ['#5AC8FA', '#007AFF', '#5856D6'] as const,
-    dawn: ['#FFCC00', '#FF9500', '#FF3B30'] as const,
-    forest: ['#34C759', '#30D158', '#32D74B'] as const,
-    royal: ['#8B5CF6', '#7C3AED', '#6D28D9'] as const,
-    success: ['#22C55E', '#16A34A', '#15803D'] as const,
-    // Main background gradient matching screenshot
-    main: ['#F8E1F4', '#E8D5F2', '#D8C9F0'] as const,
-    softGlow: ['#F0D9FF', '#E8D5F2', '#D8C9F0'] as const,
-    // Keep spiritualLight for backward compatibility
-    spiritualLight: ['#F8E1F4', '#E8D5F2', '#D8C9F0'] as const,
-    divineMorning: ['#F0F2F5', '#E0E5EA', '#D0D8E0'] as const,
-    lightGrey: ['#F9FAFB', '#F7F8F9', '#F5F6F7'] as const,
-    // Card gradients for different features
+    // Primary gradients matching prayer tracker
+    primary: ['#EC4899', '#DB2777', '#BE185D'] as const, // Primary Pink
+    secondary: ['#8B5CF6', '#7C3AED', '#6D28D9'] as const, // Secondary Purple
+    golden: ['#F59E0B', '#D97706', '#B45309'] as const, // Golden Yellow
+    faith: ['#22C55E', '#16A34A', '#15803D'] as const, // Success Green
+    
+    // Combined gradients using prayer tracker colors
+    love: ['#EC4899', '#F9A8D4', '#FDF2F8'] as const, // Love and compassion
+    spirit: ['#8B5CF6', '#C4B5FD', '#F5F3FF'] as const, // Spiritual purple
+    hope: ['#F59E0B', '#FDE68A', '#FFFBEB'] as const, // Hopeful warmth
+    peace: ['#3B82F6', '#93C5FD', '#EFF6FF'] as const, // Peaceful blues
+    success: ['#22C55E', '#86EFAC', '#F0FDF4'] as const, // Success greens
+    
+    // Modern gradients using prayer tracker colors
+    main: ['#FDF2F8', '#F5F3FF', '#FFFBEB'] as const, // Soft prayer colors
+    softGlow: ['#FDF2F8', '#FDE68A', '#F5F3FF'] as const, // Gentle warmth
+    
+    // Modern Enhanced Gradients using prayer tracker colors
+    modern: ['#EC4899', '#8B5CF6'] as const, // Pink to Purple
+    glass: ['rgba(255, 255, 255, 0.25)', 'rgba(253, 242, 248, 0.1)'] as const,
+    cardGradient: ['rgba(255, 255, 255, 0.9)', 'rgba(253, 242, 248, 0.7)'] as const,
+    overlay: ['rgba(236, 72, 153, 0.1)', 'rgba(168, 168, 168, 0.05)'] as const,
+    premium: ['#EC4899', '#8B5CF6', '#F59E0B'] as const, // Premium gradient
+    ethereal: ['#F5F3FF', '#FDF2F8'] as const, // Ethereal purple-pink
+    cosmic: ['#EC4899', '#8B5CF6', '#F59E0B', '#22C55E'] as const, // Cosmic
+    aurora: ['#F5F3FF', '#FDF2F8', '#FDE68A'] as const, // Aurora
+    etherealSunset: ['#EC4899', '#8B5CF6', '#F59E0B', '#22C55E'] as const,
+    spiritualLight: ['#F0F9FF', '#FDF2F8', '#FEF7ED'] as const, // Spiritual light gradient
+    
+    // Card gradients for different features using prayer tracker colors
     card: {
-      orange: ['#FF9500', '#FF8C00'] as const,
-      green: ['#34C759', '#30D158'] as const,
-      blue: ['#007AFF', '#005ADB'] as const,
-      purple: ['#8B5CF6', '#7C3AED'] as const,
-      pink: ['#FF2D70', '#FF1B5E'] as const,
+      blue: ['#3B82F6', '#2563EB'] as const,
+      purple: ['#8B5CF6', '#7C3AED'] as const, // Prayer tracker purple
+      gold: ['#F59E0B', '#D97706'] as const, // Prayer tracker gold
+      green: ['#22C55E', '#16A34A'] as const, // Prayer tracker green
+      pink: ['#EC4899', '#DB2777'] as const, // Prayer tracker pink
     },
     
-    // ACCENT GRADIENTS - For buttons and highlights
+    // ACCENT GRADIENTS - Prayer Tracker Colors
     accent: {
-      primary: ['#667eea', '#764ba2'] as const,
-      secondary: ['#f093fb', '#f5576c'] as const,
-      success: ['#11998e', '#38ef7d'] as const,
-      warning: ['#FFB75E', '#ED8F03'] as const,
-      danger: ['#FF416C', '#FF4B2B'] as const,
-      info: ['#667eea', '#764ba2'] as const,
+      primary: ['#EC4899', '#BE185D'] as const, // Primary pink
+      secondary: ['#8B5CF6', '#6D28D9'] as const, // Secondary purple
+      success: ['#22C55E', '#15803D'] as const, // Success green
+      warning: ['#F59E0B', '#B45309'] as const, // Warning yellow
+      danger: ['#EF4444', '#B91C1C'] as const, // Error red
+      info: ['#3B82F6', '#1E40AF'] as const, // Info blue
     },
   },
 
-  // COLORFUL GLASS & CARD EFFECTS - Matching screenshot vibrant design
+  // ENHANCED GLASS & CARD EFFECTS - Prayer Tracker Colors
   glass: {
-    light: 'rgba(255, 255, 255, 0.15)',
-    medium: 'rgba(255, 255, 255, 0.25)',
-    heavy: 'rgba(255, 255, 255, 0.35)',
-    dark: 'rgba(0, 0, 0, 0.1)',
+    light: 'rgba(253, 242, 248, 0.15)',
+    medium: 'rgba(253, 242, 248, 0.25)',
+    heavy: 'rgba(253, 242, 248, 0.35)',
+    dark: 'rgba(168, 168, 168, 0.1)',
 
-    // Colorful frosted glass effects
+    // Prayer tracker frosted glass effects
     frost: 'rgba(255, 255, 255, 0.4)',
-    crystal: 'rgba(255, 255, 255, 0.3)',
+    crystal: 'rgba(253, 242, 248, 0.3)',
 
-    // Enhanced colorful card backgrounds
+    // Enhanced card backgrounds using prayer tracker colors
     card: 'rgba(255, 255, 255, 0.9)',
-    cardDark: 'rgba(255, 255, 255, 0.95)',
+    cardDark: 'rgba(253, 242, 248, 0.95)',
     cardSoft: 'rgba(255, 255, 255, 0.8)',
 
-    // Colorful overlay effects
-    overlay: 'rgba(0, 0, 0, 0.2)',
-    overlayLight: 'rgba(0, 0, 0, 0.05)',
+    // Overlay effects using prayer tracker colors
+    overlay: 'rgba(236, 72, 153, 0.2)',
+    overlayLight: 'rgba(168, 168, 168, 0.05)',
 
-    // Colorful card variants
-    orange: 'rgba(255, 149, 0, 0.9)',
-    green: 'rgba(52, 199, 89, 0.9)',
-    blue: 'rgba(0, 122, 255, 0.9)',
-    purple: 'rgba(139, 92, 246, 0.9)',
-    pink: 'rgba(255, 45, 112, 0.9)',
+    // Card variants using prayer tracker colors
+    blue: 'rgba(59, 130, 246, 0.9)',
+    purple: 'rgba(139, 92, 246, 0.9)', // Prayer tracker purple
+    gold: 'rgba(245, 158, 11, 0.9)', // Prayer tracker gold
+    green: 'rgba(34, 197, 94, 0.9)', // Prayer tracker green
+    pink: 'rgba(236, 72, 153, 0.9)', // Prayer tracker pink
   },
 };
 
@@ -314,25 +402,350 @@ export const Shadows = {
 };
 
 export const Animations = {
-  // Modern spring animations
+  // Calming spring animations for wellness-focused UI
   spring: {
-    tension: 300,
-    friction: 20,
+    tension: 280,
+    friction: 18,
+    mass: 0.8,
   },
   fastSpring: {
-    tension: 400,
-    friction: 25,
+    tension: 320,
+    friction: 20,
+    mass: 0.7,
   },
   slowSpring: {
+    tension: 240,
+    friction: 16,
+    mass: 0.9,
+  },
+  gentleSpring: {
     tension: 200,
-    friction: 15,
+    friction: 14,
+    mass: 1.0,
   },
   
-  // Timing animations
+  // Enhanced timing animations
   timing: {
-    fast: 200,
-    normal: 300,
-    slow: 500,
+    instant: 80,
+    fast: 180,
+    normal: 280,
+    slow: 450,
+    slower: 650,
+    gentle: 800,
+  },
+  
+  // Page transition animations
+  pageTransitions: {
+    slide: {
+      duration: 350,
+      easing: 'ease-in-out',
+    },
+    fade: {
+      duration: 280,
+      easing: 'ease-out',
+    },
+    scale: {
+      duration: 320,
+      easing: 'ease-out',
+    },
+    // Calming page transitions
+    calmSlide: {
+      duration: 400,
+      easing: 'ease-in-out',
+    },
+    softFade: {
+      duration: 350,
+      easing: 'ease-out',
+    },
+    gentleScale: {
+      duration: 380,
+      easing: 'ease-out',
+    },
+  },
+  
+  // Button interaction animations
+  button: {
+    press: {
+      scale: 0.96,
+      duration: 120,
+    },
+    release: {
+      scale: 1.0,
+      duration: 200,
+    },
+    hover: {
+      scale: 1.02,
+      duration: 200,
+    },
+    // Calming button animations
+    gentlePress: {
+      scale: 0.98,
+      duration: 150,
+    },
+    softRelease: {
+      scale: 1.0,
+      duration: 250,
+    },
+  },
+  
+  // List and grid animations
+  list: {
+    item: {
+      duration: 280,
+      delay: 50,
+      easing: 'ease-out',
+    },
+    stagger: {
+      duration: 320,
+      delay: 80,
+      easing: 'ease-out',
+    },
+    // Calming list animations
+    gentleItem: {
+      duration: 350,
+      delay: 60,
+      easing: 'ease-out',
+    },
+    softStagger: {
+      duration: 400,
+      delay: 100,
+      easing: 'ease-in-out',
+    },
+  },
+  
+  // Modal and sheet animations
+  modal: {
+    entrance: {
+      scale: 0.9,
+      opacity: 0,
+      duration: 280,
+    },
+    exit: {
+      scale: 0.9,
+      opacity: 0,
+      duration: 250,
+    },
+    // Calming modal animations
+    softEntrance: {
+      scale: 0.95,
+      opacity: 0,
+      duration: 350,
+    },
+    gentleExit: {
+      scale: 0.95,
+      opacity: 0,
+      duration: 300,
+    },
+  },
+  
+  // Micro-interactions
+  micro: {
+    feedback: {
+      scale: 1.05,
+      duration: 150,
+    },
+    notification: {
+      translateY: -20,
+      opacity: 0,
+      duration: 300,
+    },
+    // Calming micro-interactions
+    gentleFeedback: {
+      scale: 1.02,
+      duration: 200,
+    },
+    softNotification: {
+      translateY: -15,
+      opacity: 0,
+      duration: 350,
+    },
+  },
+  
+  // Card animations
+  card: {
+    hover: {
+      translateY: -4,
+      scale: 1.02,
+      duration: 200,
+    },
+    press: {
+      scale: 0.98,
+      duration: 120,
+    },
+    // Calming card animations
+    gentleHover: {
+      translateY: -2,
+      scale: 1.01,
+      duration: 250,
+    },
+    softPress: {
+      scale: 0.99,
+      duration: 180,
+    },
+  },
+  
+  // Enhanced Modern Animations for Wellness UI
+  modern: {
+    spring: {
+      tension: 300,
+      friction: 18,
+      mass: 0.8,
+    },
+    bounce: {
+      tension: 280,
+      friction: 12,
+      mass: 0.9,
+    },
+    smooth: {
+      tension: 250,
+      friction: 16,
+      mass: 1.0,
+    },
+    gentle: {
+      tension: 200,
+      friction: 14,
+      mass: 1.1,
+    },
+  },
+  
+  // Comprehensive duration system
+  duration: {
+    instant: 80,
+    quick: 120,
+    fast: 180,
+    normal: 280,
+    slow: 450,
+    slower: 650,
+    gentle: 800,
+    calm: 1000,
+  },
+  
+  // Easing functions for smooth animations
+  easing: {
+    linear: 'linear',
+    easeIn: 'ease-in',
+    easeOut: 'ease-out',
+    easeInOut: 'ease-in-out',
+    // Custom easing for calming effects
+    gentle: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    soft: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    calm: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+  },
+  
+  // Stagger animation configurations
+  stagger: {
+    small: {
+      delay: 50,
+      duration: 280,
+    },
+    medium: {
+      delay: 80,
+      duration: 320,
+    },
+    large: {
+      delay: 120,
+      duration: 380,
+    },
+    // Calming stagger animations
+    gentle: {
+      delay: 100,
+      duration: 400,
+    },
+    soft: {
+      delay: 150,
+      duration: 450,
+    },
+  },
+  
+  // Entrance animations for components
+  entrance: {
+    fadeIn: {
+      opacity: { from: 0, to: 1 },
+      duration: 350,
+      easing: 'ease-out',
+    },
+    slideUp: {
+      translateY: { from: 20, to: 0 },
+      opacity: { from: 0, to: 1 },
+      duration: 400,
+      easing: 'ease-out',
+    },
+    slideDown: {
+      translateY: { from: -20, to: 0 },
+      opacity: { from: 0, to: 1 },
+      duration: 400,
+      easing: 'ease-out',
+    },
+    scaleIn: {
+      scale: { from: 0.9, to: 1 },
+      opacity: { from: 0, to: 1 },
+      duration: 350,
+      easing: 'ease-out',
+    },
+    // Calming entrance animations
+    gentleFade: {
+      opacity: { from: 0, to: 1 },
+      duration: 450,
+      easing: 'gentle',
+    },
+    softSlideUp: {
+      translateY: { from: 30, to: 0 },
+      opacity: { from: 0, to: 1 },
+      duration: 500,
+      easing: 'soft',
+    },
+    calmScale: {
+      scale: { from: 0.95, to: 1 },
+      opacity: { from: 0, to: 1 },
+      duration: 480,
+      easing: 'calm',
+    },
+  },
+  
+  // Exit animations for components
+  exit: {
+    fadeOut: {
+      opacity: { from: 1, to: 0 },
+      duration: 250,
+      easing: 'ease-in',
+    },
+    slideUp: {
+      translateY: { from: 0, to: -20 },
+      opacity: { from: 1, to: 0 },
+      duration: 300,
+      easing: 'ease-in',
+    },
+    slideDown: {
+      translateY: { from: 0, to: 20 },
+      opacity: { from: 1, to: 0 },
+      duration: 300,
+      easing: 'ease-in',
+    },
+    scaleOut: {
+      scale: { from: 1, to: 0.9 },
+      opacity: { from: 1, to: 0 },
+      duration: 280,
+      easing: 'ease-in',
+    },
+    // Calming exit animations
+    gentleFade: {
+      opacity: { from: 1, to: 0 },
+      duration: 350,
+      easing: 'gentle',
+    },
+    softSlideDown: {
+      translateY: { from: 0, to: 30 },
+      opacity: { from: 1, to: 0 },
+      duration: 400,
+      easing: 'soft',
+    },
+    calmScale: {
+      scale: { from: 1, to: 0.95 },
+      opacity: { from: 1, to: 0 },
+      duration: 380,
+      easing: 'calm',
+    },
   },
 };
 

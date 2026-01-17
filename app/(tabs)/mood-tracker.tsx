@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,202 +6,89 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Dimensions,
-  TextInput,
+
   Modal,
   StatusBar,
   Animated,
   Platform,
-  KeyboardAvoidingView,
   TouchableWithoutFeedback,
-  Keyboard,
   ActivityIndicator,
+  RefreshControl,
+  SafeAreaView,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  Plus, 
-  Trash2, 
-  Smile, 
-  X, 
+import { Calendar } from 'react-native-calendars';
+import {
+  Plus,
+  Trash2,
   Clock,
-  ArrowLeft,
+  Smile,
   TrendingUp,
+  X,
+  Filter,
+  CalendarDays,
+  Zap,
 } from 'lucide-react-native';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy, 
-  limit, 
-  doc, 
-  deleteDoc, 
-  getDoc,
-  setDoc,
-  updateDoc
-} from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { Svg, Path, Circle, Line, Text as SvgText, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/DesignTokens';
-import { useAuth } from '../../hooks/useAuth';
-import BackgroundGradient from '@/components/BackgroundGradient';
+import { AppTheme } from '@/constants/AppTheme';
 import { router } from 'expo-router';
-import { ModernHeader } from '@/components/ModernHeader';
 import { useUnifiedMoodTracker } from '../../hooks/useUnifiedMoodTracker';
 import { emitMoodEntrySaved } from '../../lib/eventEmitter';
-import BannerAd from '@/components/BannerAd';
 import { useInterstitialAds } from '@/hooks/useInterstitialAds';
-import AuthGuard from '@/components/auth/AuthGuard';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import AddMoodModal from '@/components/AddMoodModal';
+import { ModernHeader } from '@/components/ModernHeader';
+import * as Haptics from 'expo-haptics';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Enhanced responsive breakpoints
-const isSmallScreen = screenWidth < 375;
-const isMediumScreen = screenWidth >= 375 && screenWidth < 414;
-const isLargeScreen = screenWidth >= 414;
 
-// Responsive spacing and sizing
-const getResponsiveSpacing = (small: number, medium: number, large: number) => {
-  if (isSmallScreen) return small;
-  if (isMediumScreen) return medium;
-  return large;
+// Simplified mood colors mapping
+const moodColors: { [key: string]: { color: string; gradient: readonly [string, string] } } = {
+  'Happy': { color: '#22C55E', gradient: ['#22C55E', '#16A34A'] as const },
+  'Grateful': { color: '#8B5CF6', gradient: ['#8B5CF6', '#7C3AED'] as const },
+  'Calm': { color: '#06B6D4', gradient: ['#06B6D4', '#0891B2'] as const },
+  'Excited': { color: '#F59E0B', gradient: ['#F59E0B', '#D97706'] as const },
+  'Loved': { color: '#EC4899', gradient: ['#EC4899', '#DB2777'] as const },
+  'Peaceful': { color: '#A78BFA', gradient: ['#A78BFA', '#8B5CF6'] as const },
+  'Motivated': { color: '#10B981', gradient: ['#10B981', '#059669'] as const },
+  'Blessed': { color: '#FBBF24', gradient: ['#FBBF24', '#F59E0B'] as const },
+  'Sad': { color: '#6B7280', gradient: ['#6B7280', '#4B5563'] as const },
+  'Anxious': { color: '#F472B6', gradient: ['#F472B6', '#EC4899'] as const },
+  'Tired': { color: '#94A3B8', gradient: ['#94A3B8', '#64748B'] as const },
+  'Stressed': { color: '#EF4444', gradient: ['#EF4444', '#DC2626'] as const },
 };
 
-const getResponsiveFontSize = (small: number, medium: number, large: number) => {
-  if (isSmallScreen) return small;
-  if (isMediumScreen) return medium;
-  return large;
+const moodEmojis: { [key: string]: string } = {
+  'Happy': '😊',
+  'Grateful': '🙏',
+  'Calm': '😌',
+  'Excited': '🤩',
+  'Loved': '💕',
+  'Peaceful': '😇',
+  'Motivated': '💪',
+  'Blessed': '✨',
+  'Sad': '😔',
+  'Anxious': '😰',
+  'Tired': '😴',
+  'Stressed': '😓',
 };
 
-// Helper function to ensure emoji visibility
-const getEmojiStyle = (baseSize: number) => ({
-  fontSize: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2),
-  fontFamily: Platform.OS === 'ios' ? 'System' : 'Noto Color Emoji',
-  textAlign: 'center' as const,
-  includeFontPadding: false,
-  textAlignVertical: 'center' as const,
-  minHeight: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2) + 4,
-  minWidth: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2) + 4,
-  lineHeight: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2) + 4,
-});
-
-// Helper function to get responsive grid columns based on screen size and mood count
-const getGridColumns = (moodCount: number) => {
-  if (isSmallScreen) {
-    return moodCount > 6 ? 2 : 3;
-  } else if (isMediumScreen) {
-    return moodCount > 6 ? 3 : 4;
-  } else {
-    return moodCount > 6 ? 4 : 5;
-  }
+const moodVerses: { [key: string]: { text: string; reference: string } } = {
+  'Happy': { text: "A merry heart doeth good like a medicine: but a broken spirit drieth the bones.", reference: "Proverbs 17:22" },
+  'Grateful': { text: "In every thing give thanks: for this is the will of God in Christ Jesus concerning you.", reference: "1 Thessalonians 5:18" },
+  'Calm': { text: "Peace I leave with you, my peace I give unto you: not as the world giveth, give I unto you.", reference: "John 14:27" },
+  'Excited': { text: "This is the day which the LORD hath made; we will rejoice and be glad in it.", reference: "Psalm 118:24" },
+  'Loved': { text: "We love him, because he first loved us.", reference: "1 John 4:19" },
+  'Peaceful': { text: "Thou wilt keep him in perfect peace, whose mind is stayed on thee: because he trusteth in thee.", reference: "Isaiah 26:3" },
+  'Motivated': { text: "I can do all things through Christ which strengtheneth me.", reference: "Philippians 4:13" },
+  'Blessed': { text: "Blessed be the God and Father of our Lord Jesus Christ, who hath blessed us with all spiritual blessings.", reference: "Ephesians 1:3" },
+  'Sad': { text: "The LORD is nigh unto them that are of a broken heart; and saveth such as be of a contrite spirit.", reference: "Psalm 34:18" },
+  'Anxious': { text: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God.", reference: "Philippians 4:6" },
+  'Tired': { text: "Come unto me, all ye that labour and are heavy laden, and I will give you rest.", reference: "Matthew 11:28" },
+  'Stressed': { text: "Cast thy burden upon the LORD, and he shall sustain thee: he shall never suffer the righteous to be moved.", reference: "Psalm 55:22" },
 };
-
-// Enhanced mood data with better categorization and colors
-const moodCategories = {
-  positive: {
-    title: 'Positive',
-    icon: '✨',
-    moods: [
-      { id: 'positive_001_blessed', label: '🙏 Blessed', color: '#FFD700', gradient: ['#FFD700', '#FFA500', '#FF8C00'] as const },
-      { id: 'positive_002_happy', label: '😊 Happy', color: '#10B981', gradient: ['#10B981', '#059669', '#047857'] as const },
-      { id: 'positive_003_joyful', label: '😄 Joyful', color: '#22C55E', gradient: ['#22C55E', '#16A34A', '#15803D'] as const },
-      { id: 'positive_004_grateful', label: '🙏 Grateful', color: '#84CC16', gradient: ['#84CC16', '#65A30D', '#4D7C0F'] as const },
-      { id: 'positive_005_excited', label: '🤩 Excited', color: '#F59E0B', gradient: ['#F59E0B', '#D97706', '#B45309'] as const },
-      { id: 'positive_006_loved', label: '💕 Loved', color: '#EC4899', gradient: ['#EC4899', '#DB2777', '#BE185D'] as const },
-      { id: 'positive_007_proud', label: '🏆 Proud', color: '#10B981', gradient: ['#10B981', '#059669', '#047857'] as const },
-    ]
-  },
-  calm: {
-    title: 'Calm',
-    icon: '🧘',
-    moods: [
-      { id: 'calm_001_peaceful', label: '😇 Peaceful', color: '#06B6D4', gradient: ['#06B6D4', '#0891B2', '#0E7490'] as const },
-      { id: 'calm_002_calm', label: '😌 Calm', color: '#3B82F6', gradient: ['#3B82F6', '#2563EB', '#1D4ED8'] as const },
-      { id: 'calm_003_content', label: '😊 Content', color: '#8B5CF6', gradient: ['#8B5CF6', '#7C3AED', '#6D28D9'] as const },
-      { id: 'calm_004_prayerful', label: '🙏 Prayerful', color: '#8B5CF6', gradient: ['#8B5CF6', '#7C3AED', '#6D28D9'] as const },
-    ]
-  },
-  energetic: {
-    title: 'Energetic',
-    icon: '⚡',
-    moods: [
-      { id: 'energetic_001_motivated', label: '💪 Motivated', color: '#10B981', gradient: ['#10B981', '#059669', '#047857'] as const },
-      { id: 'energetic_002_focused', label: '🎯 Focused', color: '#3B82F6', gradient: ['#3B82F6', '#2563EB', '#1D4ED8'] as const },
-      { id: 'energetic_003_creative', label: '🎨 Creative', color: '#8B5CF6', gradient: ['#8B5CF6', '#7C3AED', '#6D28D9'] as const },
-      { id: 'energetic_004_inspired', label: '✨ Inspired', color: '#EC4899', gradient: ['#EC4899', '#DB2777', '#BE185D'] as const },
-      { id: 'energetic_005_accomplished', label: '🎉 Accomplished', color: '#22C55E', gradient: ['#22C55E', '#16A34A', '#15803D'] as const },
-    ]
-  },
-  challenging: {
-    title: 'Challenging',
-    icon: '💭',
-    moods: [
-      { id: 'challenging_001_sad', label: '😔 Sad', color: '#6B7280', gradient: ['#6B7280', '#4B5563', '#374151'] as const },
-      { id: 'challenging_002_anxious', label: '😰 Anxious', color: '#8B5CF6', gradient: ['#8B5CF6', '#7C3AED', '#6D28D9'] as const },
-      { id: 'challenging_003_stressed', label: '😓 Stressed', color: '#EC4899', gradient: ['#EC4899', '#DB2777', '#BE185D'] as const },
-      { id: 'challenging_004_angry', label: '😠 Angry', color: '#EF4444', gradient: ['#EF4444', '#DC2626', '#B91C1C'] as const },
-      { id: 'challenging_005_frustrated', label: '😤 Frustrated', color: '#F97316', gradient: ['#F97316', '#EA580C', '#C2410C'] as const },
-      { id: 'challenging_006_tired', label: '😴 Tired', color: '#A855F7', gradient: ['#A855F7', '#9333EA', '#7C3AED'] as const },
-      { id: 'challenging_007_lonely', label: '🥺 Lonely', color: '#6B7280', gradient: ['#6B7280', '#4B5563', '#374151'] as const },
-      { id: 'challenging_008_confused', label: '😕 Confused', color: '#F59E0B', gradient: ['#F59E0B', '#D97706', '#B45309'] as const },
-      { id: 'challenging_009_fearful', label: '😨 Fearful', color: '#DC2626', gradient: ['#DC2626', '#B91C1C', '#991B1B'] as const },
-    ]
-  },
-  curious: {
-    title: 'Curious',
-    icon: '🤔',
-    moods: [
-      { id: 'curious_001_curious', label: '🤔 Curious', color: '#14B8A6', gradient: ['#14B8A6', '#0D9488', '#0F766E'] as const },
-      { id: 'curious_002_surprised', label: '😲 Surprised', color: '#FBBF24', gradient: ['#FBBF24', '#F59E0B', '#D97706'] as const },
-      { id: 'curious_003_hopeful', label: '🌟 Hopeful', color: '#FBBF24', gradient: ['#FBBF24', '#F59E0B', '#D97706'] as const },
-    ]
-  },
-  spiritual: {
-    title: 'Spiritual',
-    icon: '🕊️',
-    moods: [
-      { id: 'spiritual_001_inspired', label: '✨ Inspired', color: '#A78BFA', gradient: ['#A78BFA', '#8B5CF6', '#7C3AED'] as const },
-      { id: 'spiritual_002_connected', label: '🔗 Connected', color: '#6EE7B7', gradient: ['#6EE7B7', '#34D399', '#10B981'] as const },
-      { id: 'spiritual_003_faithful', label: '✝️ Faithful', color: '#F472B6', gradient: ['#F472B6', '#EC4899', '#DB2777'] as const },
-    ]
-  },
-  health: {
-    title: 'Health',
-    icon: '💪',
-    moods: [
-      { id: 'health_001_healthy', label: '🍎 Healthy', color: '#6EE7B7', gradient: ['#6EE7B7', '#34D399', '#10B981'] as const },
-      { id: 'health_002_rested', label: '😴 Rested', color: '#A78BFA', gradient: ['#A78BFA', '#8B5CF6', '#7C3AED'] as const },
-      { id: 'health_003_balanced', label: '🧘 Balanced', color: '#F472B6', gradient: ['#F472B6', '#EC4899', '#DB2777'] as const },
-    ]
-  }
-};
-
-// Type for mood data
-type MoodData = {
-  id: string;
-  label: string;
-  color: string;
-  gradient: readonly [string, string, string];
-};
-
-// Flatten all moods for easy access with proper typing
-const buildAllMoods = (): MoodData[] => {
-  const result: MoodData[] = [];
-  const categories = Object.values(moodCategories || {});
-  for (const category of categories) {
-    const moods = category?.moods || [];
-    for (const mood of moods) {
-      if (mood && mood.gradient) {
-        result.push({
-          ...mood,
-          gradient: mood.gradient as readonly [string, string, string]
-        });
-      }
-    }
-  }
-  return result;
-};
-const allMoods: MoodData[] = buildAllMoods();
 
 interface MoodEntry {
   id: string;
@@ -213,292 +100,331 @@ interface MoodEntry {
   intensity_rating?: number;
 }
 
-// Animation helper component
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
+const MoodChart = ({ data }: { data: MoodEntry[] }) => {
+  const { width } = useWindowDimensions();
+  const [period, setPeriod] = useState<'weekly' | 'monthly'>('weekly');
+
+  // Map moods to numeric values for the chart (1-5 scale roughly)
+  const getMoodValue = (mood: string) => {
+    // Positive moods
+    if (['Excited', 'Happy', 'Blessed', 'Joy', 'Happiness', 'Delight', 'Triumph', 'Exhilaration', 'Enthusiasm'].includes(mood)) return 5;
+    if (['Loved', 'Motivated', 'Love', 'Tenderness', 'Admiration', 'Infatuation', 'Enchantment', 'Bliss'].includes(mood)) return 4.5;
+    if (['Grateful', 'Peaceful', 'Gratitude', 'Hope', 'Interest', 'Curiosity', 'Anticipation', 'Pride', 'Compassion'].includes(mood)) return 4;
+    if (['Calm', 'Content', 'Serene', 'Relaxed'].includes(mood)) return 3.5;
+    // Neutral
+    if (['Boredom', 'Detachment'].includes(mood)) return 3;
+    // Negative moods
+    if (['Tired', 'Exhausted'].includes(mood)) return 2.5;
+    if (['Stressed', 'Anxious', 'Worry', 'Nervousness', 'Bitterness', 'Longing', 'Disappointment', 'Regret'].includes(mood)) return 2;
+    if (['Sad', 'Sadness', 'Grief', 'Pity', 'Alienation', 'Shock', 'Fear', 'Anxiety', 'Dread', 'Panic'].includes(mood)) return 1.5;
+    if (['Despair', 'Helplessness', 'Hopelessness'].includes(mood)) return 1;
+    return 3;
+  };
+
+  // Filter data based on period
+  const getFilteredData = () => {
+    const now = new Date();
+    const filtered = data.filter(entry => {
+      const entryDate = new Date(entry.created_at);
+      if (period === 'weekly') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return entryDate >= weekAgo;
+      } else {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return entryDate >= monthAgo;
+      }
+    });
+    return [...filtered].slice(0, period === 'weekly' ? 7 : 30).reverse();
+  };
+
+  const chartData = getFilteredData();
+
+  if (chartData.length < 2) {
+    return (
+      <View style={styles.chartContainer}>
+        <View style={styles.chartHeader}>
+          <Text style={styles.chartTitle}>Mood Trends</Text>
+          <View style={styles.periodToggle}>
+            <TouchableOpacity
+              style={[styles.periodTab, period === 'weekly' && styles.periodTabActive]}
+              onPress={() => setPeriod('weekly')}
+            >
+              <Text style={[styles.periodTabText, period === 'weekly' && styles.periodTabTextActive]}>Week</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.periodTab, period === 'monthly' && styles.periodTabActive]}
+              onPress={() => setPeriod('monthly')}
+            >
+              <Text style={[styles.periodTabText, period === 'monthly' && styles.periodTabTextActive]}>Month</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.chartEmptyState}>
+          <Text style={styles.chartEmptyEmoji}>📊</Text>
+          <Text style={styles.chartEmptyText}>Log at least 2 moods to see trends</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const chartHeight = 140;
+  const chartWidth = width - 48;
+  const padding = 25;
+
+  const xStep = (chartWidth - (padding * 2)) / (Math.max(chartData.length - 1, 1));
+  const yMax = 5.5;
+  const yMin = 0.5;
+  const yRange = yMax - yMin;
+
+  const points = chartData.map((entry, index) => {
+    const x = padding + (index * xStep);
+    const value = getMoodValue(entry.mood_type);
+    const y = chartHeight - padding - ((value - yMin) / yRange) * (chartHeight - (padding * 2));
+    return { x, y, value, mood: entry.mood_type, emoji: entry.emoji };
+  });
+
+  // Create smooth bezier path
+  let pathD = `M ${points[0].x} ${points[0].y}`;
+  points.slice(1).forEach((p, i) => {
+    const prev = points[i];
+    const cp1x = prev.x + (p.x - prev.x) / 2;
+    const cp1y = prev.y;
+    const cp2x = prev.x + (p.x - prev.x) / 2;
+    const cp2y = p.y;
+    pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p.x} ${p.y}`;
+  });
+
+  // Gradient area
+  const fillPath = `${pathD} L ${points[points.length - 1].x} ${chartHeight - 10} L ${points[0].x} ${chartHeight - 10} Z`;
+
+  // Calculate average mood
+  const avgMood = points.reduce((sum, p) => sum + p.value, 0) / points.length;
+  const avgMoodLabel = avgMood >= 4 ? 'Great' : avgMood >= 3 ? 'Good' : avgMood >= 2 ? 'Okay' : 'Low';
+  const avgMoodColor = avgMood >= 4 ? '#22C55E' : avgMood >= 3 ? '#F59E0B' : avgMood >= 2 ? '#94A3B8' : '#EF4444';
+
+  return (
+    <View style={styles.chartContainer}>
+      <View style={styles.chartHeader}>
+        <View>
+          <Text style={styles.chartTitle}>Mood Trends</Text>
+          <View style={styles.avgMoodRow}>
+            <View style={[styles.avgMoodDot, { backgroundColor: avgMoodColor }]} />
+            <Text style={styles.avgMoodText}>Avg: {avgMoodLabel}</Text>
+          </View>
+        </View>
+        <View style={styles.periodToggle}>
+          <TouchableOpacity
+            style={[styles.periodTab, period === 'weekly' && styles.periodTabActive]}
+            onPress={() => setPeriod('weekly')}
+          >
+            <Text style={[styles.periodTabText, period === 'weekly' && styles.periodTabTextActive]}>Week</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.periodTab, period === 'monthly' && styles.periodTabActive]}
+            onPress={() => setPeriod('monthly')}
+          >
+            <Text style={[styles.periodTabText, period === 'monthly' && styles.periodTabTextActive]}>Month</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <Svg width={chartWidth} height={chartHeight}>
+        <Defs>
+          <SvgLinearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#8B5CF6" stopOpacity="0.3" />
+            <Stop offset="1" stopColor="#8B5CF6" stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+        {/* Horizontal grid lines */}
+        {[1, 2, 3, 4].map((_, i) => (
+          <Line
+            key={i}
+            x1={padding}
+            y1={padding + (i * (chartHeight - padding * 2) / 4)}
+            x2={chartWidth - padding}
+            y2={padding + (i * (chartHeight - padding * 2) / 4)}
+            stroke="#E2E8F0"
+            strokeWidth="1"
+            strokeDasharray="4,4"
+          />
+        ))}
+        {/* Fill Area */}
+        <Path d={fillPath} fill="url(#chartGradient)" />
+        {/* Line */}
+        <Path d={pathD} stroke="#8B5CF6" strokeWidth="3" fill="none" strokeLinecap="round" />
+        {/* Dots */}
+        {points.map((p, i) => (
+          <Circle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r="6"
+            fill="#FFFFFF"
+            stroke="#8B5CF6"
+            strokeWidth="3"
+          />
+        ))}
+      </Svg>
+      {/* Emoji indicators below chart */}
+      <View style={[styles.chartEmojiRow, { width: chartWidth, paddingHorizontal: padding - 10 }]}>
+        {points.slice(0, 7).map((p, i) => (
+          <Text key={i} style={styles.chartEmojiItem}>{p.emoji || '😊'}</Text>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+
 export default function MoodTrackerScreen() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const { saveMoodEntry, deleteMoodEntry, refetch } = useUnifiedMoodTracker();
+  const tabBarHeight = useBottomTabBarHeight();
+  const moodTracker = useUnifiedMoodTracker();
+  const { saveMoodEntry, deleteMoodEntry, refetch, moodStats, loading: moodLoading } = moodTracker;
+  const moodEntries = (moodTracker as any).moodEntries || [];
   const { showInterstitialAd } = useInterstitialAds('mood');
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
-  const [moodLoading, setMoodLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [overlayInteractive, setOverlayInteractive] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
-  const [weeklyTrends, setWeeklyTrends] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
-
+  // Initial loading state handler
   useEffect(() => {
-    if (user && !authLoading) {
-      fetchMoodHistory();
-    } else if (!user && !authLoading) {
-      setMoodHistory([]);
+    if (!moodLoading) {
+      setInitialLoading(false);
     }
-  }, [user, isAuthenticated, authLoading]);
+  }, [moodLoading]);
 
-  useEffect(() => {
-    if (modalVisible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 65,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 65,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setOverlayInteractive(true);
-      });
-    } else {
-      setOverlayInteractive(false);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: screenHeight,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.9,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [modalVisible]);
-
-  const fetchMoodHistory = async () => {
-    try {
-      // For guest users, we need to handle mood history differently
-      if (!user) {
-        setMoodHistory([]);
-        return;
-      }
-      
-      // If it's a guest user, we need to handle mood history differently
-      if (user.isGuest) {
-        // Guest users use local storage - for now, we'll show empty history
-        // The mood entries are managed by the unified hook and will be displayed
-        // through the moodStats that the hook provides
-        setMoodHistory([]);
-        return;
-      }
-      
-      // For authenticated users, fetch from Firebase
-      const moodsRef = collection(db, 'mood_entries');
-      const q = query(
-        moodsRef,
-        where('user_id', '==', user.uid),
-        orderBy('created_at', 'desc'),
-        limit(20)
-      );
-
-      const querySnapshot = await getDocs(q);
-      
-      const mapped = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        const moodId = data.mood_id || 'calm_003_content';
-        const moodData = getMoodData(moodId);
-        
-        // Handle created_at properly - it might be a Date object or a number (timestamp)
-        let createdAt;
-        if (data.created_at instanceof Date) {
-          createdAt = data.created_at;
-        } else if (typeof data.created_at === 'number') {
-          createdAt = new Date(data.created_at);
-        } else if (data.created_at && typeof data.created_at.toDate === 'function') {
-          createdAt = data.created_at.toDate();
+  // Process mood entries
+  const processedMoodHistory = useMemo(() => {
+    if (moodEntries && moodEntries.length > 0) {
+      const historyEntries = moodEntries.map((entry: any) => {
+        let createdDate;
+        if (entry.created_at) {
+          if (typeof entry.created_at === 'number') {
+            createdDate = new Date(entry.created_at);
+          } else if (typeof entry.created_at === 'string') {
+            createdDate = new Date(entry.created_at);
+          } else if (entry.created_at instanceof Date) {
+            createdDate = entry.created_at;
+          } else {
+            createdDate = new Date(entry.created_at);
+          }
+        } else if (entry.entry_date) {
+          createdDate = new Date(entry.entry_date);
         } else {
-          createdAt = new Date();
+          createdDate = new Date();
         }
-        
+
         return {
-          id: doc.id,
-          mood_id: moodId,
-          mood_type: moodData.label.split(' ').slice(1).join(' ') || 'Unknown', // Get the text part after emoji
-          emoji: moodData.label.split(' ')[0], // Use the emoji from the label
-          notes: data.note || '',
-          created_at: createdAt,
-          intensity_rating: data.intensity_rating || null,
+          id: entry.id || `mood-${Date.now()}-${Math.random()}`,
+          mood_id: entry.mood_id || 'calm',
+          mood_type: entry.mood_type || 'Unknown',
+          emoji: entry.emoji || moodEmojis[entry.mood_type] || '😊',
+          notes: entry.note || entry.notes || '',
+          created_at: createdDate,
+          intensity_rating: entry.intensity_rating || null,
         };
       });
 
-      setMoodHistory(mapped);
-      
-      if (mapped.length > 0) {
-        generateWeeklyTrends(mapped);
-      }
-    } catch (error) {
-      console.error('Error fetching mood history:', error);
-    }
-  };
-
-  const generateWeeklyTrends = (entries: MoodEntry[]) => {
-    const weeklyData = entries.reduce((acc, entry) => {
-      const date = new Date(entry.created_at);
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const moodData = getMoodData(entry.mood_id);
-      
-      let moodScore = 5;
-      if (moodData.label.includes('😊') || moodData.label.includes('😄') || moodData.label.includes('🙏')) {
-        moodScore = 8;
-      } else if (moodData.label.includes('😐') || moodData.label.includes('😌')) {
-        moodScore = 5;
-      } else {
-        moodScore = 3;
-      }
-      
-      if (!acc[dayOfWeek]) {
-        acc[dayOfWeek] = { total: 0, count: 0, moods: [] };
-      }
-      acc[dayOfWeek].total += moodScore;
-      acc[dayOfWeek].count += 1;
-      acc[dayOfWeek].moods.push(moodData.label);
-      
-      return acc;
-    }, {} as Record<number, { total: number; count: number; moods: string[] }>);
-
-    const trends = Object.entries(weeklyData).map(([day, data]) => ({
-      day: parseInt(day),
-      averageMood: data.count > 0 ? Math.round((data.total / data.count) * 10) / 10 : 0,
-      moodCount: data.count,
-      commonMoods: data.moods.slice(0, 3)
-    }));
-
-    setWeeklyTrends(trends);
-  };
-
-  const saveMood = async () => {
-    console.log('🔴 MOOD TRACKER: saveMood called, selectedMood:', selectedMood);
-    
-    if (!selectedMood) {
-      Alert.alert('Select a Mood', 'Please select a mood before saving.');
-      return;
-    }
-
-    if (authLoading || !user) {
-      console.log('🔴 MOOD TRACKER: Auth issue - loading:', authLoading, 'user:', user);
-      Alert.alert('Authentication Required', 'You need to be signed in to save moods.');
-      return;
-    }
-
-    setMoodLoading(true);
-    
-    try {
-      // Get the mood label from the selected mood ID
-      const moodData = allMoods.find(m => m.id === selectedMood);
-      if (!moodData) {
-        console.log('🔴 MOOD TRACKER: Invalid mood selected:', selectedMood);
-        Alert.alert('Error', 'Invalid mood selected.');
-        return;
-      }
-
-      // Extract the mood label from the emoji + text format (e.g., "😊 Happy" -> "Happy")
-      const moodLabel = moodData.label.split(' ').slice(1).join(' ');
-      console.log('🔴 MOOD TRACKER: Mood label extracted:', moodLabel);
-      
-      // Use the hook's saveMoodEntry function which handles the authentication properly
-      console.log('🔴 MOOD TRACKER: Calling saveMoodEntry with:', {
-        mood: moodLabel,
-        rating: 6,
-        influences: [],
-        note: notes.trim() || ''
+      return historyEntries.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return dateB - dateA;
       });
-      
-      const { data: savedEntry, error } = await saveMoodEntry(
-        moodLabel,
-        6, // Default intensity rating
-        [], // Empty influences array for now
-        notes.trim() || ''
-      );
-
-      console.log('🔴 MOOD TRACKER: saveMoodEntry response:', { savedEntry, error });
-
-      if (error) {
-        console.error('🔴 MOOD TRACKER: Error from saveMoodEntry:', error);
-        throw new Error(error.message || 'Failed to save mood entry');
-      }
-
-      if (savedEntry) {
-        console.log('🔴 MOOD TRACKER: Successfully saved mood entry:', savedEntry);
-        // Refresh the mood data
-        await refetch();
-        
-        Animated.sequence([
-          Animated.timing(scaleAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
-          Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
-        ]).start();
-
-        Alert.alert('Success', 'Your current mood has been recorded! 🎉');
-        
-        setSelectedMood(null);
-        setNotes('');
-        setModalVisible(false);
-        fetchMoodHistory();
-        
-        emitMoodEntrySaved(savedEntry);
-      } else {
-        console.log('🔴 MOOD TRACKER: No saved entry returned');
-      }
-      
-    } catch (error: any) {
-      console.error('🔴 MOOD TRACKER: Error saving mood:', error);
-      Alert.alert('Error', `Failed to save mood: ${error.message || 'Unknown error'}`);
-    } finally {
-      setMoodLoading(false);
     }
+    return [];
+  }, [moodEntries]);
+
+  useEffect(() => {
+    setMoodHistory(processedMoodHistory);
+  }, [processedMoodHistory]);
+
+  const getMoodColor = (moodType: string) => {
+    return moodColors[moodType] || { color: '#6B7280', gradient: ['#6B7280', '#4B5563'] as const };
   };
 
-    const deleteMood = async (id: string) => {
-      setEntryToDelete(id);
-      setDeleteModalVisible(true);
+  // Get unique dates with moods
+  const moodDates = useMemo(() => {
+    const dateMap: { [key: string]: { emoji: string; color: string } } = {};
+    moodHistory.forEach(entry => {
+      const date = new Date(entry.created_at).toISOString().split('T')[0];
+      // Only set if not already set (since we iterate newest to oldest, this keeps the latest)
+      if (!dateMap[date]) {
+        const moodData = getMoodColor(entry.mood_type);
+        const emoji = entry.emoji || moodEmojis[entry.mood_type] || '😊';
+        dateMap[date] = { emoji, color: moodData.color };
+      }
+    });
+    return dateMap;
+  }, [moodHistory]);
+
+  // Calendar marked dates
+  const markedDates = useMemo(() => {
+    const marks: any = {};
+    Object.entries(moodDates).forEach(([date, data]) => {
+      marks[date] = {
+        marked: true,
+        dotColor: data.color,
+        selectedColor: data.color,
+      };
+    });
+    if (selectedDate) {
+      marks[selectedDate] = {
+        ...marks[selectedDate],
+        selected: true,
+        selectedColor: AppTheme.calendar.selectedDay.background,
+      };
+    }
+    return marks;
+  }, [moodDates, selectedDate]);
+
+  // Filter mood history by selected date
+  const filteredMoodHistory = useMemo(() => {
+    if (!selectedDate) return moodHistory;
+
+    return moodHistory.filter(entry => {
+      if (!entry.created_at) return false;
+      const entryDateObj = new Date(entry.created_at);
+      const entryYear = entryDateObj.getFullYear();
+      const entryMonth = String(entryDateObj.getMonth() + 1).padStart(2, '0');
+      const entryDay = String(entryDateObj.getDate()).padStart(2, '0');
+      const entryDateStr = `${entryYear}-${entryMonth}-${entryDay}`;
+      return entryDateStr === selectedDate;
+    });
+  }, [moodHistory, selectedDate]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const deleteMood = async (id: string) => {
+    setEntryToDelete(id);
+    setDeleteModalVisible(true);
   };
 
   const confirmDelete = async () => {
-    if (!entryToDelete || !user) {
+    if (!entryToDelete) {
       cancelDelete();
       return;
     }
 
     try {
-      // Use the unified hook's deleteMoodEntry function which handles both guest and authenticated users
       const { error } = await deleteMoodEntry(entryToDelete);
-      
       if (error) {
         throw new Error(error.message || 'Failed to delete mood entry');
       }
-      
-      Alert.alert('Success', 'Mood entry deleted successfully!');
-      
-      // Refresh the mood history
-      await fetchMoodHistory();
-      
+      Alert.alert('Success', 'Mood entry deleted');
       setDeleteModalVisible(false);
       setEntryToDelete(null);
     } catch (error: any) {
-      console.error('Error deleting mood:', error);
-      Alert.alert('Error', `Failed to delete mood entry: ${error.message || 'Unknown error'}`);
+      Alert.alert('Error', error.message || 'Failed to delete');
       setDeleteModalVisible(false);
       setEntryToDelete(null);
     }
@@ -509,608 +435,413 @@ export default function MoodTrackerScreen() {
     setEntryToDelete(null);
   };
 
-  const getMoodData = (moodId: string): MoodData => {
-    return allMoods.find(mood => mood.id === moodId) || {
-      id: 'unknown',
-      label: '❓ Unknown',
-      color: '#6B7280',
-      gradient: ['#6B7280', '#4B5563', '#374151'] as readonly [string, string, string]
+  // Get mood stats
+  const stats = useMemo(() => {
+    const today = new Date();
+    const last7Days = moodHistory.filter(entry => {
+      const entryDate = new Date(entry.created_at);
+      const diffTime = today.getTime() - entryDate.getTime();
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays <= 7;
+    });
+
+    const moodCounts: { [key: string]: number } = {};
+    last7Days.forEach(entry => {
+      moodCounts[entry.mood_type] = (moodCounts[entry.mood_type] || 0) + 1;
+    });
+
+    let topMood = 'Happy';
+    let topCount = 0;
+    Object.entries(moodCounts).forEach(([mood, count]) => {
+      if (count > topCount) {
+        topMood = mood;
+        topCount = count;
+      }
+    });
+
+    return {
+      total: moodHistory.length,
+      thisWeek: last7Days.length,
+      topMood,
+      streak: Math.min(last7Days.length, 7),
     };
-  };
+  }, [moodHistory]);
 
-  const openNewMoodModal = () => {
-    setOverlayInteractive(false);
-    setModalVisible(true);
-    setSelectedMood(null);
-    setNotes('');
-  };
+  // Mood Entry Card Component
+  const MoodCard = useCallback(({ entry }: { entry: MoodEntry }) => {
+    const moodData = getMoodColor(entry.mood_type);
+    const emoji = entry.emoji || moodEmojis[entry.mood_type] || '😊';
+    const verse = moodVerses[entry.mood_type];
 
-  const closeModal = () => {
-    Keyboard.dismiss();
-    setModalVisible(false);
-    setSelectedMood(null);
-    setNotes('');
-  };
+    const formatTime = (date: any) => {
+      const d = new Date(date);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const entryDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const isToday = entryDay.getTime() === today.getTime();
 
-  const MoodHistoryItem = ({ entry, index, onDelete }: { entry: MoodEntry, index: number, onDelete: (id: string) => void }) => {
-    const moodData = getMoodData(entry.mood_id);
-    const animValue = useRef(new Animated.Value(0)).current;
+      const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    useEffect(() => {
-      Animated.timing(animValue, {
-        toValue: 1,
-        duration: 500,
-        delay: index * 100,
-        useNativeDriver: true,
-      }).start();
-    }, []);
+      if (isToday) {
+        return `Today at ${time}`;
+      }
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (entryDay.getTime() === yesterday.getTime()) {
+        return `Yesterday at ${time}`;
+      }
+
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ` at ${time}`;
+    };
 
     return (
-      <Animated.View
-        style={[
-          styles.historyItem,
-          {
-            opacity: animValue,
-            transform: [
-              {
-                translateY: animValue.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [20, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <LinearGradient
-          colors={moodData.gradient || Colors.gradients.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.historyAccent}
-        />
-        <View style={styles.historyContent}>
-          <View style={styles.historyLeft}>
-            <View style={styles.historyMoodBadge}>
-              <Text style={styles.historyMoodEmoji}>
-                {moodData.label.split(' ')[0]}
-              </Text>
+      <View style={styles.moodCard}>
+        <View style={styles.moodCardContent}>
+          <LinearGradient
+            colors={moodData.gradient}
+            style={styles.moodBadge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={styles.moodBadgeEmoji}>{emoji}</Text>
+          </LinearGradient>
+
+          <View style={styles.moodInfo}>
+            <Text style={styles.moodType}>{entry.mood_type}</Text>
+            <View style={styles.moodMeta}>
+              <Clock size={12} color={Colors.neutral[400]} />
+              <Text style={styles.moodTime}>{formatTime(entry.created_at)}</Text>
             </View>
-            <View style={styles.historyTextContent}>
-              <Text style={styles.historyMoodLabel}>
-                {moodData.label.split(' ')[1]}
-              </Text>
-              {entry.notes && (
-                <Text style={styles.historyNotes} numberOfLines={2}>
-                  {entry.notes}
-                </Text>
-              )}
-              <View style={styles.historyMeta}>
-                <Clock size={12} color={Colors.neutral[400]} />
-                <Text style={styles.historyDate}>
-                  {(() => {
-                    const entryDate = new Date(entry.created_at);
-                    const today = new Date();
-                    const isToday = entryDate.toDateString() === today.toDateString();
-                    const timeString = entryDate.toLocaleString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true
-                    });
-                    return isToday ? `Today at ${timeString}` : entryDate.toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true
-                    });
-                  })()}
-                </Text>
+
+            {/* Linked Verse */}
+            {verse && (
+              <View style={styles.verseContainer}>
+                <Text style={styles.verseText}>"{verse.text}"</Text>
+                <Text style={styles.verseReference}>- {verse.reference}</Text>
               </View>
-            </View>
+            )}
+
+            {entry.notes && (
+              <Text style={styles.moodNotes} numberOfLines={2}>
+                "{entry.notes}"
+              </Text>
+            )}
           </View>
+
           <TouchableOpacity
-            onPress={() => onDelete(entry.id)}
-            style={styles.deleteButton}
-            activeOpacity={0.7}
+            style={styles.deleteBtn}
+            onPress={() => deleteMood(entry.id)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Trash2 size={16} color={Colors.error[500]} />
+            <Trash2 size={18} color={Colors.error[500]} />
           </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
     );
-  };
-  
-  if (authLoading || !user) {
+  }, []);
+
+  if (initialLoading || (moodLoading && moodHistory.length === 0)) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-        <BackgroundGradient>
-          <View style={styles.headerCardContainer}>
-            <View style={styles.headerCard}>
-              <View style={styles.headerCardContent}>
-                <TouchableOpacity style={styles.headerCardBackButton} onPress={() => router.back()}>
-                  <ArrowLeft size={24} color={Colors.neutral[900]} />
-                </TouchableOpacity>
-                <View style={styles.headerCardIcon}>
-                  <Smile size={32} color={Colors.primary[600]} />
-                </View>
-                <View style={styles.headerCardText}>
-                  <Text style={[styles.headerCardTitle, { color: Colors.neutral[900] }]}>My Mood Now</Text>
-                  <Text style={[styles.headerCardDescription, { color: Colors.neutral[700] }]}>Track your emotional journey</Text>
-                  
-                  <View style={styles.quickStatsContainer}>
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statNumber, { color: Colors.neutral[900] }]}>-</Text>
-                      <Text style={[styles.statLabel, { color: Colors.neutral[700] }]}>Entries</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statNumber, { color: Colors.neutral[900] }]}>-</Text>
-                      <Text style={[styles.statLabel, { color: Colors.neutral[700] }]}>Avg Mood</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statNumber, { color: Colors.neutral[900] }]}>-</Text>
-                      <Text style={[styles.statLabel, { color: Colors.neutral[700] }]}>Today</Text>
-                    </View>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={[styles.headerCardActionButton, { backgroundColor: Colors.primary[50] }]}
-                  onPress={openNewMoodModal}
-                  activeOpacity={0.8}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Plus size={22} color={Colors.primary[600]} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-          <View style={styles.section}>
-            <View style={styles.emptyState}>
-              <LinearGradient
-                colors={Colors.gradients.lightGrey || ['#F9FAFB', '#F7F8F9', '#F5F6F7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.emptyStateIcon}
-              >
-                <Smile size={48} color={Colors.neutral[300]} />
-              </LinearGradient>
-              <Text style={styles.emptyStateTitle}>Sign in to continue</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Please sign in to track and view your mood history
-              </Text>
-              
-              <View style={styles.authButtonsContainer}>
-                <TouchableOpacity
-                  style={styles.signInButton}
-                  onPress={() => router.push('/login')}
-                >
-                  <LinearGradient
-                    colors={['#8B5CF6', '#A855F7']}
-                    style={styles.signInGradient}
-                  >
-                    <Text style={styles.signInText}>Sign In</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.signUpButton}
-                  onPress={() => router.push('/signup')}
-                >
-                  <Text style={styles.signUpText}>Create Account</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </BackgroundGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={AppTheme.accent.primary} />
+          <Text style={styles.loadingText}>Loading your mood journey...</Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <AuthGuard
-      message="Sign in to save and organize your mood entries. Your emotional journey will be securely stored and accessible across all your devices."
-      showGuestWarning={true}
-    >
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
-      <ModernHeader
-        title="Mood Tracker"
-        subtitle="Track your spiritual journey"
-        variant="simple"
-        showProfileButton={true}
-        showNotificationButton={true}
-        onProfilePress={() => {
-          router.push('/(tabs)/profile');
-        }}
-        onNotificationPress={() => {
-          console.log('Notifications pressed');
-        }}
-        rightActions={
-          <TouchableOpacity
-            style={styles.headerSimpleAddButton}
-            onPress={openNewMoodModal}
-          >
-            <Plus size={20} color={Colors.primary[600]} />
-          </TouchableOpacity>
-        }
-      />
-      
-      {/* Banner Ad below header */}
-      <BannerAd placement="mood" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      <BackgroundGradient>
-        <View style={styles.headerCardContainer}>
-          <View style={styles.headerCard}>
-            <View style={styles.headerCardContent}>
-              <View style={styles.headerCardIcon}>
-                <Smile size={32} color={Colors.primary[600]} />
-              </View>
-              <View style={styles.headerCardText}>
-                <Text style={[styles.headerCardTitle, { color: Colors.neutral[900] }]}>Daily Check-in</Text>
-                <Text style={[styles.headerCardDescription, { color: Colors.neutral[700] }]}>How are you feeling today?</Text>
-                
-                <View style={styles.quickStatsContainer}>
-                  <View style={styles.statItem}>
-                    <Text style={[styles.statNumber, { color: Colors.neutral[900] }]}>{moodHistory.length}</Text>
-                    <Text style={[styles.statLabel, { color: Colors.neutral[700] }]}>Entries</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statItem}>
-                    <Text style={[styles.statNumber, { color: Colors.neutral[900] }]}>
-                      {(() => {
-                        if (moodHistory.length === 0) return '0/10';
-                        
-                        const validEntries = moodHistory.filter(entry =>
-                          entry.intensity_rating !== null && entry.intensity_rating !== undefined
-                        );
-                        
-                        if (validEntries.length === 0) return '0/10';
-                        
-                        const totalRating = validEntries.reduce((sum, entry) =>
-                          sum + (entry.intensity_rating || 0), 0
-                        );
-                        
-                        const averageRating = Math.round(totalRating / validEntries.length);
-                        return `${averageRating}/10`;
-                      })()}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: Colors.neutral[700] }]}>Avg Mood</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statItem}>
-                    <Text style={[styles.statNumber, { color: Colors.neutral[900] }]}>
-                      {(() => {
-                        const today = new Date().toISOString().split('T')[0];
-                        const hasEntryToday = moodHistory.some(entry =>
-                          new Date(entry.created_at).toISOString().split('T')[0] === today
-                        );
-                        return hasEntryToday ? '✅' : '📝';
-                      })()}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: Colors.neutral[700] }]}>Today</Text>
-                  </View>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={[styles.headerCardActionButton, { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}
-                onPress={openNewMoodModal}
-                activeOpacity={0.8}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Plus size={22} color={Colors.primary[600]} />
-              </TouchableOpacity>
+      {/* Modern Header */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTop}>
+          <View style={styles.userInfo}>
+            <View style={styles.userAvatar}>
+              <Smile size={20} color="#EA580C" />
+            </View>
+            <Text style={styles.headerTitle}>Mood Journal</Text>
+          </View>
+
+          <View style={styles.headerActions}>
+            <View style={styles.streakBadge}>
+              <Zap size={14} color="#EA580C" fill="#EA580C" />
+              <Text style={styles.streakText}>{stats.streak}</Text>
             </View>
           </View>
         </View>
 
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+        {/* Calendar Toggle */}
+        <TouchableOpacity
+          style={styles.viewCalendarBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowCalendar(!showCalendar);
+          }}
+        >
+          {showCalendar ? (
+            <>
+              <X size={14} color="#EA580C" />
+              <Text style={styles.viewCalendarText}>CLOSE CALENDAR</Text>
+            </>
+          ) : (
+            <>
+              <CalendarDays size={14} color="#EA580C" />
+              <Text style={styles.viewCalendarText}>VIEW CALENDAR</Text>
+            </>
+          )}
+        </TouchableOpacity>
 
-        {weeklyTrends.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionHeaderRow}>
-                <TrendingUp size={24} color={Colors.primary[600]} />
-                <Text style={styles.sectionTitle}>Weekly Mood Trends</Text>
-              </View>
-            </View>
-            
-            <View style={styles.trendsContainer}>
-              {weeklyTrends.map((trend, index) => (
-                <View key={index} style={styles.trendItem}>
-                  <Text style={styles.trendDay}>
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][trend.day]}
-                  </Text>
-                  <View style={styles.trendBarContainer}>
-                    <LinearGradient
-                      colors={trend.averageMood >= 6 ? 
-                        ['#10B981', '#059669', '#047857'] : 
-                        trend.averageMood >= 4 ? 
-                        ['#F59E0B', '#D97706', '#B45309'] : 
-                        ['#EF4444', '#DC2626', '#B91C1C']}
+        {/* Calendar View OR Week Selector */}
+        {showCalendar ? (
+          <View style={styles.calendarCard}>
+            <Calendar
+              markedDates={markedDates}
+              onDayPress={(day) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSelectedDate(selectedDate === day.dateString ? null : day.dateString);
+              }}
+              dayComponent={({ date, state }) => {
+                const dateString = date?.dateString || '';
+                const moodData = moodDates[dateString];
+                const isSelected = selectedDate === dateString;
+                const isToday = dateString === new Date().toISOString().split('T')[0];
+                const isDisabled = state === 'disabled';
+
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!isDisabled && date) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSelectedDate(selectedDate === dateString ? null : dateString);
+                      }
+                    }}
+                    style={[
+                      styles.calendarDay,
+                      isSelected && styles.calendarDaySelected,
+                      isToday && !isSelected && styles.calendarDayToday,
+                    ]}
+                  >
+                    {moodData ? (
+                      <Text style={styles.calendarEmoji}>{moodData.emoji}</Text>
+                    ) : (
+                      <View style={styles.calendarEmptyDay} />
+                    )}
+                    <Text
                       style={[
-                        styles.trendBar,
-                        { width: `${Math.min(trend.averageMood * 10, 100)}%` }
+                        styles.calendarDayText,
+                        isDisabled && styles.calendarDayTextDisabled,
+                        isSelected && styles.calendarDayTextSelected,
+                        isToday && !isSelected && styles.calendarDayTextToday,
                       ]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                    />
-                  </View>
-                  <Text style={styles.trendValue}>
-                    {trend.averageMood.toFixed(1)}
+                    >
+                      {date?.day}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              theme={{
+                backgroundColor: 'transparent',
+                calendarBackground: 'transparent',
+                textSectionTitleColor: '#64748B',
+                selectedDayBackgroundColor: '#EA580C',
+                selectedDayTextColor: 'white',
+                todayTextColor: '#EA580C',
+                dayTextColor: '#1E293B',
+                textDisabledColor: '#CBD5E1',
+                dotColor: '#EA580C',
+                selectedDotColor: 'white',
+                arrowColor: '#EA580C',
+                monthTextColor: '#1E293B',
+                textDayFontSize: 15,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 13,
+                textDayFontWeight: '500',
+                textMonthFontWeight: '700',
+                textDayHeaderFontWeight: '600',
+              }}
+            />
+          </View>
+        ) : (
+          /* Week Selector */
+          <View style={styles.weekSelector}>
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => {
+              const currentDay = new Date().getDay();
+              const uiDayIndex = currentDay === 0 ? 6 : currentDay - 1;
+              const isActive = index === uiDayIndex;
+
+              // Calculate week dates
+              const today = new Date();
+              const monday = new Date(today);
+              monday.setDate(today.getDate() - uiDayIndex);
+              const dateNum = new Date(monday);
+              dateNum.setDate(monday.getDate() + index);
+
+              return (
+                <View key={index} style={styles.dayColumn}>
+                  <Text style={styles.dayText}>
+                    {day}
                   </Text>
+                  <View style={styles.dateCircleContainer}>
+                    {isActive && <View style={styles.activeDayIndicator} />}
+                    <Text style={[styles.dateText, isActive && styles.activeDateText]}>
+                      {dateNum.getDate()}
+                    </Text>
+                  </View>
                 </View>
-              ))}
-            </View>
+              );
+            })}
           </View>
         )}
+      </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Mood History</Text>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#EA580C"
+            colors={['#EA580C']}
+          />
+        }
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Spacing.xl + tabBarHeight + 100 }]}
+      >
+        {/* Main Content Card */}
+        <View style={styles.mainCard}>
+          {/* Stats Row */}
+          <View style={styles.statsRowNew}>
+            <View style={styles.statCardNew}>
+              <Text style={styles.statEmojiNew}>{moodEmojis[stats.topMood] || '😊'}</Text>
+              <Text style={styles.statValueNew}>{stats.total}</Text>
+              <Text style={styles.statLabelNew}>Total</Text>
+            </View>
+            <View style={styles.statCardNew}>
+              <Text style={styles.statEmojiNew}>🔥</Text>
+              <Text style={styles.statValueNew}>{stats.streak}</Text>
+              <Text style={styles.statLabelNew}>Streak</Text>
+            </View>
+            <View style={styles.statCardNew}>
+              <Text style={styles.statEmojiNew}>📊</Text>
+              <Text style={styles.statValueNew}>{stats.thisWeek}</Text>
+              <Text style={styles.statLabelNew}>This Week</Text>
+            </View>
           </View>
-          
-          { (moodHistory?.length ?? 0) === 0 ? (
-            <View style={styles.emptyState}>
-              <LinearGradient
-                colors={Colors.gradients.lightGrey || ['#F9FAFB', '#F7F8F9', '#F5F6F7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.emptyStateIcon}
-              >
-                <Smile size={48} color={Colors.neutral[300]} />
-              </LinearGradient>
-              <Text style={styles.emptyStateTitle}>No mood entries yet</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Start tracking your emotional journey throughout the day
+
+          {/* Mood Chart */}
+          {!selectedDate && moodHistory.length >= 2 && (
+            <MoodChart data={moodHistory} />
+          )}
+
+
+
+          {/* Filter Banner */}
+          {selectedDate && (
+            <View style={styles.filterBanner}>
+              <Filter size={16} color="#EA580C" />
+              <Text style={styles.filterText}>
+                {new Date(selectedDate).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric'
+                })}
               </Text>
-              <TouchableOpacity 
-                onPress={openNewMoodModal}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              <TouchableOpacity
+                style={styles.clearFilter}
+                onPress={() => setSelectedDate(null)}
               >
-                <LinearGradient
-                  colors={Colors.gradients.primary || ['#8B5CF6', '#6366F1', '#3B82F6']}
-                  style={styles.emptyStateButton}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Plus size={20} color="white" />
-                  <Text style={styles.emptyStateButtonText}>Add Your First Mood Now</Text>
-                </LinearGradient>
+                <X size={14} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-          ) : (
-            <View style={styles.historyContainer}>
-              {(moodHistory || []).map((entry, index) => (
-                <MoodHistoryItem key={entry.id} entry={entry} index={index} onDelete={deleteMood} />
-              ))}
-            </View>
           )}
+
+          {/* Mood History */}
+          <View style={styles.historySection}>
+            <Text style={styles.sectionTitle}>
+              {selectedDate ? 'MOODS FOR SELECTED DATE' : 'RECENT MOODS'}
+            </Text>
+
+            {filteredMoodHistory.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>
+                  {selectedDate ? '📅' : '✨'}
+                </Text>
+                <Text style={styles.emptyTitle}>
+                  {selectedDate ? 'No moods on this day' : 'Start Your Journey'}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {selectedDate
+                    ? 'Try selecting a different date'
+                    : 'Tap + to log your first mood'}
+                </Text>
+                {selectedDate && (
+                  <TouchableOpacity
+                    style={styles.emptyButton}
+                    onPress={() => setSelectedDate(null)}
+                  >
+                    <Text style={styles.emptyButtonText}>Show All</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              filteredMoodHistory.map((entry) => (
+                <MoodCard key={entry.id} entry={entry} />
+              ))
+            )}
+          </View>
         </View>
-        
-        <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      <Modal
-        visible={modalVisible}
-        animationType="none"
-        transparent={true}
-        statusBarTranslucent={true}
-        presentationStyle={Platform.OS === 'ios' ? 'overFullScreen' : undefined}
-        onRequestClose={closeModal}
+      {/* Floating Add Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setModalVisible(true);
+        }}
+        activeOpacity={0.9}
       >
-        <TouchableWithoutFeedback onPress={() => { if (overlayInteractive) closeModal(); }}>
-          <Animated.View 
-            style={[
-              styles.modalOverlay,
-              {
-                opacity: fadeAnim,
-              },
-            ]}
-          >
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <Animated.View
-                style={[
-                  styles.modalContainer,
-                  {
-                    transform: [
-                      { translateY: slideAnim },
-                      { scale: scaleAnim },
-                    ],
-                  },
-                ]}
-              >
-                <KeyboardAvoidingView
-                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                  style={styles.keyboardAvoid}
-                  keyboardVerticalOffset={Platform.OS === 'ios' ? (isSmallScreen ? 20 : 0) : 20}
-                >
-                  <View style={styles.modalHandle} />
-                  
-                  <View style={styles.modalHeader}>
-                    <View>
-                      <Text style={styles.modalTitle}>How are you feeling right now?</Text>
-                      <Text style={styles.modalSubtitle}>Select a mood that best describes your current state</Text>
-                    </View>
-                    <TouchableOpacity 
-                      onPress={closeModal} 
-                      style={styles.closeButton}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <X size={24} color={Colors.neutral[600]} />
-                    </TouchableOpacity>
-                  </View>
+        <View style={styles.fabGradient}>
+          <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+        </View>
+      </TouchableOpacity>
 
-                  <ScrollView 
-                    style={styles.modalScrollView} 
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={styles.modalScrollContent}
-                    bounces={false}
-                    nestedScrollEnabled={true}
-                  >
-                    <View style={styles.modernMoodContainer}>
-                      {selectedMood && (
-                        <View style={styles.selectedMoodPreview}>
-                          <LinearGradient
-                            colors={getMoodData(selectedMood).gradient || ['#6B7280', '#4B5563', '#374151']}
-                            style={styles.previewGradient}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                          >
-                            <Text style={styles.previewEmoji} allowFontScaling={false}>
-                              {getMoodData(selectedMood).label?.split(' ')[0] || '❓'}
-                            </Text>
-                            <Text style={styles.previewLabel}>
-                              {getMoodData(selectedMood).label?.split(' ').slice(1).join(' ') || 'Unknown'}
-                            </Text>
-                          </LinearGradient>
-                        </View>
-                      )}
+      {/* Add Mood Modal */}
+      <AddMoodModal
+        isVisible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onAddMood={async (mood, rating, influences, note, emoji) => {
+          try {
+            const { data: savedEntry, error } = await saveMoodEntry(
+              mood,
+              rating,
+              influences,
+              note,
+              emoji
+            );
 
-                      <View style={styles.modernMoodGrid}>
-                        <ScrollView
-                          style={styles.categoriesScrollView}
-                          showsVerticalScrollIndicator={false}
-                          contentContainerStyle={styles.categoriesScrollContent}
-                          bounces={true}
-                          nestedScrollEnabled={true}
-                        >
-                          {Object.entries(moodCategories || {}).map(([key, category]) => {
-                            if (!category) return null;
-                            
-                            const moods = category.moods || [];
-                            const gridColumns = getGridColumns(moods.length);
-                            
-                            return (
-                              <View key={key} style={styles.modernCategoryCard}>
-                                <View style={styles.categoryCardHeader}>
-                                  <Text style={styles.categoryCardIcon} allowFontScaling={false}>{category.icon || '❓'}</Text>
-                                  <Text style={styles.categoryCardTitle}>{category.title || 'Unknown'}</Text>
-                                </View>
-                                <View style={[
-                                  styles.categoryMoodGrid,
-                                  {
-                                    flexDirection: 'row',
-                                    flexWrap: 'wrap',
-                                    gap: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-                                    paddingTop: getResponsiveSpacing(Spacing.xs, Spacing.sm, Spacing.sm),
-                                  }
-                                ]}>
-                                  {moods.map(mood => {
-                                    if (!mood || !mood.id) return null;
-                                    
-                                    return (
-                                      <TouchableOpacity
-                                        key={mood.id}
-                                        style={[
-                                          styles.modernMoodButton,
-                                          selectedMood === mood.id && styles.modernMoodButtonSelected,
-                                          {
-                                            width: `${100 / gridColumns}%`,
-                                            maxWidth: getResponsiveSpacing(100, 120, 140),
-                                            marginBottom: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-                                          }
-                                        ]}
-                                        onPress={() => setSelectedMood(mood.id)}
-                                        activeOpacity={0.7}
-                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                      >
-                                        <Text
-                                          style={[
-                                            styles.modernMoodEmoji,
-                                            selectedMood === mood.id && styles.modernMoodEmojiSelected
-                                          ]}
-                                          allowFontScaling={false}
-                                        >
-                                          {mood.label?.split(' ')[0] || '❓'}
-                                        </Text>
-                                        <Text
-                                          style={[
-                                            styles.modernMoodText,
-                                            selectedMood === mood.id && styles.modernMoodTextSelected
-                                          ]}
-                                          allowFontScaling={false}
-                                        >
-                                          {mood.label?.split(' ').slice(1).join(' ') || 'Unknown'}
-                                        </Text>
-                                      </TouchableOpacity>
-                                    );
-                                  })}
-                                </View>
-                              </View>
-                            );
-                          })}
-                        </ScrollView>
-                        <View style={styles.scrollIndicator} />
-                      </View>
-                      <View style={styles.modernNotesSection}>
-                        <Text style={styles.modernNotesTitle}>Add a note (optional)</Text>
-                        <View style={styles.modernNotesInputContainer}>
-                          <TextInput
-                            style={styles.modernNotesInput}
-                            placeholder="What's happening right now? Any thoughts or reflections?"
-                            value={notes}
-                            onChangeText={setNotes}
-                            multiline
-                            numberOfLines={3}
-                            placeholderTextColor={Colors.neutral[400]}
-                            textAlignVertical="top"
-                          />
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        onPress={saveMood}
-                        disabled={!selectedMood || moodLoading}
-                        activeOpacity={0.8}
-                        style={[
-                          styles.modernSaveButton,
-                          !selectedMood && styles.modernSaveButtonDisabled
-                        ]}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <LinearGradient
-                          colors={selectedMood ?
-                            getMoodData(selectedMood).gradient || Colors.gradients.primary :
-                            [Colors.neutral[300], Colors.neutral[400]]
-                          }
-                          style={styles.modernSaveButtonGradient}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                        >
-                          {moodLoading ? (
-                            <ActivityIndicator size="small" color="white" />
-                          ) : (
-                            <>
-                              <Text style={styles.modernSaveButtonText}>
-                                {selectedMood ? 'Save My Mood' : 'Select a Mood'}
-                              </Text>
-                              {selectedMood && (
-                                <Text style={styles.modernSaveButtonEmoji} allowFontScaling={false}>
-                                  {getMoodData(selectedMood).label.split(' ')[0]}
-                                </Text>
-                              )}
-                            </>
-                          )}
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.modalBottomSpacing} />
-                  </ScrollView>
-                </KeyboardAvoidingView>
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </Animated.View>
-        </TouchableWithoutFeedback>
-      </Modal>
+            if (error) {
+              throw new Error(error.message || 'Failed to save mood');
+            }
 
+            if (savedEntry) {
+              Alert.alert('Success', 'Mood saved! 🎉');
+              setModalVisible(false);
+              await refetch();
+              emitMoodEntrySaved(savedEntry);
+            }
+          } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to save');
+          }
+        }}
+      />
+
+      {/* Delete Modal */}
       <Modal
         visible={deleteModalVisible}
         animationType="fade"
@@ -1119,900 +850,635 @@ export default function MoodTrackerScreen() {
         onRequestClose={cancelDelete}
       >
         <TouchableWithoutFeedback onPress={cancelDelete}>
-          <View style={styles.deleteModalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.deleteModalContainer}>
-                <View style={styles.deleteModalContent}>
-                  <View style={styles.deleteModalIcon}>
-                    <Trash2 size={48} color={Colors.error[500]} />
-                  </View>
-                  <Text style={styles.deleteModalTitle}>Delete Mood Entry</Text>
-                  <Text style={styles.deleteModalMessage}>
-                    Are you sure you want to delete this mood entry? This action cannot be undone.
-                  </Text>
-                  <View style={styles.deleteModalButtons}>
-                    <TouchableOpacity
-                      style={styles.deleteModalCancelButton}
-                      onPress={cancelDelete}
-                    >
-                      <Text style={styles.deleteModalCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteModalDeleteButton}
-                      onPress={confirmDelete}
-                    >
-                      <Text style={styles.deleteModalDeleteText}>Delete</Text>
-                    </TouchableOpacity>
-                  </View>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => { }}>
+              <View style={styles.deleteModal}>
+                <View style={styles.deleteIcon}>
+                  <Trash2 size={32} color="#EF4444" />
+                </View>
+                <Text style={styles.deleteTitle}>Delete Mood?</Text>
+                <Text style={styles.deleteMessage}>
+                  This action cannot be undone.
+                </Text>
+                <View style={styles.deleteButtons}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={cancelDelete}>
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.confirmBtn} onPress={confirmDelete}>
+                    <Text style={styles.confirmBtnText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      </BackgroundGradient>
-    </View>
-    </AuthGuard>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: '#FAF5EF',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + Spacing.lg,
-    paddingBottom: Spacing.lg,
+  headerContainer: {
     paddingHorizontal: Spacing.lg,
-  },
-  headerTitle: {
-    fontSize: Typography.sizes['4xl'],
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[800],
-  },
-  headerSubtitle: {
-    fontSize: Typography.sizes.lg,
-    color: Colors.neutral[600],
-  },
-  headerIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.md,
-  },
-  headerCardContainer: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 100 : (StatusBar.currentHeight || 0) + 60,
-  },
-  headerCardGradient: {
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadows.lg,
-  },
-  headerCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadows.lg,
-  },
-  headerCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.xl,
-  },
-  headerCardIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.lg,
-    ...Shadows.md,
-  },
-  headerCardText: {
-    flex: 1,
-  },
-  headerCardTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[800],
-  },
-  headerCardDescription: {
-    fontSize: Typography.sizes.base,
-    color: Colors.neutral[600],
-    marginTop: Spacing.xs,
-  },
-  headerCardActionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.md,
-  },
-  headerCardBackButton: {
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    marginRight: Spacing.sm,
-  },
-  heroAddButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.md,
-  },
-  headerSimple: {
-    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 12,
-    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: Spacing.md,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[200],
-    ...Shadows.sm,
   },
-  headerSimpleContent: {
+  headerTop: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
   },
-  headerSimpleLeft: {
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
   },
-  headerSimpleIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.primary[50],
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFD8B4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    ...Shadows.sm,
+  },
+  streakText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#EA580C',
+  },
+  weekSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
+  },
+  dayColumn: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  dayText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#C2410C',
+  },
+  activeDayText: {
+    color: '#C2410C',
+  },
+  dateCircleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerSimpleTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[900],
-  },
-  headerSimpleSubtitle: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.neutral[600],
-    marginTop: 2,
-  },
-  headerSimpleAddButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.xs,
-  },
-  headerAddButton: {
-    position: 'absolute',
-    right: Spacing.lg,
-    bottom: Spacing.md,
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.full,
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#C2410C',
+    zIndex: 1,
+  },
+  activeDateText: {
+    color: '#FFFFFF',
+  },
+  activeDayIndicator: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EA580C',
+  },
+  viewCalendarBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary[50],
+    gap: Spacing.xs,
+    alignSelf: 'flex-end',
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 12,
+  },
+  viewCalendarText: {
+    color: '#EA580C',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: Spacing.xl,
+    paddingTop: 0,
   },
-  section: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing['3xl'],
-  },
-  sectionHeader: {
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[900],
-  },
-  addButton: {
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
-  },
-  addButtonGradient: {
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.full,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: Spacing['5xl'],
-  },
-  emptyStateIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.neutral[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xl,
-  },
-  emptyStateTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[700],
-    marginBottom: Spacing.sm,
-  },
-  emptyStateSubtext: {
-    fontSize: Typography.sizes.lg,
-    color: Colors.neutral[500],
-    marginBottom: Spacing['3xl'],
-  },
-  emptyStateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing['2xl'],
-    paddingVertical: Spacing.lg,
-    borderRadius: BorderRadius.full,
-  },
-  emptyStateButtonText: {
-    color: 'white',
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semiBold,
-  },
-  historyContainer: {
-    gap: Spacing.md,
-  },
-  historyItem: {
-    backgroundColor: 'white',
-    borderRadius: BorderRadius['2xl'],
-    overflow: 'hidden',
-    marginBottom: Spacing.md,
-    ...Shadows.md,
-  },
-  historyAccent: {
-    height: 4,
-    width: '100%',
-  },
-  historyContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: Spacing.lg,
-  },
-  historyLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  historyMoodBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.neutral[100],
-  },
-  historyMoodEmoji: {
-    ...getEmojiStyle(24),
-  },
-  historyTextContent: {
-    flex: 1,
-  },
-  historyMoodLabel: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[900],
-    marginBottom: Spacing.xs,
-  },
-  historyNotes: {
-    fontSize: Typography.sizes.base,
-    color: Colors.neutral[600],
-    marginBottom: Spacing.xs,
-    lineHeight: Typography.sizes.base * Typography.lineHeights.normal,
-  },
-  historyMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  historyDate: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.neutral[400],
-  },
-  deleteButton: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.error[50],
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.error[200],
-  },
-  bottomSpacing: {
-    height: 120,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: BorderRadius['3xl'],
-    borderTopRightRadius: BorderRadius['3xl'],
-    maxHeight: isSmallScreen ? screenHeight * 0.9 : screenHeight * 0.95,
-    minHeight: isSmallScreen ? screenHeight * 0.7 : screenHeight * 0.6,
-    ...Shadows['2xl'],
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  modalHandle: {
-    width: getResponsiveSpacing(36, 40, 44),
-    height: getResponsiveSpacing(3, 4, 4),
-    backgroundColor: Colors.neutral[300],
-    borderRadius: BorderRadius.full,
-    alignSelf: 'center',
-    marginTop: getResponsiveSpacing(Spacing.xs, Spacing.sm, Spacing.sm),
-    marginBottom: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing['2xl']),
-    paddingBottom: getResponsiveSpacing(Spacing.md, Spacing.lg, Spacing.lg),
-  },
-  modalTitle: {
-    fontSize: getResponsiveFontSize(Typography.sizes.xl, Typography.sizes['2xl'], Typography.sizes['3xl']),
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[900],
-    marginBottom: Spacing.xs,
-    flex: 1,
-    paddingRight: Spacing.md,
-    lineHeight: getResponsiveFontSize(Typography.sizes.xl, Typography.sizes['2xl'], Typography.sizes['3xl']) * 1.2,
-  },
-  modalSubtitle: {
-    fontSize: getResponsiveFontSize(Typography.sizes.sm, Typography.sizes.base, Typography.sizes.base),
-    color: Colors.neutral[600],
-    lineHeight: getResponsiveFontSize(Typography.sizes.sm, Typography.sizes.base, Typography.sizes.base) * 1.4,
-  },
-  closeButton: {
-    padding: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.neutral[100],
-    minWidth: getResponsiveSpacing(40, 44, 48),
-    minHeight: getResponsiveSpacing(40, 44, 48),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    paddingBottom: getResponsiveSpacing(Spacing['2xl'], Spacing['3xl'], Spacing['4xl']),
-  },
-  
-  categoriesContainer: {
-    gap: Platform.OS === 'ios' ? Spacing.lg : Spacing.md,
-  },
-  categorySection: {
-    marginBottom: Platform.OS === 'ios' ? Spacing.md : Spacing.sm,
-  },
-  categoryHeader: {
-    paddingHorizontal: Platform.OS === 'ios' ? Spacing['2xl'] : Spacing.lg,
-    marginBottom: Platform.OS === 'ios' ? Spacing.xs : 2,
-  },
-  categoryTitle: {
-    fontSize: Platform.OS === 'ios' ? Typography.sizes.lg : Typography.sizes.base,
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[700],
-  },
-  moodGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: Platform.OS === 'ios' ? Spacing['2xl'] : Spacing.lg,
-    gap: Platform.OS === 'ios' ? 6 : 4,
-    marginBottom: Platform.OS === 'ios' ? Spacing['2xl'] : Spacing.lg,
-  },
-  moodButton: {
-    width: (screenWidth - (Platform.OS === 'ios' ? Spacing['2xl'] : Spacing.lg) * 2 - (Platform.OS === 'ios' ? Spacing.sm : Spacing.xs) * (7 - 1)) / 7,
-    aspectRatio: 1,
-    borderRadius: BorderRadius.lg,
-    ...Shadows.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: Platform.OS === 'ios' ? 45 : 40,
-    minHeight: Platform.OS === 'ios' ? 45 : 40,
-  },
-  moodGradient: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moodGradientSelected: {
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  moodEmoji: {
-    ...getEmojiStyle(22),
-  },
-  moodEmojiSelected: {
-    ...getEmojiStyle(26),
-  },
-  moodLabel: {
-    fontSize: Platform.OS === 'ios' ? Typography.sizes.xs : 10,
-    fontWeight: Typography.weights.semiBold,
-    color: 'white',
-    textAlign: 'center',
-  },
-  moodLabelSelected: {
-    fontSize: Platform.OS === 'ios' ? Typography.sizes.sm : Typography.sizes.xs,
-  },
-  moodTooltip: {
-    position: 'absolute',
-    bottom: -20,
-    fontSize: 10,
-    fontWeight: Typography.weights.medium,
-    color: Colors.neutral[700],
-    backgroundColor: Colors.neutral[100],
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: BorderRadius.sm,
-    textAlign: 'center',
-    minWidth: 30,
-  },
-  notesSection: {
-    paddingHorizontal: Platform.OS === 'ios' ? Spacing['2xl'] : Spacing.lg,
-    marginBottom: Platform.OS === 'ios' ? Spacing['3xl'] : Spacing['2xl'],
-  },
-  notesSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  notesSectionTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[700],
-  },
-  notesInputContainer: {
-    backgroundColor: Colors.neutral[50],
-    borderRadius: BorderRadius['2xl'],
-    borderWidth: 1,
-    borderColor: Colors.neutral[200],
-    padding: Spacing.lg,
-  },
-  notesInput: {
-    fontSize: Typography.sizes.base,
-    color: Colors.neutral[900],
-    minHeight: Platform.OS === 'ios' ? 100 : 80,
-  },
-  saveButton: {
-    marginHorizontal: Platform.OS === 'ios' ? Spacing['2xl'] : Spacing.lg,
-    borderRadius: BorderRadius['2xl'],
-    overflow: 'hidden',
-    ...Shadows.md,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    fontSize: Platform.OS === 'ios' ? Typography.sizes.lg : Typography.sizes.base,
-    fontWeight: Typography.weights.semiBold,
-    color: 'white',
-    paddingVertical: Platform.OS === 'ios' ? Spacing.lg : Spacing.md,
-    textAlign: 'center',
-  },
-  modalBottomSpacing: {
-    height: getResponsiveSpacing(Spacing['2xl'], Spacing['3xl'], Spacing['4xl']),
-  },
-
-  // Modern Modal Styles
-  modernMoodContainer: {
-    paddingHorizontal: getResponsiveSpacing(Spacing.md, Spacing.lg, Spacing.lg),
-    paddingTop: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-  },
-  selectedMoodPreview: {
-    marginBottom: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing.xl),
-    borderRadius: BorderRadius['2xl'],
-    overflow: 'hidden',
-    ...Shadows.lg,
-  },
-  previewGradient: {
-    paddingVertical: getResponsiveSpacing(Spacing.xl, Spacing['2xl'], Spacing['2xl']),
-    paddingHorizontal: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing.xl),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewEmoji: {
-    ...getEmojiStyle(42),
-    marginBottom: Spacing.sm,
-  },
-  previewLabel: {
-    fontSize: getResponsiveFontSize(Typography.sizes.lg, Typography.sizes.xl, Typography.sizes.xl),
-    fontWeight: Typography.weights.bold,
-    color: 'white',
-    textAlign: 'center',
-  },
-  modernMoodGrid: {
-    marginBottom: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing.xl),
-    flex: 1,
-  },
-  categoriesScrollView: {
-    flex: 1,
-  },
-  categoriesScrollContent: {
-    gap: getResponsiveSpacing(Spacing.xl, Spacing['2xl'], Spacing['2xl']),
-    paddingBottom: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing.xl),
-  },
-  scrollIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 20,
-    backgroundColor: 'transparent',
-    borderBottomLeftRadius: BorderRadius.xl,
-    borderBottomRightRadius: BorderRadius.xl,
-  },
-  modernCategoryCard: {
-    backgroundColor: 'white',
-    borderRadius: BorderRadius.xl,
-    padding: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing.xl),
-    ...Shadows.sm,
-    borderWidth: 1,
-    borderColor: Colors.neutral[100],
-    marginBottom: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-  },
-  categoryCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: getResponsiveSpacing(Spacing.md, Spacing.lg, Spacing.lg),
-    gap: Spacing.sm,
-    paddingBottom: getResponsiveSpacing(Spacing.xs, Spacing.sm, Spacing.sm),
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
-  },
-  categoryCardIcon: {
-    ...getEmojiStyle(20),
-  },
-  categoryCardTitle: {
-    fontSize: getResponsiveFontSize(Typography.sizes.base, Typography.sizes.lg, Typography.sizes.lg),
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[800],
-  },
-  categoryMoodGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: getResponsiveSpacing(Spacing.md, Spacing.lg, Spacing.lg),
-    paddingTop: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  modernMoodButton: {
-    flex: 1,
-    backgroundColor: Colors.neutral[50],
-    borderRadius: BorderRadius.lg,
-    paddingVertical: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-    paddingHorizontal: getResponsiveSpacing(Spacing.xs, Spacing.sm, Spacing.sm),
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    ...Shadows.xs,
-    minHeight: getResponsiveSpacing(70, 80, 90),
-    minWidth: getResponsiveSpacing(70, 80, 90),
-  },
-  modernMoodButtonSelected: {
-    backgroundColor: Colors.primary[50],
-    borderColor: Colors.primary[300],
-    ...Shadows.sm,
-  },
-  modernMoodEmoji: {
-    ...getEmojiStyle(26),
-    marginBottom: Spacing.xs,
-  },
-  modernMoodEmojiSelected: {
-    ...getEmojiStyle(30),
-  },
-  modernMoodText: {
-    fontSize: getResponsiveFontSize(11, Typography.sizes.xs, Typography.sizes.xs),
-    fontWeight: Typography.weights.medium,
-    color: Colors.neutral[700],
-    textAlign: 'center',
-    lineHeight: getResponsiveFontSize(11, Typography.sizes.xs, Typography.sizes.xs) * 1.3,
-    marginTop: getResponsiveSpacing(3, 4, 5),
-  },
-  modernMoodTextSelected: {
-    color: Colors.primary[700],
-    fontWeight: Typography.weights.semiBold,
-  },
-  modernNotesSection: {
-    marginBottom: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing.xl),
-  },
-  modernNotesTitle: {
-    fontSize: getResponsiveFontSize(Typography.sizes.base, Typography.sizes.lg, Typography.sizes.lg),
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[800],
-    marginBottom: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md),
-  },
-  modernNotesInputContainer: {
-    backgroundColor: Colors.neutral[50],
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    borderColor: Colors.neutral[200],
-    padding: getResponsiveSpacing(Spacing.md, Spacing.lg, Spacing.lg),
-  },
-  modernNotesInput: {
-    fontSize: getResponsiveFontSize(Typography.sizes.sm, Typography.sizes.base, Typography.sizes.base),
-    color: Colors.neutral[900],
-    lineHeight: getResponsiveFontSize(Typography.sizes.sm, Typography.sizes.base, Typography.sizes.base) * 1.5,
-    minHeight: getResponsiveSpacing(80, 100, 120),
-  },
-  modernSaveButton: {
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadows.lg,
-  },
-  modernSaveButtonDisabled: {
-    opacity: 0.5,
-  },
-  modernSaveButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: getResponsiveSpacing(Spacing.md, Spacing.lg, Spacing.lg),
-    paddingHorizontal: getResponsiveSpacing(Spacing.lg, Spacing.xl, Spacing.xl),
-    gap: Spacing.sm,
-    minHeight: getResponsiveSpacing(50, 56, 60),
-  },
-  modernSaveButtonText: {
-    fontSize: getResponsiveFontSize(Typography.sizes.base, Typography.sizes.lg, Typography.sizes.lg),
-    fontWeight: Typography.weights.semiBold,
-    color: 'white',
-  },
-  modernSaveButtonEmoji: {
-    ...getEmojiStyle(18),
-  },
-  
-  deleteModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteModalContainer: {
-    backgroundColor: 'white',
-    borderRadius: BorderRadius['2xl'],
-    padding: Spacing['2xl'],
-    margin: Spacing.xl,
-    maxWidth: 400,
-    width: '100%',
-    ...Shadows['2xl'],
-  },
-  deleteModalContent: {
-    alignItems: 'center',
-  },
-  deleteModalIcon: {
-    marginBottom: Spacing.lg,
-  },
-  deleteModalTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[900],
-    marginBottom: Spacing.sm,
-    textAlign: 'center',
-  },
-  deleteModalMessage: {
-    fontSize: Typography.sizes.base,
-    color: Colors.neutral[600],
-    textAlign: 'center',
-    marginBottom: Spacing['2xl'],
-    lineHeight: Typography.sizes.base * 1.5,
-  },
-  deleteModalButtons: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    width: '100%',
-  },
-  deleteModalCancelButton: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.neutral[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteModalCancelText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
-    color: Colors.neutral[700],
-  },
-  deleteModalDeleteButton: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.error[500],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteModalDeleteText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
-    color: 'white',
-  },
-  quickStatsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: Spacing.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.white,
-    marginBottom: Spacing.xs,
-  },
-  statLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.white,
-    opacity: 0.8,
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    marginHorizontal: Spacing.sm,
-  },
-  
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  toggleText: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.primary[600],
-    fontWeight: Typography.weights.medium,
-  },
-  insightsCard: {
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadows.md,
-    marginBottom: Spacing.lg,
-  },
-  insightsGradient: {
-    padding: Spacing.lg,
-  },
-  insightsContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  insightsText: {
-    flex: 1,
-    fontSize: Typography.sizes.base,
-    color: 'white',
-    fontWeight: Typography.weights.medium,
-    lineHeight: Typography.sizes.base * 1.4,
-  },
-
-  trendsContainer: {
-    backgroundColor: 'white',
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    ...Shadows.sm,
-    gap: Spacing.md,
-  },
-  trendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  trendDay: {
-    width: 40,
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
-    color: Colors.neutral[700],
-  },
-  trendBarContainer: {
-    flex: 1,
-    height: 8,
-    backgroundColor: Colors.neutral[100],
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
-  },
-  trendBar: {
-    height: '100%',
-    borderRadius: BorderRadius.full,
-  },
-  trendValue: {
-    width: 30,
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[700],
-    textAlign: 'right',
-  },
-
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 100 : (StatusBar.currentHeight || 0) + 60,
+    backgroundColor: '#FAF5EF',
   },
   loadingText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.medium,
-    color: Colors.neutral[700],
     marginTop: Spacing.md,
+    fontSize: 16,
+    color: '#64748B',
   },
-  authButtonsContainer: {
-    width: '100%',
-    gap: Spacing.md,
-    marginTop: Spacing.xl,
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: Spacing.md,
+    paddingTop: 28,
+    paddingBottom: Spacing.lg,
+    minHeight: 500,
+    ...Shadows.md,
+  },
+  statsRowNew: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  statCardNew: {
+    flex: 1,
+    backgroundColor: '#FAF5EF',
+    borderRadius: 16,
+    padding: Spacing.md,
     alignItems: 'center',
   },
-  signInButton: {
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    width: '80%',
+  statEmojiNew: {
+    fontSize: 24,
+    marginBottom: 4,
   },
-  signInGradient: {
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing['2xl'],
+  statValueNew: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#EA580C',
+  },
+  statLabelNew: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  heroCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: 28,
+    paddingBottom: Spacing.lg,
+    ...Shadows.md,
+  },
+  heroContent: {
+    gap: Spacing.md,
+  },
+  heroLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  heroEmoji: {
+    fontSize: 40,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  heroStats: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  heroStat: {
+    flex: 1,
+    backgroundColor: '#FAF5EF',
+    borderRadius: 16,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  heroStatNumber: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#EA580C',
+  },
+  heroStatLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  heroStatDivider: {
+    width: 0,
+  },
+  calendarToggle: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: '#FAF5EF',
+    borderRadius: 16,
+    padding: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
   },
-  signInText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
-    color: 'white',
+  calendarToggleText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#EA580C',
   },
-  signUpButton: {
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing['2xl'],
-    borderRadius: BorderRadius.xl,
-    borderWidth: 2,
-    borderColor: Colors.primary[400],
+  calendarCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    marginHorizontal: 0,
+    ...Shadows.sm,
+  },
+  filterBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '80%',
+    gap: Spacing.sm,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 12,
+    padding: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
   },
-  signUpText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
-    color: Colors.primary[600],
+  filterText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#EA580C',
+  },
+  clearFilter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#EA580C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historySection: {
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: '#FFFFFF',
+    paddingTop: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 1,
+    marginBottom: Spacing.md,
+    textTransform: 'uppercase',
+  },
+  moodCard: {
+    backgroundColor: '#FAF5EF',
+    borderRadius: 20,
+    marginBottom: Spacing.sm,
+  },
+  moodCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 16,
+  },
+  moodBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moodBadgeEmoji: {
+    fontSize: 22,
+  },
+  moodInfo: {
+    flex: 1,
+  },
+  moodType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  moodMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  moodTime: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  moodNotes: {
+    fontSize: 13,
+    color: '#64748B',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl * 2,
+    paddingHorizontal: Spacing.lg,
+  },
+  emptyEmoji: {
+    fontSize: 60,
+    marginBottom: Spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: Spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  emptyButton: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: 16,
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EA580C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#EA580C',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  fabGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // New Styles
+  verseContainer: {
+    marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+  },
+  verseText: {
+    fontSize: 13,
+    color: '#475569',
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  verseReference: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  chartContainer: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 8,
+    marginBottom: 20,
+    borderRadius: 24,
+    padding: 20,
+    paddingBottom: 16,
+    ...Shadows.md,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  avgMoodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  avgMoodDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  avgMoodText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  periodToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 4,
+  },
+  periodTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  periodTabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  periodTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  periodTabTextActive: {
+    color: '#8B5CF6',
+  },
+  chartEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  chartEmptyEmoji: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  chartEmptyText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+  },
+  chartEmojiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  chartEmojiItem: {
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: Spacing.xl,
+    margin: Spacing.lg,
+    width: '85%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  deleteIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  deleteTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: Spacing.sm,
+  },
+  deleteMessage: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+  deleteButtons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    width: '100%',
+  },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: '#FAF5EF',
+    paddingVertical: Spacing.md,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  confirmBtn: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    paddingVertical: Spacing.md,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  // Calendar Day Styles
+  calendarDay: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  calendarDaySelected: {
+    backgroundColor: '#EA580C',
+  },
+  calendarDayToday: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#EA580C',
+  },
+  calendarEmoji: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  calendarEmptyDay: {
+    height: 14,
+    marginBottom: 2,
+  },
+  calendarDayText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#1E293B',
+  },
+  calendarDayTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  calendarDayTextToday: {
+    color: '#EA580C',
+    fontWeight: '700',
+  },
+  calendarDayTextDisabled: {
+    color: '#CBD5E1',
   },
 });

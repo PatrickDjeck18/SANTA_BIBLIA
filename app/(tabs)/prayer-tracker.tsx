@@ -1,1060 +1,1209 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  FlatList,
   Alert,
-  Dimensions,
-  TextInput,
-  Animated,
   Platform,
-  KeyboardAvoidingView,
-  ActivityIndicator,
   StatusBar,
-  useWindowDimensions,
-  useColorScheme,
+  SafeAreaView,
+  Animated,
+  Modal,
   RefreshControl,
-  ListRenderItem,
 } from 'react-native';
+import { Dimensions } from 'react-native';
 import {
-  Plus,
-  Trash2,
-  Heart,
-  Clock,
-  Search,
-  X,
-  ChevronRight,
-  Sparkles,
-  Target,
-  TrendingUp,
-  Calendar,
   Bell,
-  Star,
-  ArrowLeft,
-  Award,
-  Flame,
-  BarChart3,
-  Mic,
-  Users,
-  BookOpen,
-  Lightbulb,
-  Zap,
-  Share2,
-  Download,
-  Settings,
-  Moon,
-  Sun,
-  Camera,
-  MapPin,
   Timer,
-  Coffee,
-  Music,
-  MoreVertical,
-  Edit3,
-  CheckCircle2,
   Pause,
   Play,
+  Square,
+  Flame,
+  Heart,
+  Clock,
+  Plus,
+  ChevronRight,
+  Zap,
+  CalendarDays,
+  Filter,
+  X,
 } from 'lucide-react-native';
-import { db } from '@/lib/firebase'; // Assuming you have a Firebase config file
-import { collection, addDoc, getDocs, query, where, deleteDoc, updateDoc, doc, orderBy, serverTimestamp } from 'firebase/firestore';
-import { Typography, Spacing, BorderRadius, Shadows, Colors } from '@/constants/DesignTokens';
-import { useAuth } from '@/hooks/useAuth';
-import { Prayer } from '@/lib/types';
-import BackgroundGradient from '../../components/BackgroundGradient';
-import { router } from 'expo-router';
-import AddPrayerModal from '../../components/AddPrayerModal';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/DesignTokens';
+import { Calendar } from 'react-native-calendars';
+import { AppTheme } from '@/constants/AppTheme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, useFocusEffect } from 'expo-router';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ModernHeader } from '@/components/ModernHeader';
-import BannerAd from '@/components/BannerAd';
+import * as Haptics from 'expo-haptics';
+import { useUnifiedPrayers } from '@/hooks/useUnifiedPrayers';
 import { useInterstitialAds } from '@/hooks/useInterstitialAds';
-import AuthGuard from '@/components/auth/AuthGuard';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-// Enhanced responsive breakpoints
-const isSmallScreen = screenWidth < 375;
-const isMediumScreen = screenWidth >= 375 && screenWidth < 414;
-const isLargeScreen = screenWidth >= 414;
-
-// Responsive spacing and sizing
-const getResponsiveSpacing = (small: number, medium: number, large: number) => {
-  if (isSmallScreen) return small;
-  if (isMediumScreen) return medium;
-  return large;
-};
-
-const getResponsiveFontSize = (small: number, medium: number, large: number) => {
-  if (isSmallScreen) return small;
-  if (isMediumScreen) return medium;
-  return large;
-};
-
-// Helper function to ensure emoji visibility
-const getEmojiStyle = (baseSize: number) => ({
-  fontSize: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2),
-  fontFamily: Platform.OS === 'ios' ? 'System' : 'Noto Color Emoji',
-  textAlign: 'center' as const,
-  includeFontPadding: false,
-  textAlignVertical: 'center' as const,
-  minHeight: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2) + 4,
-  minWidth: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2) + 4,
-  lineHeight: getResponsiveFontSize(baseSize - 2, baseSize, baseSize + 2) + 4,
-});
-
-const categories = [
-  { id: 'personal', label: 'Personal', icon: '🙏', color: Colors.primary[500] },
-  { id: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦', color: Colors.error[500] },
-  { id: 'health', label: 'Health', icon: '🏥', color: Colors.success[500] },
-  { id: 'work', label: 'Work', icon: '💼', color: Colors.warning[500] },
-  { id: 'financial', label: 'Financial', icon: '💰', color: Colors.secondary[500] },
-  { id: 'spiritual', label: 'Spiritual', icon: '✝️', color: Colors.primary[600] },
-  { id: 'community', label: 'Community', icon: '🏘️', color: Colors.primary[500] },
-  { id: 'gratitude', label: 'Gratitude', icon: '🙌', color: Colors.warning[500] },
-];
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function PrayerTrackerScreen() {
-  const { user } = useAuth();
+  const { prayers, addPrayer, refetch, loading } = useUnifiedPrayers();
   const tabBarHeight = useBottomTabBarHeight();
-  const { showInterstitialAd } = useInterstitialAds('prayer');
-  const [prayers, setPrayers] = useState<Prayer[]>([]);
-  const [loading, setLoading] = useState(false);
+  useInterstitialAds('prayer');
+
+  // Timer state
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'answered' | 'paused'>('all');
-  
-  // Animation refs
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-  const [showScrollToTop, setShowScrollToTop] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
 
-  const stats = useMemo(() => ({
-    total: prayers.length,
-    active: prayers.filter(p => p.status === 'active').length,
-    answered: prayers.filter(p => p.status === 'answered').length,
-    paused: prayers.filter(p => p.status === 'paused').length,
-  }), [prayers]);
+  // Calendar state
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchPrayers();
-    } else {
-      setPrayers([]);
+  // Get dates with prayers
+  const prayerDates = useMemo(() => {
+    const dates: { [key: string]: boolean } = {};
+    if (prayers) {
+      prayers.forEach(prayer => {
+        const date = new Date(prayer.created_at).toISOString().split('T')[0];
+        dates[date] = true;
+      });
     }
-  }, [user]);
+    return dates;
+  }, [prayers]);
 
-  // Animation effects
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  // Calendar marked dates
+  const markedDates = useMemo(() => {
+    const marks: any = {};
+    Object.keys(prayerDates).forEach((date) => {
+      marks[date] = {
+        marked: true,
+        dotColor: '#EA580C',
+        selectedColor: '#EA580C',
+      };
+    });
+
+    if (selectedDate) {
+      marks[selectedDate] = {
+        ...marks[selectedDate],
+        selected: true,
+        selectedColor: '#EA580C',
+      };
+    }
+    return marks;
+  }, [prayerDates, selectedDate]);
+
+  // Filter sessions by selected date
+  const filteredSessions = useMemo(() => {
+    let sessions = [...prayers].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    if (selectedDate) {
+      sessions = sessions.filter(session => {
+        const sessionDate = new Date(session.created_at).toISOString().split('T')[0];
+        return sessionDate === selectedDate;
+      });
+    }
+
+    // If not filtering, just return top 5 for "Recent Sessions"
+    return selectedDate ? sessions : sessions.slice(0, 5);
+  }, [prayers, selectedDate]);
+
+  // Animation
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Load timer state
+  const loadTimerState = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem('prayer_timer_state');
+      if (stored) {
+        const timerState = JSON.parse(stored);
+        let seconds = timerState.seconds || 0;
+        const isRunning = timerState.isRunning || false;
+        const timestamp = timerState.timestamp || Date.now();
+
+        if (isRunning) {
+          const elapsed = Math.floor((Date.now() - timestamp) / 1000);
+          seconds = seconds + elapsed;
+        }
+
+        setTimerSeconds(seconds);
+        setIsTimerRunning(isRunning);
+
+        if (isRunning) {
+          startTimeRef.current = Date.now() - (seconds * 1000);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading timer state:', error);
+    }
   }, []);
 
-  const fetchPrayers = async () => {
-    if (!user) {
-      console.log('No authenticated user found');
-      setPrayers([]);
-      setLoading(false);
-      return;
-    }
-
+  // Save timer state
+  const saveTimerState = useCallback(async (seconds: number, isRunning: boolean) => {
     try {
-      setLoading(true);
-      console.log('Fetching prayers for user:', user.uid);
-      
-      const q = query(
-        collection(db, 'prayers'),
-        where('user_id', '==', user.uid),
-        orderBy('createdAt', 'desc')
+      const timerState = { seconds, isRunning, timestamp: Date.now() };
+      await AsyncStorage.setItem('prayer_timer_state', JSON.stringify(timerState));
+    } catch (error) {
+      console.error('Error saving timer state:', error);
+    }
+  }, []);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const sessionCount = prayers.length;
+    const totalMinutes = prayers.reduce((acc, session) => {
+      const duration = session.description ? parseInt(session.description.split(' ')[0]) : 0;
+      return acc + (isNaN(duration) ? 0 : duration);
+    }, 0);
+
+    // Calculate streak
+    let streak = 0;
+    if (prayers.length > 0) {
+      const sortedPrayers = [...prayers].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-      
-      const querySnapshot = await getDocs(q);
-      const fetchedPrayers: Prayer[] = [];
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        fetchedPrayers.push({
-          id: doc.id,
-          title: data.title,
-          description: data.description,
-          category: data.category,
-          priority: data.priority,
-          status: data.status,
-          created_at: data.createdAt?.toDate().toISOString(), // Convert Firebase Timestamp to ISO string
-          answered_at: data.answeredAt ? data.answeredAt.toDate().toISOString() : null,
-          user_id: data.user_id,
-        });
-      });
-      
-      console.log('Prayers fetched successfully:', fetchedPrayers.length, 'prayers');
-      setPrayers(fetchedPrayers);
-    } catch (error: any) {
-      console.error('Error fetching prayers:', error);
-      Alert.alert('Error', 'Failed to fetch prayers.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
+      for (let i = 0; i < sortedPrayers.length; i++) {
+        const prayerDate = new Date(sortedPrayers[i].created_at);
+        prayerDate.setHours(0, 0, 0, 0);
+        const daysDiff = Math.floor((today.getTime() - prayerDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const updatePrayerStatus = async (id: string, status: 'active' | 'answered' | 'paused') => {
-    if (!user) return;
-    try {
-      const updateData: any = { status };
-      if (status === 'answered') {
-        updateData.answeredAt = serverTimestamp();
-      } else if (status === 'active') {
-        // Reset answeredAt if resuming
-        updateData.answeredAt = null;
+        if (daysDiff === streak) {
+          streak++;
+        } else if (daysDiff > streak) {
+          break;
+        }
       }
-      
-      const prayerDocRef = doc(db, 'prayers', id);
-      await updateDoc(prayerDocRef, updateData);
-
-      fetchPrayers(); // Re-fetch to get updated data
-    } catch (error: any) {
-      console.error('Error updating prayer status:', error);
-      Alert.alert('Error', 'Failed to update prayer status');
     }
+
+    return { sessionCount, totalMinutes, streak };
+  }, [prayers]);
+
+  // Recent sessions
+  const recentSessions = useMemo(() => {
+    return [...prayers]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5);
+  }, [prayers]);
+
+  // Timer animation
+  useEffect(() => {
+    if (isTimerRunning) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1);
+    }
+  }, [isTimerRunning]);
+
+  // Timer logic
+  useEffect(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (isTimerRunning) {
+      if (!startTimeRef.current) {
+        startTimeRef.current = Date.now() - (timerSeconds * 1000);
+      }
+
+      timerRef.current = setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - (startTimeRef.current || now)) / 1000);
+        setTimerSeconds(elapsed);
+      }, 100);
+    } else {
+      startTimeRef.current = null;
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isTimerRunning]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+      loadTimerState();
+    }, [refetch, loadTimerState])
+  );
+
+  const formatTimer = (total: number) => {
+    const minutes = Math.floor(Math.abs(total) / 60);
+    const seconds = Math.abs(total) % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const deletePrayer = async (id: string) => {
-    if (!user) {
-      Alert.alert('Error', 'You need to be logged in to delete prayers');
+  const toggleTimer = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const willStart = !isTimerRunning;
+
+    if (willStart) {
+      startTimeRef.current = Date.now() - (timerSeconds * 1000);
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.1, duration: 150, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]).start();
+    } else {
+      startTimeRef.current = null;
+    }
+
+    setIsTimerRunning(willStart);
+    saveTimerState(timerSeconds, willStart);
+  }, [isTimerRunning, timerSeconds, saveTimerState]);
+
+  const stopAndSave = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const currentSeconds = timerSeconds;
+    setIsTimerRunning(false);
+    startTimeRef.current = null;
+
+    if (currentSeconds < 10) {
+      Alert.alert('Too Short', 'Pray for at least 10 seconds to save.');
+      setTimerSeconds(0);
+      saveTimerState(0, false);
       return;
     }
 
     try {
-      const prayerDocRef = doc(db, 'prayers', id);
-      await deleteDoc(prayerDocRef);
-      
-      Alert.alert('Success', '🙏 Prayer deleted successfully');
-      fetchPrayers();
-    } catch (error: any) {
-      console.error('Error deleting prayer:', error);
-      Alert.alert('Error', 'Failed to delete prayer');
-    }
-  };
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+      const durationMin = Math.max(1, Math.round(currentSeconds / 60));
 
-  const filteredPrayers = useMemo(() => {
-    let filtered = prayers;
-    
-    // Filter by status
-    if (selectedFilter !== 'all') {
-      filtered = filtered.filter(prayer => prayer.status === selectedFilter);
+      const prayerData = {
+        title: `Prayer Session`,
+        description: `${durationMin} minutes of prayer`,
+        status: 'active' as const,
+        category: 'personal' as const,
+        priority: 'medium' as const,
+        frequency: 'daily' as const,
+        is_shared: false,
+        is_community: false,
+
+        // Default values for required fields
+        answered_at: null,
+        answered_notes: null,
+        prayer_notes: null,
+        gratitude_notes: null,
+        reminder_time: null,
+        reminder_frequency: null,
+        last_prayed_at: new Date().toISOString(),
+        prayer_count: 1,
+        answered_prayer_count: 0,
+      };
+
+      const result = await addPrayer(prayerData);
+
+      if (result.error) {
+        Alert.alert('Error', 'Failed to save session.');
+        return;
+      }
+
+      setTimerSeconds(0);
+      saveTimerState(0, false);
+
+      Alert.alert('Saved! ✨', `${durationMin} ${durationMin === 1 ? 'minute' : 'minutes'} of prayer recorded.`);
+
+    } catch (error) {
+      Alert.alert('Error', 'Could not save session.');
     }
-    
-    // Filter by search query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(prayer => 
-        prayer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (prayer.description && prayer.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-    
-    return filtered;
-  }, [prayers, selectedFilter, searchQuery]);
+  }, [timerSeconds, addPrayer, saveTimerState]);
+
+  const resetTimer = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsTimerRunning(false);
+    setTimerSeconds(0);
+    startTimeRef.current = null;
+    saveTimerState(0, false);
+  }, [saveTimerState]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchPrayers();
+    await refetch();
     setRefreshing(false);
   };
 
+  const formatSessionTime = (date: string) => {
+    const d = new Date(date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sessionDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-  const getCategoryIcon = (category: string) => {
-    const categoryData = categories.find(cat => cat.id === category);
-    return categoryData?.icon || '🙏';
-  };
+    const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  const getCategoryColor = (category: string) => {
-    const categoryData = categories.find(cat => cat.id === category);
-    return categoryData?.color || Colors.primary[500];
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'answered': return Colors.success[500];
-      case 'paused': return Colors.warning[500];
-      default: return Colors.primary[500];
+    if (sessionDay.getTime() === today.getTime()) {
+      return `Today at ${time}`;
     }
-  };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'answered': return <CheckCircle2 size={16} color={Colors.success[500]} />;
-      case 'paused': return <Pause size={16} color={Colors.warning[500]} />;
-      default: return <Heart size={16} color={Colors.primary[500]} />;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (sessionDay.getTime() === yesterday.getTime()) {
+      return `Yesterday at ${time}`;
     }
-  };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-    });
-  };
-
-  // Prayer Item Component
-  const PrayerItem = React.memo(({ prayer, index }: { prayer: Prayer; index: number }) => {
-    const itemAnim = useRef(new Animated.Value(0)).current;
-    
-    useEffect(() => {
-      Animated.timing(itemAnim, {
-        toValue: 1,
-        duration: 400,
-        delay: index * 100,
-        useNativeDriver: true,
-      }).start();
-    }, [itemAnim, index]);
-
-    return (
-      <Animated.View 
-        style={[
-          styles.prayerCard,
-          {
-            opacity: itemAnim,
-            transform: [{
-              translateY: itemAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [30, 0],
-              }),
-            }],
-          },
-        ]}
-      >
-        <View style={styles.prayerCardHeader}>
-          <View style={styles.prayerCardLeft}>
-            <View style={[styles.categoryIcon, { backgroundColor: getCategoryColor(prayer.category) + '20' }]}>
-              <Text style={styles.categoryEmoji}>{getCategoryIcon(prayer.category)}</Text>
-            </View>
-            <View style={styles.prayerInfo}>
-              <Text style={styles.prayerTitle}>{prayer.title}</Text>
-              <View style={styles.prayerMeta}>
-                <View style={styles.statusContainer}>
-                  {getStatusIcon(prayer.status)}
-                  <Text style={[styles.statusText, { color: getStatusColor(prayer.status) }]}>
-                    {prayer.status.charAt(0).toUpperCase() + prayer.status.slice(1)}
-                  </Text>
-                </View>
-                <Text style={styles.prayerDate}>
-                  {formatDate(prayer.created_at)}
-                </Text>
-              </View>
-            </View>
-          </View>
-          <TouchableOpacity style={styles.moreButton}>
-            <MoreVertical size={20} color={Colors.neutral[400]} />
-          </TouchableOpacity>
-        </View>
-        
-        {prayer.description && (
-          <Text style={styles.prayerDescription} numberOfLines={2}>
-            {prayer.description}
-          </Text>
-        )}
-
-        <View style={styles.prayerActions}>
-          {prayer.status === 'active' && (
-            <>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.answeredButton]}
-                onPress={() => updatePrayerStatus(prayer.id, 'answered')}
-              >
-                <CheckCircle2 size={16} color={Colors.success[500]} />
-                <Text style={[styles.actionButtonText, { color: Colors.success[500] }]}>
-                  Mark Answered
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.pauseButton]}
-                onPress={() => updatePrayerStatus(prayer.id, 'paused')}
-              >
-                <Pause size={16} color={Colors.warning[500]} />
-                <Text style={[styles.actionButtonText, { color: Colors.warning[500] }]}>
-                  Pause
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-          {prayer.status === 'paused' && (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.resumeButton]}
-              onPress={() => updatePrayerStatus(prayer.id, 'active')}
-            >
-              <Play size={16} color={Colors.primary[500]} />
-              <Text style={[styles.actionButtonText, { color: Colors.primary[500] }]}>
-                Resume
-              </Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => deletePrayer(prayer.id)}
-          >
-            <Trash2 size={16} color={Colors.error[500]} />
-            <Text style={[styles.actionButtonText, { color: Colors.error[500] }]}>
-              Delete
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    );
-  });
-
-  // Render function for prayer items
-  const renderPrayerItem: ListRenderItem<Prayer> = ({ item: prayer, index }) => {
-    return <PrayerItem prayer={prayer} index={index} />;
-  };
-
-  // Key extractor for FlatList
-  const keyExtractor = (item: Prayer) => item.id;
-
-  // Empty component for FlatList
-  const renderEmptyComponent = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>🙏</Text>
-      <Text style={styles.emptyTitle}>
-        {searchQuery ? 'No prayers found' : 'No prayers yet'}
-      </Text>
-      <Text style={styles.emptySubtitle}>
-        {searchQuery 
-          ? 'Try adjusting your search terms' 
-          : 'Start your prayer journey by adding your first prayer'
-        }
-      </Text>
-      {!searchQuery && (
-        <TouchableOpacity
-          style={styles.emptyButton}
-          onPress={() => setIsAddModalVisible(true)}
-        >
-          <Text style={styles.emptyButtonText}>Add Prayer</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  // Loading component for FlatList
-  const renderLoadingComponent = () => (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={Colors.primary[500]} />
-      <Text style={styles.loadingText}>Loading prayers...</Text>
-    </View>
-  );
-
-  // Scroll indicator component
-  const renderScrollIndicator = () => {
-    if (!showScrollIndicator || filteredPrayers.length <= 3) return null;
-    
-    return (
-      <Animated.View style={styles.scrollIndicator}>
-        <View style={styles.scrollIndicatorTrack}>
-          <Animated.View 
-            style={[
-              styles.scrollIndicatorThumb,
-              {
-                transform: [{
-                  translateY: scrollY.interpolate({
-                    inputRange: [0, 1000],
-                    outputRange: [0, 200],
-                    extrapolate: 'clamp',
-                  }),
-                }],
-              },
-            ]}
-          />
-        </View>
-      </Animated.View>
-    );
-  };
-
-  // Handle scroll events
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { 
-      useNativeDriver: false,
-      listener: (event: any) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        setShowScrollIndicator(offsetY > 50);
-        setShowScrollToTop(offsetY > 200);
-      },
-    }
-  );
-
-  // Scroll to top function
-  const scrollToTop = () => {
-    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
-    <AuthGuard
-      message="Sign in to save and organize your prayer requests. Your spiritual journey will be securely stored and accessible across all your devices."
-      showGuestWarning={true}
-    >
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
-      {/* Modern Header */}
-      <ModernHeader
-        title="Prayer Tracker"
-        subtitle="Track your spiritual journey"
-        variant="simple"
-        showProfileButton={true}
-        onProfilePress={() => {
-          router.push('/(tabs)/profile');
-        }}
-      />
-      
-      {/* Banner Ad below header */}
-      <BannerAd placement="prayer" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      <BackgroundGradient>
-        {/* Search and Filter */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color={Colors.neutral[400]} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search prayers..."
-              placeholderTextColor={Colors.neutral[400]}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
+      {/* Modern Header */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTop}>
+          <View style={styles.userInfo}>
+            <View style={styles.userAvatar}>
+              <Heart size={20} color="#EA580C" />
+            </View>
+            <Text style={styles.headerTitle}>Prayer Journal</Text>
+          </View>
+
+          <View style={styles.headerActions}>
+            <View style={styles.streakBadge}>
+              <Zap size={14} color="#EA580C" fill="#EA580C" />
+              <Text style={styles.streakText}>{stats.streak}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Calendar Toggle */}
+        <TouchableOpacity
+          style={styles.viewCalendarBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowCalendar(!showCalendar);
+          }}
+        >
+          {showCalendar ? (
+            <>
+              <X size={14} color="#EA580C" />
+              <Text style={styles.viewCalendarText}>CLOSE CALENDAR</Text>
+            </>
+          ) : (
+            <>
+              <CalendarDays size={14} color="#EA580C" />
+              <Text style={styles.viewCalendarText}>VIEW CALENDAR</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Calendar View */}
+        {showCalendar ? (
+          <View style={styles.calendarCard}>
+            <Calendar
+              markedDates={markedDates}
+              onDayPress={(day) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSelectedDate(selectedDate === day.dateString ? null : day.dateString);
+              }}
+              dayComponent={({ date, state }) => {
+                const dateString = date?.dateString || '';
+                const hasPrayer = prayerDates[dateString];
+                const isSelected = selectedDate === dateString;
+                const isToday = dateString === new Date().toISOString().split('T')[0];
+                const isDisabled = state === 'disabled';
+
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!isDisabled && date) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSelectedDate(selectedDate === dateString ? null : dateString);
+                      }
+                    }}
+                    style={[
+                      styles.calendarDay,
+                      isSelected && styles.calendarDaySelected,
+                      isToday && !isSelected && styles.calendarDayToday,
+                    ]}
+                  >
+                    {hasPrayer ? (
+                      <Text style={styles.calendarEmoji}>🙏</Text>
+                    ) : (
+                      <View style={styles.calendarEmptyDay} />
+                    )}
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        isDisabled && styles.calendarDayTextDisabled,
+                        isSelected && styles.calendarDayTextSelected,
+                        isToday && !isSelected && styles.calendarDayTextToday,
+                      ]}
+                    >
+                      {date?.day}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              theme={{
+                backgroundColor: 'transparent',
+                calendarBackground: 'transparent',
+                textSectionTitleColor: '#64748B',
+                selectedDayBackgroundColor: '#EA580C',
+                selectedDayTextColor: 'white',
+                todayTextColor: '#EA580C',
+                dayTextColor: '#1E293B',
+                textDisabledColor: '#CBD5E1',
+                dotColor: '#EA580C',
+                selectedDotColor: 'white',
+                arrowColor: '#EA580C',
+                monthTextColor: '#1E293B',
+                textDayFontSize: 15,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 13,
+                textDayFontWeight: '500',
+                textMonthFontWeight: '700',
+                textDayHeaderFontWeight: '600',
+              }}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={20} color={Colors.neutral[400]} />
+          </View>
+        ) : (
+          /* Week Selector */
+          <View style={styles.weekSelector}>
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => {
+              const currentDay = new Date().getDay();
+              const uiDayIndex = currentDay === 0 ? 6 : currentDay - 1;
+              const isActive = index === uiDayIndex;
+
+              // Calculate week dates
+              const today = new Date();
+              const monday = new Date(today);
+              monday.setDate(today.getDate() - (uiDayIndex));
+              const dateNum = new Date(monday);
+              dateNum.setDate(monday.getDate() + index);
+
+              return (
+                <View key={index} style={styles.dayColumn}>
+                  <Text style={styles.dayText}>
+                    {day}
+                  </Text>
+                  <View style={styles.dateCircleContainer}>
+                    {isActive && <View style={styles.activeDayIndicator} />}
+                    <Text style={[styles.dateText, isActive && styles.activeDateText]}>
+                      {dateNum.getDate()}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#EA580C"
+          />
+        }
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Spacing.xl + tabBarHeight + 100 }]}
+      >
+        {/* Main Content Card */}
+        <View style={styles.mainCard}>
+          {/* Stats Row */}
+          <View style={styles.statsRowNew}>
+            <View style={styles.statCardNew}>
+              <Text style={styles.statEmojiNew}>🔥</Text>
+              <Text style={styles.statValueNew}>{stats.streak}</Text>
+              <Text style={styles.statLabelNew}>Streak</Text>
+            </View>
+            <View style={styles.statCardNew}>
+              <Text style={styles.statEmojiNew}>🙏</Text>
+              <Text style={styles.statValueNew}>{stats.sessionCount}</Text>
+              <Text style={styles.statLabelNew}>Sessions</Text>
+            </View>
+            <View style={styles.statCardNew}>
+              <Text style={styles.statEmojiNew}>⏱️</Text>
+              <Text style={styles.statValueNew}>{stats.totalMinutes}</Text>
+              <Text style={styles.statLabelNew}>Minutes</Text>
+            </View>
+          </View>
+
+          {/* Timer Card */}
+          <View style={styles.timerCard}>
+            <Text style={styles.sectionTitle}>Prayer Timer</Text>
+
+            <View style={styles.timerContainer}>
+              <Animated.View style={[
+                styles.timerRingContainer,
+                { transform: [{ scale: pulseAnim }] }
+              ]}>
+                <LinearGradient
+                  colors={isTimerRunning ? ['#FFF7ED', '#FFEDD5'] : ['#F8FAFC', '#F1F5F9']}
+                  style={[styles.timerCircle, isTimerRunning && styles.timerCircleActive]}
+                >
+                  <View style={[styles.innerRing, isTimerRunning && styles.innerRingActive]} />
+                  <Text style={[styles.timerText, isTimerRunning && styles.timerTextActive]}>
+                    {formatTimer(timerSeconds)}
+                  </Text>
+                  {isTimerRunning && (
+                    <View style={styles.recordingIndicator}>
+                      <View style={styles.recordingDot} />
+                      <Text style={styles.recordingText}>RECORDING</Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </Animated.View>
+            </View>
+
+            <View style={styles.timerControls}>
+              {/* Reset Button (Left) */}
+              <TouchableOpacity
+                style={[styles.controlBtn, styles.secondaryControlBtn, { opacity: timerSeconds > 0 ? 1 : 0.5 }]}
+                onPress={resetTimer}
+                disabled={timerSeconds === 0}
+              >
+                <View style={styles.iconContainer}>
+                  <Square size={20} color={Colors.neutral[500]} />
+                </View>
+                <Text style={styles.controlLabel}>Reset</Text>
               </TouchableOpacity>
+
+              {/* Play/Pause Button (Center, Large) */}
+              <TouchableOpacity
+                style={[styles.mainControlBtn, isTimerRunning && styles.mainControlBtnActive]}
+                onPress={toggleTimer}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={isTimerRunning ? ['#F97316', '#EA580C'] : ['#1E293B', '#0F172A']}
+                  style={styles.mainControlGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                >
+                  {isTimerRunning ? (
+                    <Pause size={32} color={Colors.white} fill={Colors.white} />
+                  ) : (
+                    <Play size={32} color={Colors.white} fill={Colors.white} style={{ marginLeft: 4 }} />
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Save Button (Right) */}
+              <TouchableOpacity
+                style={[styles.controlBtn, styles.secondaryControlBtn, { opacity: timerSeconds > 0 ? 1 : 0.5 }]}
+                onPress={stopAndSave}
+                disabled={timerSeconds === 0}
+              >
+                <View style={[styles.iconContainer, timerSeconds > 0 && styles.saveIconContainer]}>
+                  <Heart size={20} color={timerSeconds > 0 ? '#EA580C' : Colors.neutral[500]} fill={timerSeconds > 0 ? '#EA580C' : 'transparent'} />
+                </View>
+                <Text style={[styles.controlLabel, timerSeconds > 0 && styles.saveLabel]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.timerHint}>
+              {isTimerRunning ? 'Keep going, God is listening...' : 'Tap play to start your prayer session'}
+            </Text>
+          </View>
+
+          {/* Recent Sessions */}
+          <View style={styles.sessionsSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {selectedDate ? 'SESSIONS' : 'RECENT SESSIONS'}
+              </Text>
+              {selectedDate && (
+                <TouchableOpacity
+                  style={styles.clearFilterBtn}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedDate(null);
+                  }}
+                >
+                  <Text style={styles.clearFilterText}>Clear Filter</Text>
+                  <X size={12} color="#64748B" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Empty State for Filter */}
+            {selectedDate && filteredSessions.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>📅</Text>
+                <Text style={styles.emptyTitle}>No sessions found</Text>
+                <Text style={styles.emptySubtitle}>No prayer sessions recorded on this date</Text>
+              </View>
+            ) : filteredSessions.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>🕊️</Text>
+                <Text style={styles.emptyTitle}>No sessions yet</Text>
+                <Text style={styles.emptySubtitle}>Start your first prayer session above</Text>
+              </View>
+            ) : (
+              filteredSessions.map((session, index) => {
+                const duration = session.description ? session.description.split(' ')[0] : '0';
+                return (
+                  <View key={session.id || index} style={styles.sessionCard}>
+                    <View style={styles.sessionIcon}>
+                      <Timer size={16} color="#EA580C" />
+                    </View>
+                    <View style={styles.sessionInfo}>
+                      <Text style={styles.sessionDuration}>{duration} minutes</Text>
+                      <Text style={styles.sessionTime}>
+                        {formatSessionTime(session.created_at)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
             )}
           </View>
         </View>
-
-        {/* Filter Tabs */}
-        <View style={styles.filterContainer}>
-          {(['all', 'active', 'answered', 'paused'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterTab,
-                selectedFilter === filter && styles.filterTabActive
-              ]}
-              onPress={() => setSelectedFilter(filter)}
-            >
-              <Text style={[
-                styles.filterTabText,
-                selectedFilter === filter && styles.filterTabTextActive
-              ]}>
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Enhanced Prayers List with FlatList */}
-        <Animated.View 
-          style={[
-            styles.prayersList,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <FlatList
-            ref={flatListRef}
-            data={filteredPrayers}
-            renderItem={renderPrayerItem}
-            keyExtractor={keyExtractor}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={onRefresh}
-                tintColor={Colors.primary[500]}
-                colors={[Colors.primary[500]]}
-                progressBackgroundColor={Colors.white}
-              />
-            }
-            contentContainerStyle={[styles.flatListContent, { paddingBottom: Spacing.xl + tabBarHeight }]}
-            ListEmptyComponent={renderEmptyComponent}
-            ListHeaderComponent={
-              loading && prayers.length === 0 ? renderLoadingComponent : null
-            }
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            updateCellsBatchingPeriod={50}
-            initialNumToRender={10}
-            windowSize={10}
-            getItemLayout={(data, index) => ({
-              length: 200, // Approximate item height
-              offset: 200 * index,
-              index,
-            })}
-            ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-          />
-        </Animated.View>
-
-        {/* Scroll Indicator */}
-        {renderScrollIndicator()}
-
-        {/* Scroll to Top Button */}
-        {showScrollToTop && (
-          <View style={styles.scrollToTopButton}>
-            <TouchableOpacity
-              style={styles.scrollToTopButtonInner}
-              onPress={scrollToTop}
-              activeOpacity={0.8}
-            >
-              <ChevronRight 
-                size={20} 
-                color={Colors.white} 
-                style={{ transform: [{ rotate: '-90deg' }] }}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <AddPrayerModal
-          isVisible={isAddModalVisible}
-          onClose={() => setIsAddModalVisible(false)}
-          onAddPrayer={async (title, description, category, priority) => {
-            setLoading(true);
-            try {
-              if (!user) {
-                Alert.alert('Error', 'User not authenticated.');
-                return;
-              }
-              
-              await addDoc(collection(db, 'prayers'), {
-                user_id: user.uid,
-                title: title.trim(),
-                description: description.trim() || null,
-                category: category,
-                priority: priority,
-                status: 'active',
-                createdAt: serverTimestamp(),
-              });
-
-              Alert.alert('Success', '🙏 Prayer added successfully!');
-              setIsAddModalVisible(false);
-              fetchPrayers();
-            } catch (error: any) {
-              console.error('Error adding prayer:', error);
-              Alert.alert('Error', `Failed to add prayer: ${error.message || 'Unknown error'}`);
-            } finally {
-              setLoading(false);
-            }
-          }}
-        />
-      </BackgroundGradient>
-    </View>
-    </AuthGuard>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: '#FAF5EF',
   },
-  
-  // Header Styles - Matching Mood Tracker
-  headerSimple: {
-    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 12,
+  headerContainer: {
     paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: Spacing.md,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[200],
-    ...Shadows.sm,
   },
-  headerSimpleContent: {
+  headerTop: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
   },
-  headerSimpleLeft: {
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
   },
-  headerSimpleIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerSimpleTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[900],
-  },
-  headerSimpleSubtitle: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.neutral[600],
-    marginTop: 2,
-  },
-  headerSimpleAddButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.xs,
-  },
-
-  // Header Card Styles - Matching Mood Tracker
-  headerCardContainer: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 100 : (StatusBar.currentHeight || 0) + 60,
-  },
-  headerCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadows.lg,
-  },
-  headerCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.xl,
-  },
-  headerCardIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.lg,
-    ...Shadows.md,
-  },
-  headerCardText: {
-    flex: 1,
-  },
-  headerCardTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[800],
-  },
-  headerCardDescription: {
-    fontSize: Typography.sizes.base,
-    color: Colors.neutral[600],
-    marginTop: Spacing.xs,
-  },
-  headerCardActionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.md,
-  },
-  quickStatsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: Spacing.md,
-    backgroundColor: Colors.neutral[50],
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[900],
-    marginBottom: Spacing.xs,
-  },
-  statLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.neutral[600],
-    opacity: 0.8,
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: Colors.neutral[200],
-    marginHorizontal: Spacing.sm,
-  },
-
-
-  // Search Styles
-  searchContainer: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.neutral[50],
-    borderRadius: 12,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.neutral[200],
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: Spacing.sm,
-    fontSize: 16,
-    color: Colors.neutral[900],
-  },
-
-  // Filter Styles
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    gap: Spacing.xs,
-  },
-  filterTab: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: 20,
-    backgroundColor: Colors.neutral[100],
-  },
-  filterTabActive: {
-    backgroundColor: Colors.primary[500],
-    shadowColor: Colors.primary[500],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  filterTabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.neutral[600],
-  },
-  filterTabTextActive: {
-    color: Colors.white,
-  },
-
-  // Prayers List Styles
-  prayersList: {
-    flex: 1,
-    paddingHorizontal: Spacing.lg,
-  },
-  flatListContent: {
-    paddingBottom: Spacing.xl,
-  },
-  itemSeparator: {
-    height: Spacing.sm,
-  },
-
-  // Scroll Indicator Styles
-  scrollIndicator: {
-    position: 'absolute',
-    right: Spacing.md,
-    top: '50%',
-    transform: [{ translateY: -100 }],
-    zIndex: 1000,
-  },
-  scrollIndicatorTrack: {
-    width: 4,
-    height: 200,
-    backgroundColor: Colors.neutral[200],
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  scrollIndicatorThumb: {
-    width: 4,
-    height: 40,
-    backgroundColor: Colors.primary[500],
-    borderRadius: 2,
-    opacity: 0.8,
-  },
-
-  // Scroll to Top Button Styles
-  scrollToTopButton: {
-    position: 'absolute',
-    bottom: Spacing.xl,
-    right: Spacing.lg,
-    zIndex: 1000,
-  },
-  scrollToTopButtonInner: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.primary[500],
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.lg,
-  },
-
-  // Prayer Card Styles
-  prayerCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    ...Shadows.md,
-    borderWidth: 1,
-    borderColor: Colors.neutral[200],
-  },
-  prayerCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
-  },
-  prayerCardLeft: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  categoryIcon: {
+  userAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 20,
+    backgroundColor: '#FFD8B4',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.md,
   },
-  categoryEmoji: {
-    fontSize: 20,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
   },
-  prayerInfo: {
-    flex: 1,
-  },
-  prayerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.neutral[900],
-    marginBottom: 4,
-  },
-  prayerMeta: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  statusContainer: {
+  streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  prayerDate: {
-    fontSize: 12,
-    color: Colors.neutral[500],
-  },
-  moreButton: {
-    padding: 4,
-  },
-  prayerDescription: {
-    fontSize: 14,
-    color: Colors.neutral[600],
-    lineHeight: 20,
-    marginBottom: Spacing.md,
-  },
-
-  // Prayer Actions Styles
-  prayerActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.sm,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
+    borderRadius: 12,
+    ...Shadows.sm,
   },
-  answeredButton: {
-    backgroundColor: Colors.success[50],
+  streakText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#EA580C',
   },
-  pauseButton: {
-    backgroundColor: Colors.warning[50],
+  weekSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
   },
-  resumeButton: {
-    backgroundColor: Colors.primary[50],
-  },
-  deleteButton: {
-    backgroundColor: Colors.error[50],
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-
-  // Loading and Empty States
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  dayColumn: {
     alignItems: 'center',
-    paddingVertical: Spacing.xl * 2,
+    gap: 6,
   },
-  loadingText: {
-    marginTop: Spacing.md,
+  dayText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#C2410C',
+  },
+  activeDayText: {
+    color: '#C2410C',
+  },
+  dateCircleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 36,
+    height: 36,
+  },
+  dateText: {
     fontSize: 16,
-    color: Colors.neutral[600],
+    fontWeight: '700',
+    color: '#C2410C',
+    zIndex: 1,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  activeDateText: {
+    color: '#FFFFFF',
+  },
+  activeDayIndicator: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EA580C',
+  },
+  viewCalendarBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.xl * 2,
-    paddingHorizontal: Spacing.xl,
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
-  emptyIcon: {
-    fontSize: 64,
+  viewCalendarText: {
+    color: '#EA580C',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 0,
+  },
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: 28,
+    paddingBottom: Spacing.lg,
+    minHeight: 500,
+    ...Shadows.md,
+  },
+  statsRowNew: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.neutral[900],
+  statCardNew: {
+    flex: 1,
+    backgroundColor: '#FAF5EF',
+    borderRadius: 16,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  statEmojiNew: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  statValueNew: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#EA580C',
+  },
+  statLabelNew: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  heroCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: 28,
+    paddingBottom: Spacing.lg,
+    ...Shadows.md,
+  },
+  heroContent: {
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  heroEmoji: {
+    fontSize: 40,
     marginBottom: Spacing.sm,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#FAF5EF',
+    borderRadius: 16,
+    padding: Spacing.md,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#EA580C',
+    marginTop: Spacing.xs,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 0,
+  },
+  timerCard: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 1,
+    marginBottom: Spacing.xl,
+    alignSelf: 'flex-start',
+    textTransform: 'uppercase',
+  },
+
+  // New Timer Styles
+  timerContainer: {
+    marginBottom: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerRingContainer: {
+    padding: 10,
+  },
+  timerCircle: {
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...Shadows.sm,
+  },
+  timerCircleActive: {
+    borderColor: '#FDBA74',
+    ...Shadows.md,
+    shadowColor: '#EA580C',
+    shadowOpacity: 0.2,
+  },
+  innerRing: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  innerRingActive: {
+    borderColor: '#FED7AA',
+  },
+  timerText: {
+    fontSize: 64,
+    fontWeight: '300',
+    color: '#334155',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -2,
+    marginTop: -10,
+  },
+  timerTextActive: {
+    color: '#EA580C',
+    fontWeight: '400',
+  },
+  recordingIndicator: {
+    position: 'absolute',
+    bottom: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+  },
+  recordingText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#EF4444',
+    letterSpacing: 0.5,
+  },
+
+  // Controls
+  timerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    gap: 20,
+    marginBottom: 20,
+  },
+  mainControlBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    overflow: 'hidden',
+    ...Shadows.md,
+  },
+  mainControlBtnActive: {
+    ...Shadows.lg,
+    shadowColor: '#EA580C',
+  },
+  mainControlGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  controlBtn: {
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 60,
+  },
+  secondaryControlBtn: {
+    padding: 10,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveIconContainer: {
+    backgroundColor: '#FFF7ED',
+  },
+  controlLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  saveLabel: {
+    color: '#EA580C',
+  },
+  timerHint: {
+    fontSize: 13,
+    color: '#94A3B8',
+    fontStyle: 'italic',
     textAlign: 'center',
+  },
+
+  // Keep existing styles below
+  quickActions: {
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: Spacing.md,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF5EF',
+    borderRadius: 20,
+    padding: 16,
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#EA580C',
+  },
+  actionInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  actionSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  sessionsSection: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 0,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xl,
+  },
+  sessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF5EF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: Spacing.sm,
+  },
+  sessionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFD8B4',
+  },
+  sessionInfo: {
+    marginLeft: Spacing.md,
+    flex: 1,
+  },
+  sessionDuration: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  sessionTime: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
   },
   emptySubtitle: {
-    fontSize: 16,
-    color: Colors.neutral[600],
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: Spacing.xl,
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: Spacing.xs,
   },
-  emptyButton: {
-    backgroundColor: Colors.primary[500],
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
+
+  // Calendar Styles
+  calendarCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: Spacing.sm,
+    marginBottom: Spacing.lg,
+    ...Shadows.sm,
+  },
+  viewCalendarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    alignSelf: 'flex-end',
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    backgroundColor: '#FFF7ED',
     borderRadius: 12,
   },
-  emptyButtonText: {
-    color: Colors.white,
-    fontSize: 16,
+  viewCalendarText: {
+    color: '#EA580C',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  calendarDay: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  calendarDaySelected: {
+    backgroundColor: '#EA580C',
+  },
+  calendarDayToday: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#EA580C',
+  },
+  calendarEmoji: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  calendarEmptyDay: {
+    height: 14,
+    marginBottom: 2,
+  },
+  calendarDayText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#1E293B',
+  },
+  calendarDayTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  calendarDayTextToday: {
+    color: '#EA580C',
+    fontWeight: '700',
+  },
+  calendarDayTextDisabled: {
+    color: '#CBD5E1',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  clearFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+  },
+  clearFilterText: {
+    fontSize: 11,
     fontWeight: '600',
+    color: '#64748B',
   },
 });
+

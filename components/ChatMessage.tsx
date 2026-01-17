@@ -1,8 +1,8 @@
 // src/components/ChatMessage.js
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Bot, User, Copy, Share } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Pressable } from 'react-native';
+import { Book, User, Copy, Share, Trash2 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 // Importing Colors as it's used in the original code, but not directly in the component's logic
 import { Colors } from '@/constants/DesignTokens';
@@ -25,9 +25,13 @@ interface ChatMessageProps {
   };
   onCopy?: (text: string) => void;
   onShare?: (text: string) => void;
+  onDelete?: (messageId: string) => void;
+  showDeleteButton?: boolean;
 }
 
-export function ChatMessage({ message, onCopy, onShare }: ChatMessageProps) {
+export function ChatMessage({ message, onCopy, onShare, onDelete, showDeleteButton = false }: ChatMessageProps) {
+  const [isPressed, setIsPressed] = useState(false);
+  
   // Convert the timestamp to a Date object at the beginning of the component
   const timestamp = convertTimestampToDate(message.timestamp);
 
@@ -52,6 +56,24 @@ export function ChatMessage({ message, onCopy, onShare }: ChatMessageProps) {
     onShare?.(message.text);
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Message',
+      'Are you sure you want to delete this message? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => onDelete?.(message.id),
+        },
+      ]
+    );
+  };
+
   // Parse the message text for formatting
   const formattedTextElements = parseSimpleMarkdown(message.text);
 
@@ -62,14 +84,21 @@ export function ChatMessage({ message, onCopy, onShare }: ChatMessageProps) {
     ]}>
       {!message.isUser && (
         <View style={styles.aiMessageAvatar}>
-          <Bot size={16} color="white" />
+          <Book size={16} color="white" />
         </View>
       )}
       
-      <View style={[
-        styles.messageBubble,
-        message.isUser ? styles.userMessageBubble : styles.aiMessageBubble
-      ]}>
+      <Pressable 
+        style={[
+          styles.messageBubble,
+          message.isUser ? styles.userMessageBubble : styles.aiMessageBubble,
+          isPressed && showDeleteButton && styles.pressedBubble
+        ]}
+        onLongPress={showDeleteButton ? handleDelete : undefined}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        delayLongPress={500}
+      >
         <Text style={[
           styles.messageText,
           message.isUser ? styles.userMessageText : styles.aiMessageText
@@ -99,8 +128,17 @@ export function ChatMessage({ message, onCopy, onShare }: ChatMessageProps) {
               </TouchableOpacity>
             </View>
           )}
+          
+          {showDeleteButton && (
+            <View style={styles.messageActions}>
+              <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={handleDelete}>
+                <Trash2 size={12} color="#EF4444" />
+              </TouchableOpacity>
+              <Text style={styles.longPressHint}>Long press to delete</Text>
+            </View>
+          )}
         </View>
-      </View>
+      </Pressable>
       
       {message.isUser && (
         <View style={styles.userMessageAvatar}>
@@ -123,6 +161,7 @@ const styles = StyleSheet.create({
   },
   aiMessageContainer: {
     justifyContent: 'flex-start',
+    width: '100%',
   },
   aiMessageAvatar: {
     width: 32,
@@ -153,36 +192,40 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   messageBubble: {
-    maxWidth: '75%',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   userMessageBubble: {
     backgroundColor: '#3B82F6',
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 6,
+    maxWidth: '80%',
   },
   aiMessageBubble: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderBottomLeftRadius: 4,
+    backgroundColor: '#F9FAFB',
+    borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
+    borderColor: '#E5E7EB',
+    flex: 1,
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 8,
+    lineHeight: 24,
+    marginBottom: 6,
+    letterSpacing: 0.2,
   },
   userMessageText: {
     color: 'white',
+    fontWeight: '500',
   },
   aiMessageText: {
-    color: '#1A1A1A',
+    color: '#111827',
+    fontWeight: '400',
   },
   messageFooter: {
     flexDirection: 'row',
@@ -207,5 +250,18 @@ const styles = StyleSheet.create({
     padding: 4,
     borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  deleteButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  pressedBubble: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  longPressHint: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    marginLeft: 4,
   },
 });

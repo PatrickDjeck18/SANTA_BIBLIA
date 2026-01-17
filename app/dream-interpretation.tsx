@@ -15,6 +15,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Pressable,
+  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar as RNStatusBar } from 'expo-status-bar';
@@ -30,12 +31,14 @@ import {
   Clock,
   Zap,
 } from 'lucide-react-native';
-import { DreamService } from '../lib/services/dreamService';
+import { DreamServiceGuest as DreamService } from '../lib/services/dreamServiceGuest';
 import { DreamEntry } from '../lib/types/dreams';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../constants/DesignTokens';
-import { useAuth } from '../hooks/useAuth';
+
 import BackgroundGradient from '@/components/BackgroundGradient';
-import { HeaderCard } from '@/components/HeaderCard';
+import { ModernHeader } from '@/components/ModernHeader';
+import BannerAd from '@/components/BannerAd';
+import { useInterstitialAds } from '@/hooks/useInterstitialAds';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -44,7 +47,8 @@ type MoodOption = 'peaceful' | 'anxious' | 'joyful' | 'confused' | 'hopeful';
 // Paywall removed
 
 export default function DreamInterpretationScreen() {
-  const { user } = useAuth();
+  // const { user, loading: authLoading } = useAuth(); // Removed auth
+  const { showInterstitialAd } = useInterstitialAds('dream');
   const isSubscribed = false; // Subscriptions are disabled
 
   // State for dreams and selected dream
@@ -111,12 +115,12 @@ export default function DreamInterpretationScreen() {
   const loadDreams = useCallback(async (forceRefresh: boolean = false) => {
     try {
       setLoadingDreams(true);
-      if (!user?.uid) {
-        console.log('No authenticated user, skipping dreams load');
-        setDreams([]);
-        return;
-      }
-      const dreamsList = await DreamService.getDreams(user.uid, forceRefresh);
+      // Load dreams from local storage
+      console.log('Loading dreams from local storage');
+      // Test API configuration for debugging (optional)
+      // DreamService.testApiConfiguration();
+      
+      const dreamsList = await DreamService.getDreams();
       setDreams(dreamsList);
     } catch (error) {
       console.error('Error loading dreams:', error);
@@ -128,16 +132,13 @@ export default function DreamInterpretationScreen() {
     } finally {
       setLoadingDreams(false);
     }
-  }, [user]);
+  }, []);
 
   // Load dreams on initial mount
   useEffect(() => {
-    if (user?.uid) {
-      loadDreams();
-    } else {
-      setLoadingDreams(false);
-    }
-  }, [user, loadDreams, isSubscribed]);
+    loadDreams();
+    loadDreams();
+  }, [loadDreams, isSubscribed]);
 
   // Paywall removed: no ad handlers
 
@@ -147,24 +148,21 @@ export default function DreamInterpretationScreen() {
       return;
     }
 
-    if (!user?.uid) {
-      Alert.alert('Authentication Error', 'Please log in to add dreams.');
-      return;
-    }
-
     setIsAnalyzing(true);
+    
+    // Show immediate feedback for mobile
     Alert.alert(
-      'Analyzing Dream...',
-      'Your dream is being analyzed with AI. This may take a few moments.',
+      'Analyzing Dream... ⚡',
+      'Your dream is being processed. This will be quick!',
       [{ text: 'OK' }]
     );
 
     try {
-      const analyzedDream = await DreamService.addAndInterpretDream({
+      const analyzedDream = await DreamService.addDreamFast({
         dreamTitle: dreamTitle.trim(),
         dreamDescription: dreamDescription.trim(),
         mood: dreamMood
-      }, user.uid);
+      });
 
       setDreams(prev => [analyzedDream, ...prev]);
       resetForm();
@@ -187,15 +185,12 @@ export default function DreamInterpretationScreen() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [dreamTitle, dreamDescription, dreamMood, user]);
+  }, [dreamTitle, dreamDescription, dreamMood]);
 
   const handleDeleteDream = useCallback(async (dreamId: string) => {
     try {
-      if (!user?.uid) {
-        Alert.alert('Authentication Error', 'Please log in to delete dreams.');
-        return;
-      }
-      await DreamService.deleteDream(dreamId, user.uid);
+      await DreamService.deleteDream(dreamId);
+      
       setDreams(prev => prev.filter(d => d.id !== dreamId));
       setSelectedDream(null);
       Alert.alert('Success', 'Dream deleted successfully.');
@@ -203,7 +198,7 @@ export default function DreamInterpretationScreen() {
       console.error('Error deleting dream:', error);
       Alert.alert('Error', 'Failed to delete dream.');
     }
-  }, [user]);
+  }, []);
 
   const resetForm = () => {
     setDreamTitle('');
@@ -256,7 +251,7 @@ export default function DreamInterpretationScreen() {
       ]}
     >
       <Pressable
-        onPress={() => setSelectedDream(dream)}
+        onPress={() => router.push(`/dream-result?dreamId=${dream.id}`)}
         style={({ pressed }) => [
           styles.dreamCardPressable,
           pressed && styles.dreamCardPressed
@@ -342,171 +337,7 @@ export default function DreamInterpretationScreen() {
     </Animated.View>
   );
 
-  const DreamDetailModal = () => (
-    <Modal
-      visible={selectedDream !== null}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => setSelectedDream(null)}
-    >
-      {selectedDream && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalContainer}
-        >
-          <LinearGradient
-            colors={Colors.gradients.spiritualLight as any}
-            style={styles.modalGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setSelectedDream(null)}>
-                <ChevronLeft size={24} color="white" />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>{selectedDream.title}</Text>
-              <TouchableOpacity onPress={() => handleDeleteDream(selectedDream.id)}>
-                <Trash2 size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView 
-              style={styles.modalContent}
-              contentContainerStyle={styles.modalContentContainer}
-              showsVerticalScrollIndicator={true}
-              keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled={true}
-              bounces={true}
-            >
-              <View style={styles.dreamDetailContent}>
-                <View style={styles.dreamDetailSection}>
-                  <Text style={styles.dreamDetailLabel}>Dream Description</Text>
-                  <Text style={styles.dreamDetailText}>{selectedDream.description}</Text>
-                </View>
-                
-                <View style={styles.dreamDetailSection}>
-                  <Text style={styles.dreamDetailLabel}>Mood</Text>
-                  <View style={styles.dreamDetailMood}>
-                    <Text style={styles.dreamDetailMoodEmoji}>
-                      {getMoodEmoji(selectedDream.mood)}
-                    </Text>
-                    <Text style={styles.dreamDetailMoodText}>
-                      {selectedDream.mood.charAt(0).toUpperCase() + selectedDream.mood.slice(1)}
-                    </Text>
-                  </View>
-                </View>
-                
-                {selectedDream.is_analyzed && selectedDream.interpretation && (
-                  <View style={styles.dreamDetailSection}>
-                    <Text style={styles.dreamDetailLabel}>AI Interpretation</Text>
-                    <LinearGradient
-                      colors={['#D1FAE5', '#A7F3D0']}
-                      style={styles.interpretationCard}
-                    >
-                      <View style={styles.interpretationHeader}>
-                        <Sparkles size={20} color="#065F46" />
-                        <Text style={styles.interpretationTitle}>Biblical Analysis</Text>
-                      </View>
-                      <Text style={styles.interpretationContent}>
-                        {selectedDream.interpretation}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                )}
-                
-                {selectedDream.spiritual_meaning && (
-                  <View style={styles.dreamDetailSection}>
-                    <Text style={styles.dreamDetailLabel}>Spiritual Meaning</Text>
-                    <LinearGradient
-                      colors={['#FEF3C7', '#FDE68A']}
-                      style={styles.spiritualMeaningCard}
-                    >
-                      <View style={styles.spiritualMeaningHeader}>
-                        <Star size={20} color="#D97706" />
-                        <Text style={styles.spiritualMeaningTitle}>Spiritual Insights</Text>
-                      </View>
-                      <Text style={styles.spiritualMeaningContent}>
-                        {selectedDream.spiritual_meaning}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                )}
-                
-                {selectedDream.biblical_insights && selectedDream.biblical_insights.length > 0 && (
-                  <View style={styles.dreamDetailSection}>
-                    <Text style={styles.dreamDetailLabel}>Biblical Insights</Text>
-                    <View style={styles.biblicalInsightsContainer}>
-                      {selectedDream.biblical_insights.map((insight, index) => (
-                        <View key={index} style={styles.biblicalInsightCard}>
-                          <View style={styles.biblicalInsightIcon}>
-                            <BookOpen size={16} color="#7C3AED" />
-                          </View>
-                          <Text style={styles.biblicalInsightText}>{insight}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-                
-                {selectedDream.symbols && selectedDream.symbols.length > 0 && (
-                  <View style={styles.dreamDetailSection}>
-                    <Text style={styles.dreamDetailLabel}>Dream Symbols</Text>
-                    <View style={styles.symbolsContainer}>
-                      {selectedDream.symbols.map((symbol, index) => (
-                        <View key={index} style={styles.symbolCard}>
-                          <View style={styles.symbolHeader}>
-                            <Text style={styles.symbolName}>{symbol.symbol}</Text>
-                          </View>
-                          <Text style={styles.symbolMeaning}>{symbol.meaning}</Text>
-                          {symbol.bibleVerse && (
-                            <Text style={styles.symbolVerse}>"{symbol.bibleVerse}"</Text>
-                          )}
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-                
-                {selectedDream.prayer && (
-                  <View style={styles.dreamDetailSection}>
-                    <Text style={styles.dreamDetailLabel}>Prayer Guidance</Text>
-                    <LinearGradient
-                      colors={['#DBEAFE', '#BFDBFE']}
-                      style={styles.prayerCard}
-                    >
-                      <View style={styles.prayerHeader}>
-                        <Text style={styles.prayerIcon}>🙏</Text>
-                        <Text style={styles.prayerTitle}>Prayer for This Dream</Text>
-                      </View>
-                      <Text style={styles.prayerContent}>
-                        {selectedDream.prayer}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                )}
-                
-                {selectedDream.significance && (
-                  <View style={styles.dreamDetailSection}>
-                    <Text style={styles.dreamDetailLabel}>Spiritual Significance</Text>
-                    <View style={[
-                      styles.significanceCard,
-                      { backgroundColor: getSignificanceColor(selectedDream.significance) }
-                    ]}>
-                      <Text style={styles.significanceCardText}>
-                        {selectedDream.significance.toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-                
-                {/* Additional spacing to ensure content is visible */}
-                <View style={styles.bottomSpacing} />
-              </View>
-            </ScrollView>
-          </LinearGradient>
-        </KeyboardAvoidingView>
-      )}
-    </Modal>
-  );
+  // DreamDetailModal removed - now using dedicated page
 
   return (
     <KeyboardAvoidingView
@@ -515,20 +346,29 @@ export default function DreamInterpretationScreen() {
     >
       <RNStatusBar style="dark" />
       <BackgroundGradient>
-        {/* Fixed Hero Header */}
-        <HeaderCard
-          title="Dream Interpretation"
-          subtitle={`${dreams.length} dreams recorded • AI-powered insights`}
-          showBackButton={true}
-          onBackPress={handleSafeBack}
-          gradientColors={Colors.gradients.spiritualLight}
-        />
+        {/* Header Container with proper styling */}
+        <View style={styles.headerContainer}>
+          <ModernHeader
+            title="Dream Interpretation"
+            variant="simple"
+            showBackButton={true}
+            showReaderButton={false}
+            onBackPress={handleSafeBack}
+            readerText="Dream Interpretation. Track your spiritual dreams. Record and interpret your dreams with biblical guidance."
+          />
+        </View>
+        
+        {/* Banner Ad below header */}
+        <BannerAd placement="dream" />
         
         <Animated.ScrollView
           style={[styles.scrollView, { opacity: fadeAnim }]}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          {/* Spacer to push Overview Card down */}
+          <View style={styles.headerSpacer} />
+          
           {/* Overview Card */}
           <Animated.View style={[styles.overviewCard, { transform: [{ scale: scaleAnim }] }]}>
             <View style={styles.overviewGradient}>
@@ -685,7 +525,7 @@ export default function DreamInterpretationScreen() {
                         styles.saveButtonText,
                         (!dreamTitle.trim() || !dreamDescription.trim()) && styles.saveButtonTextDisabled,
                       ]}>
-                        {isAnalyzing ? 'AI Analysis in Progress...' : 'Analyze with AI'}
+                        {isAnalyzing ? 'Quick Analysis...' : 'Analyze with AI'}
                       </Text>
                     </View>
                   </LinearGradient>
@@ -746,8 +586,7 @@ export default function DreamInterpretationScreen() {
           <View style={styles.bottomSpacing} />
         </Animated.ScrollView>
         
-        {/* Modals */}
-        <DreamDetailModal />
+        {/* Modals removed - now using dedicated page */}
       </BackgroundGradient>
     </KeyboardAvoidingView>
   );
@@ -851,12 +690,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerContainer: {
+    backgroundColor: Colors.white,
+    zIndex: 1000,
+    elevation: 4,
+    shadowColor: Colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[200],
+    position: 'relative',
+  },
   scrollView: {
     flex: 1,
     paddingHorizontal: 20,
   },
   scrollContent: {
-    paddingBottom: 100, // Add padding at the bottom to prevent content from being cut off
+    paddingBottom: 60, // Reduced padding at the bottom for compactness
+  },
+  
+  headerSpacer: {
+    height: 40, // Reduced space between header and overview card for compactness
   },
   
   // Header Styles
@@ -888,7 +743,7 @@ const styles = StyleSheet.create({
   
   // Hero Header (Bible Style)
   hero: {
-    paddingTop: Platform.OS === 'ios' ? 60 : RNStatusBar.currentHeight! + 12,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 12,
   },
   heroGradient: {
     borderBottomLeftRadius: BorderRadius['3xl'],
@@ -948,13 +803,13 @@ const styles = StyleSheet.create({
   overviewGradient: {
     backgroundColor: 'white',
     borderRadius: BorderRadius['3xl'],
-    padding: Spacing.lg,
+    padding: Spacing.md,
   },
   overviewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   overviewLeft: {
     flexDirection: 'row',
@@ -1017,13 +872,13 @@ const styles = StyleSheet.create({
 
   // Dreams Section
   dreamsSection: {
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   dreamsSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   refreshButton: {
     backgroundColor: Colors.primary[100],
@@ -1266,10 +1121,10 @@ const styles = StyleSheet.create({
 
   // Form Styles
   dreamForm: {
-    gap: Spacing.lg,
+    gap: Spacing.md,
   },
   inputGroup: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   inputLabel: {
     fontSize: Typography.sizes.base,
@@ -1283,17 +1138,17 @@ const styles = StyleSheet.create({
     borderColor: Colors.neutral[200],
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     fontSize: Typography.sizes.base,
     color: Colors.neutral[800],
-    minHeight: 48,
+    minHeight: 40,
   },
   inputFocused: {
     borderColor: Colors.primary[500],
     backgroundColor: Colors.primary[50],
   },
   textArea: {
-    minHeight: 120,
+    minHeight: 100,
     textAlignVertical: 'top',
   },
   charCount: {
@@ -1314,7 +1169,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.neutral[200],
     borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     gap: Spacing.xs,
@@ -1548,7 +1403,7 @@ const styles = StyleSheet.create({
   },
 
   bottomSpacing: {
-    height: 100,
+    height: 40,
   },
 
   // Dream Form Card
@@ -1564,10 +1419,10 @@ const styles = StyleSheet.create({
   dreamFormGradient: {
     backgroundColor: 'white',
     borderRadius: BorderRadius['3xl'],
-    padding: Spacing.lg,
+    padding: Spacing.md,
   },
   dreamFormHeader: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   dreamFormTitle: {
     fontSize: Typography.sizes.xl,
@@ -1785,7 +1640,7 @@ const styles = StyleSheet.create({
   // Modern Dream Card Styles
   modernDreamCard: {
     borderRadius: BorderRadius['2xl'],
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     shadowColor: 'rgba(0, 0, 0, 0.08)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -1802,7 +1657,7 @@ const styles = StyleSheet.create({
   },
   modernDreamCardGradient: {
     borderRadius: BorderRadius['2xl'],
-    padding: Spacing.lg,
+    padding: Spacing.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
@@ -1862,10 +1717,10 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.base,
     color: Colors.neutral[700],
     lineHeight: Typography.lineHeights.relaxed * Typography.sizes.base,
-    marginVertical: Spacing.md,
+    marginVertical: Spacing.sm,
   },
   modernInterpretationPreview: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   modernInterpretationBanner: {
     flexDirection: 'row',
@@ -1892,7 +1747,7 @@ const styles = StyleSheet.create({
     lineHeight: Typography.lineHeights.relaxed * Typography.sizes.sm,
   },
   modernAnalysisPending: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   modernAnalysisBanner: {
     flexDirection: 'row',

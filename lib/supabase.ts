@@ -1,43 +1,85 @@
-import { createClient } from '@supabase/supabase-js';
-import { config } from './config';
+// Supabase is disabled - app uses local storage only
+// This file provides a mock Supabase client that doesn't make network calls
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const supabase = createClient(config.supabase.url, config.supabase.anonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false,
-    flowType: 'pkce',
-    storage: {
-      getItem: async (key) => {
-        try {
-          return await AsyncStorage.getItem(key);
-        } catch (error) {
-          console.warn('AsyncStorage getItem error:', error);
-          return null;
-        }
-      },
-      setItem: async (key, value) => {
-        try {
-          await AsyncStorage.setItem(key, value);
-        } catch (error) {
-          console.warn('AsyncStorage setItem error:', error);
-        }
-      },
-      removeItem: async (key) => {
-        try {
-          await AsyncStorage.removeItem(key);
-        } catch (error) {
-          console.warn('AsyncStorage removeItem error:', error);
-        }
-      },
-    },
-  },
-});
+// Mock Supabase client that doesn't make network calls
+const createMockClient = () => {
+  const mockResponse = { data: null, error: { message: 'Supabase disabled - using local storage' } };
+  const mockPromise = () => Promise.resolve(mockResponse);
 
-// Database types... (rest of your file)
-// Database types - No changes needed as they are standard TypeScript
+  const mockQueryBuilder = {
+    select: () => mockQueryBuilder,
+    insert: () => mockQueryBuilder,
+    update: () => mockQueryBuilder,
+    delete: () => mockQueryBuilder,
+    eq: () => mockQueryBuilder,
+    neq: () => mockQueryBuilder,
+    gt: () => mockQueryBuilder,
+    gte: () => mockQueryBuilder,
+    lt: () => mockQueryBuilder,
+    lte: () => mockQueryBuilder,
+    like: () => mockQueryBuilder,
+    ilike: () => mockQueryBuilder,
+    is: () => mockQueryBuilder,
+    in: () => mockQueryBuilder,
+    contains: () => mockQueryBuilder,
+    containedBy: () => mockQueryBuilder,
+    match: () => mockQueryBuilder,
+    not: () => mockQueryBuilder,
+    or: () => mockQueryBuilder,
+    filter: () => mockQueryBuilder,
+    order: () => mockQueryBuilder,
+    limit: () => mockQueryBuilder,
+    range: () => mockQueryBuilder,
+    single: () => mockPromise(),
+    maybeSingle: () => mockPromise(),
+    then: (resolve: any) => resolve(mockResponse),
+  };
+
+  const mockAuth = {
+    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+    signInWithPassword: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Auth disabled' } }),
+    signUp: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Auth disabled' } }),
+    signOut: () => Promise.resolve({ error: null }),
+    signInWithOtp: () => Promise.resolve({ error: { message: 'Auth disabled' } }),
+    verifyOtp: () => Promise.resolve({ data: null, error: { message: 'Auth disabled' } }),
+    updateUser: () => Promise.resolve({ data: null, error: { message: 'Auth disabled' } }),
+    setSession: () => Promise.resolve({ data: null, error: null }),
+    onAuthStateChange: (_callback: any) => ({
+      data: { subscription: { unsubscribe: () => { } } },
+    }),
+  };
+
+  const mockChannel = {
+    on: () => mockChannel,
+    subscribe: () => ({ unsubscribe: () => { } }),
+    unsubscribe: () => { },
+  };
+
+  return {
+    from: (_table: string) => mockQueryBuilder,
+    rpc: () => mockPromise(),
+    auth: mockAuth,
+    channel: () => mockChannel,
+    removeChannel: () => Promise.resolve({ error: null }),
+    removeAllChannels: () => Promise.resolve([]),
+    getChannels: () => [],
+    storage: {
+      from: () => ({
+        upload: () => mockPromise(),
+        download: () => mockPromise(),
+        remove: () => mockPromise(),
+        list: () => mockPromise(),
+      }),
+    },
+  };
+};
+
+export const supabase = createMockClient() as any;
+
+// Database types - kept for compatibility
 export interface Profile {
   id: string;
   full_name: string | null;
@@ -188,4 +230,14 @@ export interface UserQuizStats {
   total_time_spent_seconds: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface VerseLike {
+  id: string;
+  user_id: string | null;
+  session_id: string | null;
+  verse_reference: string;
+  verse_text: string;
+  like_date: string;
+  created_at: string;
 }

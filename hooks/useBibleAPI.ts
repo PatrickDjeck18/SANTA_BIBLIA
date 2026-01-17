@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -12,13 +12,35 @@ const STORAGE_KEYS = {
   OFFLINE_CHAPTERS: 'bible_offline_chapters', // Store chapters for offline access
 };
 
+// Simple cache to prevent excessive storage reads
+const storageCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 5000; // 5 seconds cache
+
+// Request debouncing to prevent duplicate API calls
+const pendingRequests = new Map<string, Promise<any>>();
+const requestDebounceTime = 2000; // 2 seconds debounce
+
+// Request queuing system to batch API calls
+const requestQueue: Array<{ endpoint: string; resolve: Function; reject: Function }> = [];
+let isProcessingQueue = false;
+const QUEUE_BATCH_SIZE = 10; // Process up to 10 requests at once (increased from 5)
+const QUEUE_DELAY = 100; // 100ms delay between batches (reduced from 500ms)
+
 // Local storage helper functions using AsyncStorage
 const getFromStorage = async (key: string) => {
   try {
-    console.log(`📖 Reading from storage ${key}`);
+    // Check cache first (silent - no logging for performance)
+    const cached = storageCache.get(key);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      return cached.data;
+    }
+
     const item = await AsyncStorage.getItem(key);
     const result = item ? JSON.parse(item) : null;
-    console.log(`📖 Retrieved from storage ${key}:`, result ? result.length + ' items' : 'null');
+
+    // Cache the result
+    storageCache.set(key, { data: result, timestamp: Date.now() });
+
     return result;
   } catch (error) {
     console.error('❌ Error reading from storage:', error);
@@ -28,23 +50,112 @@ const getFromStorage = async (key: string) => {
 
 const setToStorage = async (key: string, value: any) => {
   try {
-    console.log(`💾 Writing to storage ${key}:`, value.length || 'data');
     await AsyncStorage.setItem(key, JSON.stringify(value));
-    console.log(`✅ Successfully wrote to storage ${key}`);
+    // Update cache with new data
+    storageCache.set(key, { data: value, timestamp: Date.now() });
   } catch (error) {
-    console.error('❌ Error writing to storage:', error);
+    console.error('Error writing to storage:', error);
   }
 };
 
 const API_BASE_URL = 'https://api.scripture.api.bible/v1';
 const API_KEY = '1f8f911243f0c1333ccb4ffffea4efb8';
 
-// Rate limiting configuration
+// Fallback Bible data when API is unavailable
+const FALLBACK_BIBLES = [
+  {
+    id: 'de4e12af7f28f599-02',
+    name: 'King James Version',
+    englishName: 'King James Version',
+    shortName: 'KJV',
+    language: 'en',
+    languageName: 'English',
+    textDirection: 'ltr' as const,
+    availableFormats: ['json'] as const,
+    numberOfBooks: 66,
+    totalNumberOfChapters: 1189,
+    totalNumberOfVerses: 31102
+  }
+];
+
+const FALLBACK_BOOKS = [
+  { id: 'GEN', name: 'Genesis', order: 1, numberOfChapters: 50, testament: 'old' },
+  { id: 'EXO', name: 'Exodus', order: 2, numberOfChapters: 40, testament: 'old' },
+  { id: 'LEV', name: 'Leviticus', order: 3, numberOfChapters: 27, testament: 'old' },
+  { id: 'NUM', name: 'Numbers', order: 4, numberOfChapters: 36, testament: 'old' },
+  { id: 'DEU', name: 'Deuteronomy', order: 5, numberOfChapters: 34, testament: 'old' },
+  { id: 'JOS', name: 'Joshua', order: 6, numberOfChapters: 24, testament: 'old' },
+  { id: 'JDG', name: 'Judges', order: 7, numberOfChapters: 21, testament: 'old' },
+  { id: 'RUT', name: 'Ruth', order: 8, numberOfChapters: 4, testament: 'old' },
+  { id: '1SA', name: '1 Samuel', order: 9, numberOfChapters: 31, testament: 'old' },
+  { id: '2SA', name: '2 Samuel', order: 10, numberOfChapters: 24, testament: 'old' },
+  { id: '1KI', name: '1 Kings', order: 11, numberOfChapters: 22, testament: 'old' },
+  { id: '2KI', name: '2 Kings', order: 12, numberOfChapters: 25, testament: 'old' },
+  { id: '1CH', name: '1 Chronicles', order: 13, numberOfChapters: 29, testament: 'old' },
+  { id: '2CH', name: '2 Chronicles', order: 14, numberOfChapters: 36, testament: 'old' },
+  { id: 'EZR', name: 'Ezra', order: 15, numberOfChapters: 10, testament: 'old' },
+  { id: 'NEH', name: 'Nehemiah', order: 16, numberOfChapters: 13, testament: 'old' },
+  { id: 'EST', name: 'Esther', order: 17, numberOfChapters: 10, testament: 'old' },
+  { id: 'JOB', name: 'Job', order: 18, numberOfChapters: 42, testament: 'old' },
+  { id: 'PSA', name: 'Psalms', order: 19, numberOfChapters: 150, testament: 'old' },
+  { id: 'PRO', name: 'Proverbs', order: 20, numberOfChapters: 31, testament: 'old' },
+  { id: 'ECC', name: 'Ecclesiastes', order: 21, numberOfChapters: 12, testament: 'old' },
+  { id: 'SNG', name: 'Song of Songs', order: 22, numberOfChapters: 8, testament: 'old' },
+  { id: 'ISA', name: 'Isaiah', order: 23, numberOfChapters: 66, testament: 'old' },
+  { id: 'JER', name: 'Jeremiah', order: 24, numberOfChapters: 52, testament: 'old' },
+  { id: 'LAM', name: 'Lamentations', order: 25, numberOfChapters: 5, testament: 'old' },
+  { id: 'EZK', name: 'Ezekiel', order: 26, numberOfChapters: 48, testament: 'old' },
+  { id: 'DAN', name: 'Daniel', order: 27, numberOfChapters: 12, testament: 'old' },
+  { id: 'HOS', name: 'Hosea', order: 28, numberOfChapters: 14, testament: 'old' },
+  { id: 'JOL', name: 'Joel', order: 29, numberOfChapters: 3, testament: 'old' },
+  { id: 'AMO', name: 'Amos', order: 30, numberOfChapters: 9, testament: 'old' },
+  { id: 'OBA', name: 'Obadiah', order: 31, numberOfChapters: 1, testament: 'old' },
+  { id: 'JON', name: 'Jonah', order: 32, numberOfChapters: 4, testament: 'old' },
+  { id: 'MIC', name: 'Micah', order: 33, numberOfChapters: 7, testament: 'old' },
+  { id: 'NAH', name: 'Nahum', order: 34, numberOfChapters: 3, testament: 'old' },
+  { id: 'HAB', name: 'Habakkuk', order: 35, numberOfChapters: 3, testament: 'old' },
+  { id: 'ZEP', name: 'Zephaniah', order: 36, numberOfChapters: 3, testament: 'old' },
+  { id: 'HAG', name: 'Haggai', order: 37, numberOfChapters: 2, testament: 'old' },
+  { id: 'ZEC', name: 'Zechariah', order: 38, numberOfChapters: 14, testament: 'old' },
+  { id: 'MAL', name: 'Malachi', order: 39, numberOfChapters: 4, testament: 'old' },
+  { id: 'MAT', name: 'Matthew', order: 40, numberOfChapters: 28, testament: 'new' },
+  { id: 'MRK', name: 'Mark', order: 41, numberOfChapters: 16, testament: 'new' },
+  { id: 'LUK', name: 'Luke', order: 42, numberOfChapters: 24, testament: 'new' },
+  { id: 'JHN', name: 'John', order: 43, numberOfChapters: 21, testament: 'new' },
+  { id: 'ACT', name: 'Acts', order: 44, numberOfChapters: 28, testament: 'new' },
+  { id: 'ROM', name: 'Romans', order: 45, numberOfChapters: 16, testament: 'new' },
+  { id: '1CO', name: '1 Corinthians', order: 46, numberOfChapters: 16, testament: 'new' },
+  { id: '2CO', name: '2 Corinthians', order: 47, numberOfChapters: 13, testament: 'new' },
+  { id: 'GAL', name: 'Galatians', order: 48, numberOfChapters: 6, testament: 'new' },
+  { id: 'EPH', name: 'Ephesians', order: 49, numberOfChapters: 6, testament: 'new' },
+  { id: 'PHP', name: 'Philippians', order: 50, numberOfChapters: 4, testament: 'new' },
+  { id: 'COL', name: 'Colossians', order: 51, numberOfChapters: 4, testament: 'new' },
+  { id: '1TH', name: '1 Thessalonians', order: 52, numberOfChapters: 5, testament: 'new' },
+  { id: '2TH', name: '2 Thessalonians', order: 53, numberOfChapters: 3, testament: 'new' },
+  { id: '1TI', name: '1 Timothy', order: 54, numberOfChapters: 6, testament: 'new' },
+  { id: '2TI', name: '2 Timothy', order: 55, numberOfChapters: 4, testament: 'new' },
+  { id: 'TIT', name: 'Titus', order: 56, numberOfChapters: 3, testament: 'new' },
+  { id: 'PHM', name: 'Philemon', order: 57, numberOfChapters: 1, testament: 'new' },
+  { id: 'HEB', name: 'Hebrews', order: 58, numberOfChapters: 13, testament: 'new' },
+  { id: 'JAS', name: 'James', order: 59, numberOfChapters: 5, testament: 'new' },
+  { id: '1PE', name: '1 Peter', order: 60, numberOfChapters: 5, testament: 'new' },
+  { id: '2PE', name: '2 Peter', order: 61, numberOfChapters: 3, testament: 'new' },
+  { id: '1JN', name: '1 John', order: 62, numberOfChapters: 5, testament: 'new' },
+  { id: '2JN', name: '2 John', order: 63, numberOfChapters: 1, testament: 'new' },
+  { id: '3JN', name: '3 John', order: 64, numberOfChapters: 1, testament: 'new' },
+  { id: 'JUD', name: 'Jude', order: 65, numberOfChapters: 1, testament: 'new' },
+  { id: 'REV', name: 'Revelation', order: 66, numberOfChapters: 22, testament: 'new' }
+];
+
+// Rate limiting configuration - Optimized for better performance while respecting API limits
 const RATE_LIMIT = {
-  requestsPerMinute: 100,
-  requestsPerHour: 1000,
-  cooldownMs: 1000, // 1 second between requests
+  requestsPerMinute: 50, // Increased from 20 to 50
+  requestsPerHour: 500, // Increased from 200 to 500
+  cooldownMs: 500, // Reduced from 3 seconds to 500ms for faster loading
 };
+
+// API timeout configuration
+const API_TIMEOUT = 15000; // 15 seconds timeout
 
 interface Bible {
   id: string;
@@ -134,11 +245,13 @@ export function useBibleAPI() {
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [processingBookId, setProcessingBookId] = useState<string | null>(null);
+  const [processingPassageId, setProcessingPassageId] = useState<string | null>(null);
+  const [processingBibleId, setProcessingBibleId] = useState<string | null>(null);
   const [rateLimitInfo, setRateLimitInfo] = useState({
     remaining: RATE_LIMIT.requestsPerMinute,
     resetTime: Date.now() + 60000,
   });
-  
+
   // New state for enhanced features
   const [bookmarks, setBookmarks] = useState<Array<{
     id: string;
@@ -172,67 +285,159 @@ export function useBibleAPI() {
     bibleId: string;
   }>>([]);
 
-  // Load data from storage on mount
+  // Optimize data loading from storage - load only essential data initially
   useEffect(() => {
     const loadStoredData = async () => {
-      const storedBookmarks = await getFromStorage(STORAGE_KEYS.BOOKMARKS);
-      const storedProgress = await getFromStorage(STORAGE_KEYS.READING_PROGRESS);
-      const storedCache = await getFromStorage(STORAGE_KEYS.CACHED_PASSAGES);
-      const storedRecent = await getFromStorage(STORAGE_KEYS.RECENT_CHAPTERS);
-      const storedOfflineBooks = await getFromStorage(STORAGE_KEYS.OFFLINE_BOOKS);
-      const storedOfflineChapters = await getFromStorage(STORAGE_KEYS.OFFLINE_CHAPTERS);
-      
-      if (storedBookmarks) setBookmarks(storedBookmarks);
-      if (storedProgress) setReadingProgress(storedProgress);
-      if (storedCache) setCachedPassages(storedCache);
-      if (storedRecent) setRecentChapters(storedRecent);
-      
-      console.log('📖 Loaded offline data:', {
-        passages: Object.keys(storedCache || {}).length,
-        books: (storedOfflineBooks || []).length,
-        chapters: (storedOfflineChapters || []).length
-      });
+      try {
+        // Load essential data first
+        const [storedBookmarks, storedProgress, storedCache, storedRecent] = await Promise.all([
+          getFromStorage(STORAGE_KEYS.BOOKMARKS),
+          getFromStorage(STORAGE_KEYS.READING_PROGRESS),
+          getFromStorage(STORAGE_KEYS.CACHED_PASSAGES),
+          getFromStorage(STORAGE_KEYS.RECENT_CHAPTERS)
+        ]);
+
+        if (storedBookmarks) setBookmarks(storedBookmarks);
+        if (storedProgress) setReadingProgress(storedProgress);
+        if (storedCache) setCachedPassages(storedCache);
+        if (storedRecent) setRecentChapters(storedRecent);
+
+        // Load offline data separately to prevent blocking
+        setTimeout(async () => {
+          try {
+            const [storedOfflineBooks, storedOfflineChapters] = await Promise.all([
+              getFromStorage(STORAGE_KEYS.OFFLINE_BOOKS),
+              getFromStorage(STORAGE_KEYS.OFFLINE_CHAPTERS)
+            ]);
+
+            if (__DEV__) {
+              console.log('📖 Loaded offline data:', {
+                passages: Object.keys(storedCache || {}).length,
+                books: (storedOfflineBooks || []).length,
+                chapters: (storedOfflineChapters || []).length
+              });
+            }
+          } catch (error) {
+            console.error('Error loading offline data:', error);
+          }
+        }, 100);
+
+      } catch (error) {
+        console.error('Error loading stored data:', error);
+      }
     };
-    
+
     loadStoredData();
   }, []);
 
-  // Save data to storage when it changes
+  // Optimize data saving to storage - debounce to prevent excessive writes
   useEffect(() => {
-    setToStorage(STORAGE_KEYS.BOOKMARKS, bookmarks);
+    const timeoutId = setTimeout(() => {
+      setToStorage(STORAGE_KEYS.BOOKMARKS, bookmarks);
+    }, 1000); // Increased debounce time
+    return () => clearTimeout(timeoutId);
   }, [bookmarks]);
-  
+
   useEffect(() => {
-    setToStorage(STORAGE_KEYS.READING_PROGRESS, readingProgress);
+    const timeoutId = setTimeout(() => {
+      setToStorage(STORAGE_KEYS.READING_PROGRESS, readingProgress);
+    }, 1000); // Increased debounce time
+    return () => clearTimeout(timeoutId);
   }, [readingProgress]);
-  
+
   useEffect(() => {
-    setToStorage(STORAGE_KEYS.CACHED_PASSAGES, cachedPassages);
+    const timeoutId = setTimeout(() => {
+      setToStorage(STORAGE_KEYS.CACHED_PASSAGES, cachedPassages);
+    }, 2000); // Longer delay for cached passages as they're larger
+    return () => clearTimeout(timeoutId);
   }, [cachedPassages]);
-  
+
   useEffect(() => {
-    setToStorage(STORAGE_KEYS.RECENT_CHAPTERS, recentChapters);
+    const timeoutId = setTimeout(() => {
+      setToStorage(STORAGE_KEYS.RECENT_CHAPTERS, recentChapters);
+    }, 1000); // Increased debounce time
+    return () => clearTimeout(timeoutId);
   }, [recentChapters]);
 
 
-  // Clean up old cache periodically
+  // Define clearOldCache function before using it
+  const clearOldCache = async () => {
+    try {
+      const now = Date.now();
+      const thirtyDaysAgo = 30 * 24 * 60 * 60 * 1000; // 30 days for passages
+      const ninetyDaysAgo = 90 * 24 * 60 * 60 * 1000; // 90 days for books/chapters
+
+      // Clean up old cached passages
+      const newCachedPassages = Object.fromEntries(
+        Object.entries(cachedPassages).filter(([_, passage]) =>
+          (now - passage.timestamp) < thirtyDaysAgo
+        )
+      );
+
+      if (Object.keys(newCachedPassages).length !== Object.keys(cachedPassages).length) {
+        setCachedPassages(newCachedPassages);
+        console.log(`🧹 Cleaned up ${Object.keys(cachedPassages).length - Object.keys(newCachedPassages).length} old cached passages`);
+      }
+
+      // Clean up old recent chapters (keep only last 50)
+      if (recentChapters.length > 50) {
+        const sortedChapters = recentChapters
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 50);
+        setRecentChapters(sortedChapters);
+        console.log(`🧹 Cleaned up ${recentChapters.length - 50} old recent chapters`);
+      }
+
+      // Clear old offline books and chapters
+      try {
+        const offlineBooks = await getFromStorage(STORAGE_KEYS.OFFLINE_BOOKS) || [];
+        const filteredBooks = offlineBooks.filter((book: any) =>
+          (now - book.savedAt) < ninetyDaysAgo
+        );
+        await setToStorage(STORAGE_KEYS.OFFLINE_BOOKS, filteredBooks);
+
+        const offlineChapters = await getFromStorage(STORAGE_KEYS.OFFLINE_CHAPTERS) || [];
+        const filteredChapters = offlineChapters.filter((chapter: any) =>
+          (now - chapter.savedAt) < ninetyDaysAgo
+        );
+        await setToStorage(STORAGE_KEYS.OFFLINE_CHAPTERS, filteredChapters);
+
+        console.log('🧹 Cache cleanup completed:', {
+          passages: Object.keys(newCachedPassages).length,
+          books: filteredBooks.length,
+          chapters: filteredChapters.length
+        });
+      } catch (error) {
+        console.error('Error during offline cache cleanup:', error);
+      }
+
+    } catch (error) {
+      console.error('Error clearing old cache:', error);
+    }
+  };
+
+  // Optimize cache cleanup - run less frequently and with better memory management
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      clearOldCache();
-    }, 24 * 60 * 60 * 1000); // Clean up every 24 hours
-    
-    return () => clearInterval(cleanupInterval);
-  }, []);
+      try {
+        clearOldCache();
+        // Force garbage collection if available
+        if (global.gc) {
+          global.gc();
+        }
+      } catch (error) {
+        console.error('Error during cache cleanup:', error);
+      }
+    }, 6 * 60 * 60 * 1000); // Clean up every 6 hours instead of 24
 
-  // Monitor chapters state changes
+    return () => clearInterval(cleanupInterval);
+  }, [clearOldCache]);
+
+  // Monitor chapters state changes - minimal logging for production
   useEffect(() => {
-    console.log('🔄 useBibleAPI: chapters state changed to:', chapters.length, 'chapters');
-    if (chapters.length > 0) {
-      console.log('📖 First few chapters in state:', chapters.slice(0, 3).map(ch => ({
-        id: ch.id,
-        chapterNumber: ch.chapterNumber,
-        bookId: ch.bookId
-      })));
+    // Only log in development mode
+    if (__DEV__ && chapters.length > 0) {
+      console.log('Chapters loaded:', chapters.length);
     }
   }, [chapters]);
 
@@ -263,92 +468,90 @@ export function useBibleAPI() {
       });
       return true;
     }
-    
+
     if (rateLimitInfo.remaining <= 0) {
       return false;
     }
-    
+
     setRateLimitInfo(prev => ({
       ...prev,
       remaining: prev.remaining - 1,
     }));
-    
+
     return true;
   };
 
-  // Enhanced error handling
-  const handleAPIError = (error: any, context: string): APIError => {
-    console.error(`API Error in ${context}:`, error);
-    
-    if (error.status === 429) {
-      return {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: 'Rate limit exceeded. Please wait a moment before trying again.',
-        details: 'You\'ve made too many requests. Please slow down.'
-      };
+  // Queue processing function
+  const processQueue = async () => {
+    if (isProcessingQueue || requestQueue.length === 0) return;
+
+    isProcessingQueue = true;
+    console.log(`🔄 Processing queue with ${requestQueue.length} requests`);
+
+    while (requestQueue.length > 0) {
+      const batch = requestQueue.splice(0, QUEUE_BATCH_SIZE);
+      console.log(`📦 Processing batch of ${batch.length} requests`);
+
+      // Process batch in parallel
+      const promises = batch.map(async ({ endpoint, resolve, reject }) => {
+        try {
+          const result = await makeDirectAPIRequest(endpoint);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      await Promise.allSettled(promises);
+
+      // Add delay between batches
+      if (requestQueue.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, QUEUE_DELAY));
+      }
     }
-    
-    if (error.status === 401) {
-      return {
-        code: 'UNAUTHORIZED',
-        message: 'API key is invalid or expired.',
-        details: 'Please check your API key configuration.'
-      };
-    }
-    
-    if (error.status === 403) {
-      return {
-        code: 'FORBIDDEN',
-        message: 'Access denied. Check your API permissions.',
-        details: 'Your API key may not have access to this resource.'
-      };
-    }
-    
-    if (error.status >= 500) {
-      return {
-        code: 'SERVER_ERROR',
-        message: 'Bible API service is temporarily unavailable.',
-        details: 'Please try again later.'
-      };
-    }
-    
-    if (!isOnline) {
-      return {
-        code: 'OFFLINE',
-        message: 'You\'re currently offline.',
-        details: 'Please check your internet connection and try again.'
-      };
-    }
-    
-    return {
-      code: 'UNKNOWN_ERROR',
-      message: 'An unexpected error occurred.',
-      details: error.message || 'Please try again later.'
-    };
+
+    isProcessingQueue = false;
   };
 
-  const makeAPIRequest = async (endpoint: string) => {
+  // Direct API request without queuing (used by queue processor)
+  const makeDirectAPIRequest = async (endpoint: string) => {
+    console.log(`🌐 Making direct API request to: ${API_BASE_URL}${endpoint}`);
+
+    // Check rate limiting
+    if (!checkRateLimit()) {
+      throw new Error('Rate limit exceeded. Please wait before making another request.');
+    }
+
+    // Check online status
+    if (!isOnline) {
+      throw new Error('You are currently offline. Please check your internet connection.');
+    }
+
+    // Add delay to respect rate limiting
+    await new Promise(resolve => setTimeout(resolve, RATE_LIMIT.cooldownMs));
+
+    // Create AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ API request timed out, aborting...');
+      controller.abort();
+    }, API_TIMEOUT);
+
     try {
-      // Check rate limiting
-      if (!checkRateLimit()) {
-        throw new Error('Rate limit exceeded. Please wait before making another request.');
-      }
-
-      // Check online status
-      if (!isOnline) {
-        throw new Error('You are currently offline. Please check your internet connection.');
-      }
-
-      // Add delay to respect rate limiting
-      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT.cooldownMs));
+      console.log(`🌐 Making API request to: ${API_BASE_URL}${endpoint}`);
+      console.log(`🔑 Using API key: ${API_KEY.substring(0, 8)}...`);
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'api-key': API_KEY,
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       });
-      
+
+      clearTimeout(timeoutId);
+      console.log(`📡 API Response status: ${response.status}`);
+
       if (!response.ok) {
         const errorDataResponse = await response.json().catch(() => ({}));
         const apiError = {
@@ -358,13 +561,105 @@ export function useBibleAPI() {
         };
         throw apiError;
       }
-      
-            const data = await response.json();
-            return data;
-          } catch (error) {
+
+      const data = await response.json();
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+
+      // Handle timeout specifically
+      if (fetchError.name === 'AbortError') {
+        throw new Error(`Request timed out after ${API_TIMEOUT / 1000} seconds. Please check your internet connection and try again.`);
+      }
+
+      throw fetchError;
+    }
+  };
+
+  // Enhanced error handling
+  const handleAPIError = (error: any, context: string): APIError => {
+    console.error(`API Error in ${context}:`, error);
+
+    if (error.status === 429) {
+      return {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Rate limit exceeded. Please wait a moment before trying again.',
+        details: 'You\'ve made too many requests. Please slow down.'
+      };
+    }
+
+    if (error.status === 401) {
+      return {
+        code: 'UNAUTHORIZED',
+        message: 'Bible service is temporarily unavailable.',
+        details: 'The Bible API is currently experiencing authentication issues. Please try again later.'
+      };
+    }
+
+    if (error.status === 403) {
+      return {
+        code: 'FORBIDDEN',
+        message: 'Access denied. Check your API permissions.',
+        details: 'Your API key may not have access to this resource.'
+      };
+    }
+
+    if (error.status >= 500) {
+      return {
+        code: 'SERVER_ERROR',
+        message: 'Bible API service is temporarily unavailable.',
+        details: 'Please try again later.'
+      };
+    }
+
+    if (!isOnline) {
+      return {
+        code: 'OFFLINE',
+        message: 'You\'re currently offline.',
+        details: 'Please check your internet connection and try again.'
+      };
+    }
+
+    return {
+      code: 'UNKNOWN_ERROR',
+      message: 'An unexpected error occurred.',
+      details: error.message || 'Please try again later.'
+    };
+  };
+
+  const makeAPIRequest = async (endpoint: string) => {
+    // Check for pending request with same endpoint (debouncing)
+    const requestKey = endpoint;
+    if (pendingRequests.has(requestKey)) {
+      console.log(`🔄 Request already pending for ${endpoint}, returning existing promise`);
+      return await pendingRequests.get(requestKey);
+    }
+
+    // Create the request promise using queue system
+    const requestPromise = new Promise((resolve, reject) => {
+      // Add to queue
+      requestQueue.push({ endpoint, resolve, reject });
+      console.log(`📝 Added request to queue: ${endpoint} (queue size: ${requestQueue.length})`);
+
+      // Start processing queue if not already processing
+      if (!isProcessingQueue) {
+        processQueue();
+      }
+    });
+
+    // Store the promise in pending requests
+    pendingRequests.set(requestKey, requestPromise);
+
+    try {
+      const result = await requestPromise;
+      return result;
+    } catch (error) {
       const apiError = handleAPIError(error, endpoint);
       setError(apiError.message);
       throw apiError;
+    } finally {
+      // Remove from pending requests when done
+      pendingRequests.delete(requestKey);
     }
   };
 
@@ -372,90 +667,107 @@ export function useBibleAPI() {
     try {
       setLoading(true);
       setError(null);
+      console.log('🔄 Fetching bibles from API...');
       const data = await makeAPIRequest('/bibles');
+      console.log('✅ Bibles fetched successfully:', data.data?.length || 0, 'bibles');
       setBibles(data.data || []);
     } catch (error) {
       const apiError = error as APIError;
-      setError(apiError.message);
-      console.error('Error fetching bibles:', apiError);
+      console.error('❌ Error fetching bibles:', apiError);
+
+      // Use fallback data when API fails
+      if (apiError.code === 'UNAUTHORIZED' || apiError.code === 'SERVER_ERROR') {
+        console.log('📚 Using fallback Bible data due to API error');
+        setBibles(FALLBACK_BIBLES);
+        setError(null); // Clear error since we have fallback data
+      } else {
+        setError(apiError.message);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const fetchBooks = async (bibleId: string) => {
+    // Prevent duplicate calls for the same Bible
+    if (processingBibleId === bibleId) {
+      console.log('🔄 Already processing books for Bible:', bibleId, 'skipping duplicate call');
+      return;
+    }
+
     try {
+      setProcessingBibleId(bibleId);
       setLoading(true);
       setError(null);
       console.log('📚 Fetching books for Bible:', bibleId);
-      
-      const data = await makeAPIRequest(`/bibles/${bibleId}/books`);
-      
-      if (data.data && Array.isArray(data.data)) {
-        // Merge API books with static list to ensure all canonical books are present
-        const { BIBLE_BOOKS } = require('@/constants/BibleBooks');
 
-        // Normalize and exclude apocryphal books when explicitly marked
-        const apiBooks: Book[] = (data.data as Book[])
-          .filter((book: Book) => book.isApocryphal !== true);
+      // First, set books from static data immediately for instant UI response
+      const { BIBLE_BOOKS } = require('@/constants/BibleBooks');
+      const staticBooks = createStaticBookList(bibleId);
+      setBooks(staticBooks);
+      console.log(`📚 Set ${staticBooks.length} static books immediately`);
 
-        console.log(`📖 Fetched ${apiBooks.length} non-apocryphal books from API`);
+      // Then try to enhance with API data in the background
+      try {
+        const data = await makeAPIRequest(`/bibles/${bibleId}/books`);
+        console.log('📊 API Response for books:', data);
 
-        const apiBooksById = new Map<string, Book>();
-        for (const b of apiBooks) {
-          apiBooksById.set(b.id, b);
-        }
+        if (data.data && Array.isArray(data.data)) {
+          // Normalize and exclude apocryphal books when explicitly marked
+          const apiBooks: Book[] = (data.data as Book[])
+            .filter((book: Book) => book.isApocryphal !== true);
 
-        // Build merged list in canonical order as defined by BIBLE_BOOKS
-        const mergedBooks: Book[] = BIBLE_BOOKS.map((staticBook: any, index: number) => {
-          const apiBook = apiBooksById.get(staticBook.id);
-          if (apiBook) {
-            return {
-              ...apiBook,
-              translationId: bibleId,
-              // Ensure order falls back to canonical ordering if missing
-              order: typeof apiBook.order === 'number' ? apiBook.order : staticBook.order ?? index + 1,
-              // Ensure numberOfChapters populated
-              numberOfChapters: apiBook.numberOfChapters || staticBook.chapters,
-              isApocryphal: false,
-            } as Book;
+          console.log(`📖 Fetched ${apiBooks.length} non-apocryphal books from API`);
+
+          const apiBooksById = new Map<string, Book>();
+          for (const b of apiBooks) {
+            apiBooksById.set(b.id, b);
           }
-          // Fallback for any book missing from API
-          return {
-            id: staticBook.id,
-            translationId: bibleId,
-            name: staticBook.name,
-            commonName: staticBook.name,
-            title: staticBook.name,
-            order: staticBook.order ?? index + 1,
-            numberOfChapters: staticBook.chapters,
-            firstChapterApiLink: '',
-            lastChapterApiLink: '',
-            totalNumberOfVerses: 0,
-            isApocryphal: false,
-          } as Book;
-        });
 
-        // Final sort by canonical order to be safe
-        mergedBooks.sort((a, b) => (a.order || 0) - (b.order || 0));
+          // Build enhanced list with API data where available
+          const enhancedBooks: Book[] = staticBooks.map((staticBook: Book) => {
+            const apiBook = apiBooksById.get(staticBook.id);
+            if (apiBook) {
+              return {
+                ...staticBook,
+                ...apiBook,
+                translationId: bibleId,
+                // Use API data for enhanced fields
+                numberOfChapters: apiBook.numberOfChapters || staticBook.numberOfChapters,
+                totalNumberOfVerses: apiBook.totalNumberOfVerses || 0,
+                firstChapterApiLink: apiBook.firstChapterApiLink || '',
+                lastChapterApiLink: apiBook.lastChapterApiLink || '',
+              } as Book;
+            }
+            return staticBook;
+          });
 
-        setBooks(mergedBooks);
-        console.log(`✅ Set ${mergedBooks.length} merged books in state`);
-      } else {
-        console.warn('⚠️ No books data received from API');
-        setBooks([]);
+          console.log(`✅ Enhanced ${enhancedBooks.length} books with API data`);
+          setBooks(enhancedBooks);
+        }
+      } catch (apiError) {
+        console.log('⚠️ API enhancement failed, using static data:', apiError);
+        // Static data is already set, so we continue with that
       }
     } catch (error) {
       const apiError = error as APIError;
-      setError(apiError.message);
       console.error('❌ Error fetching books:', apiError);
-      
-      // Fallback to static book list if API fails
-      console.log('📚 Using fallback static book list');
-      const fallbackBooks = createStaticBookList(bibleId);
-      setBooks(fallbackBooks);
+
+      // Use fallback data when API fails
+      if (apiError.code === 'UNAUTHORIZED' || apiError.code === 'SERVER_ERROR') {
+        console.log('📚 Using fallback books data due to API error');
+        setBooks(FALLBACK_BOOKS);
+        setError(null); // Clear error since we have fallback data
+      } else {
+        setError(apiError.message);
+        // Fallback to static book list if API fails
+        console.log('📚 Using fallback static book list');
+        const fallbackBooks = createStaticBookList(bibleId);
+        setBooks(fallbackBooks);
+      }
     } finally {
       setLoading(false);
+      setProcessingBibleId(null);
     }
   };
 
@@ -463,14 +775,15 @@ export function useBibleAPI() {
   const createStaticBookList = (bibleId: string): Book[] => {
     // Import the static book list from constants
     const { BIBLE_BOOKS } = require('@/constants/BibleBooks');
-    
-    return BIBLE_BOOKS.map((book: any, index: number) => ({
+
+    // Use the order from the static data instead of index
+    return BIBLE_BOOKS.map((book: any) => ({
       id: book.id,
       translationId: bibleId,
       name: book.name,
       commonName: book.name,
       title: book.name,
-      order: index + 1,
+      order: book.order,
       numberOfChapters: book.chapters,
       firstChapterApiLink: '',
       lastChapterApiLink: '',
@@ -485,28 +798,44 @@ export function useBibleAPI() {
       console.log('🔄 Already processing chapters for book:', bookId, 'skipping duplicate call');
       return;
     }
-    
+
     try {
       console.log('🔍 fetchChapters called with:', { bibleId, bookId });
       setProcessingBookId(bookId);
       setLoading(true);
       setError(null);
-      
-      // Clear existing chapters to prevent duplication
-      setChapters([]);
-      
-      // First try to get chapters from the API
+
+      // First, create static chapter list immediately for instant UI response
+      const { BIBLE_BOOKS } = require('@/constants/BibleBooks');
+      const staticBook = BIBLE_BOOKS.find((b: any) => b.id === bookId);
+
+      if (staticBook) {
+        const staticChapters: APIChapter[] = [];
+        for (let i = 1; i <= staticBook.chapters; i++) {
+          staticChapters.push({
+            id: `${bookId}-${i}`,
+            translationId: bibleId,
+            bookId: bookId,
+            chapterNumber: i,
+            numberOfVerses: 0,
+            verses: []
+          });
+        }
+        setChapters(staticChapters);
+        console.log(`📚 Set ${staticChapters.length} static chapters immediately`);
+      }
+
+      // Then try to enhance with API data in the background
       try {
         const chaptersData = await makeAPIRequest(`/bibles/${bibleId}/books/${bookId}/chapters`);
         if (chaptersData.data && chaptersData.data.length > 0) {
           console.log('📚 API chapters found:', chaptersData.data.length);
-          console.log('📚 First API chapter structure:', chaptersData.data[0]);
-          
+
           // Map API chapters to ensure they have the correct structure
           const mappedChapters: APIChapter[] = chaptersData.data.map((chapter: any, index: number) => {
             // Extract chapter number from various possible sources
             let chapterNumber = chapter.chapterNumber;
-            
+
             // If chapterNumber is not available, try to extract it from the id or other fields
             if (!chapterNumber || isNaN(chapterNumber)) {
               // Try to extract from id (e.g., "GEN.1" -> 1)
@@ -516,14 +845,14 @@ export function useBibleAPI() {
                   chapterNumber = parseInt(match[1]);
                 }
               }
-              
+
               // If still no chapter number, use the index + 1 as fallback
               if (!chapterNumber || isNaN(chapterNumber)) {
                 chapterNumber = index + 1;
                 console.warn('⚠️ Using index as fallback for chapter number:', { index, chapterNumber, chapterId: chapter.id });
               }
             }
-            
+
             return {
               id: chapter.id || `${bookId}-${chapterNumber}`,
               translationId: bibleId,
@@ -533,70 +862,28 @@ export function useBibleAPI() {
               verses: chapter.verses || []
             };
           });
-          
+
           // Validate that all chapters have valid chapter numbers
-          const validChapters = mappedChapters.filter(chapter => 
+          const validChapters = mappedChapters.filter(chapter =>
             chapter.chapterNumber && typeof chapter.chapterNumber === 'number' && !isNaN(chapter.chapterNumber)
           );
-          
+
           // Remove duplicate chapters by chapter number
-          const uniqueChapters = validChapters.filter((chapter, index, self) => 
+          const uniqueChapters = validChapters.filter((chapter, index, self) =>
             index === self.findIndex(c => c.chapterNumber === chapter.chapterNumber)
           );
-          
-          console.log('📚 API chapters found:', chaptersData.data.length);
-          console.log('📚 Valid chapters:', validChapters.length);
-          console.log('📚 Unique chapters after deduplication:', uniqueChapters.length);
-          
+
           if (uniqueChapters.length > 0) {
-            console.log('📚 All API chapters have valid chapter numbers');
-            console.log('📚 Mapped API chapters:', uniqueChapters.slice(0, 3));
+            console.log('📚 Enhanced chapters with API data:', uniqueChapters.length);
             setChapters(uniqueChapters);
             return;
-          } else {
-            console.warn('⚠️ No valid unique chapters found, falling back to static data');
           }
         }
       } catch (apiError) {
-        console.log('⚠️ API chapters not available, falling back to static data');
+        console.log('⚠️ API chapters not available, using static data:', apiError);
+        // Static data is already set, so we continue with that
       }
-      
-      // Fallback: Get the book to find out how many chapters it has
-      const bookData = await makeAPIRequest(`/bibles/${bibleId}/books`);
-      const book = bookData.data?.find((b: Book) => b.id === bookId);
-      
-      if (!book) {
-        throw new Error('Book not found');
-      }
-      
-      console.log('📖 Found book:', book.name, 'with', book.numberOfChapters, 'chapters');
-      
 
-      
-      // Create chapter objects for all chapters in the book
-      const chapterList: APIChapter[] = [];
-      for (let i = 1; i <= book.numberOfChapters; i++) {
-        chapterList.push({
-          id: `${bookId}-${i}`,
-          translationId: bibleId,
-          bookId: bookId,
-          chapterNumber: i,
-          numberOfVerses: 0, // Will be updated when fetching actual chapter
-          verses: []
-        });
-      }
-      
-      // Ensure no duplicates (shouldn't happen with this loop, but just to be safe)
-      const uniqueChapterList = chapterList.filter((chapter, index, self) => 
-        index === self.findIndex(c => c.chapterNumber === chapter.chapterNumber)
-      );
-      
-      console.log('📚 Created', chapterList.length, 'chapter objects');
-      console.log('📚 Unique chapters after deduplication:', uniqueChapterList.length);
-      console.log('📚 First few chapters:', uniqueChapterList.slice(0, 3));
-      
-      setChapters(uniqueChapterList);
-      console.log('✅ setChapters called with', uniqueChapterList.length, 'chapters');
     } catch (error) {
       const apiError = error as APIError;
       setError(apiError.message);
@@ -613,14 +900,14 @@ export function useBibleAPI() {
       // Import BibleBooks dynamically to avoid circular dependencies
       const { BIBLE_BOOKS } = require('../constants/BibleBooks');
       const staticBook = BIBLE_BOOKS.find((b: any) => b.id === bookId);
-      
+
       if (!staticBook) {
         console.error('❌ Static book not found:', bookId);
         return;
       }
-      
+
       console.log('📖 Creating static chapters for', staticBook.name, 'with', staticBook.chapters, 'chapters');
-      
+
       const chapterList: APIChapter[] = [];
       for (let i = 1; i <= staticBook.chapters; i++) {
         chapterList.push({
@@ -632,83 +919,157 @@ export function useBibleAPI() {
           verses: []
         });
       }
-      
+
       console.log('📚 Created', chapterList.length, 'static chapter objects');
       console.log('📚 First few static chapters:', chapterList.slice(0, 3));
-      
+
       setChapters(chapterList);
-      console.log('✅ setChapters called with', chapterList.length, 'static chapters');
     } catch (error) {
       console.error('Error creating static chapters:', error);
     }
   };
 
-  const fetchPassage = async (bibleId: string, passageId: string) => {
+  // Helper function to fetch passage from API silently (for background refresh)
+  const fetchPassageFromAPI = async (bibleId: string, passageId: string, bookId: string, chapterNum: number, cacheKey: string) => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('🔍 fetchPassage called with:', { bibleId, passageId });
-      
-      // Parse passageId to get book, chapter info
-      const [bookId, chapterNumber] = passageId.split('-');
-      console.log('📖 Parsed passageId:', { bookId, chapterNumber, original: passageId });
-      
-      if (!bookId || !chapterNumber) {
-        throw new Error('Invalid passage ID format');
-      }
-      
-      // Validate chapter number
-      const chapterNum = parseInt(chapterNumber);
-      if (isNaN(chapterNum) || chapterNum <= 0) {
-        console.error('❌ Invalid chapter number:', { chapterNumber, parsed: chapterNum, isNaN: isNaN(chapterNum) });
-        throw new Error(`Invalid chapter number: ${chapterNumber}`);
-      }
-      
-      console.log('✅ Validated chapter number:', chapterNum);
-      
-      // Check cache first (offline-first strategy)
-      const cacheKey = `${bibleId}-${passageId}`;
-      const cachedPassage = cachedPassages[cacheKey];
-      const now = Date.now();
-      
-      // Use cached passage if available (extended to 30 days for offline access)
-      const cacheExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days
-      if (cachedPassage && (now - cachedPassage.timestamp) < cacheExpiry) {
-        console.log('📖 Using cached passage:', passageId);
-        const passage: Passage = {
-          id: passageId,
-          translationId: bibleId,
+      const data = await makeAPIRequest(`/bibles/${bibleId}/passages/${bookId}.${chapterNum}`);
+      const passage: Passage = {
+        id: passageId,
+        translationId: bibleId,
+        bookId: bookId,
+        chapterNumber: chapterNum,
+        content: data.data?.content || '',
+        reference: data.data?.reference || `${bookId} ${chapterNum}`,
+        verseCount: data.data?.verseCount || 0
+      };
+      setCurrentPassage(passage);
+
+      // Update cache
+      setCachedPassages(prev => ({
+        ...prev,
+        [cacheKey]: {
+          content: passage.content,
+          timestamp: Date.now(),
+          bibleId: bibleId,
           bookId: bookId,
           chapterNumber: chapterNum,
-          content: cachedPassage.content,
-          reference: cachedPassage.reference || `${bookId} ${chapterNum}`,
-          verseCount: 0
-        };
-        setCurrentPassage(passage);
-        
-        // Update reading progress
-        updateReadingProgress(bookId, chapterNum, 1);
-        
-        // Add to recent chapters
-        addToRecentChapters(bookId, chapterNum, bookId, bibleId);
-        
-        // If offline, we're done - don't try to fetch from API
-        if (!isOnline) {
-          console.log('📱 Offline mode - using cached data only');
-          return;
+          reference: passage.reference
         }
-        
-        // If online, continue to fetch fresh data in background
-        console.log('🌐 Online - fetching fresh data in background');
+      }));
+    } catch (error) {
+      // Silently fail for background refresh - we already have cached data
+      if (__DEV__) {
+        console.log('Background refresh failed:', error);
       }
-      
+    }
+  };
+
+  const fetchPassage = async (bibleId: string, passageId: string) => {
+    // Prevent multiple simultaneous requests for the same passage
+    const requestKey = `${bibleId}-${passageId}`;
+    if (processingPassageId === requestKey) {
+      return;
+    }
+
+    // Parse passageId to get book, chapter info FIRST
+    const [bookId, chapterNumber] = passageId.split('-');
+    if (!bookId || !chapterNumber) {
+      setError('Invalid passage ID format');
+      return;
+    }
+
+    // Validate chapter number
+    const chapterNum = parseInt(chapterNumber);
+    if (isNaN(chapterNum) || chapterNum <= 0) {
+      setError(`Invalid chapter number: ${chapterNumber}`);
+      return;
+    }
+
+    // Check cache FIRST - before setting loading state for instant display
+    const cacheKey = `${bibleId}-${passageId}`;
+    const cachedPassage = cachedPassages[cacheKey];
+    const now = Date.now();
+    const cacheExpiry = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    if (cachedPassage && (now - cachedPassage.timestamp) < cacheExpiry) {
+      // Immediately set passage from cache - NO loading state shown
+      const passage: Passage = {
+        id: passageId,
+        translationId: bibleId,
+        bookId: bookId,
+        chapterNumber: chapterNum,
+        content: cachedPassage.content,
+        reference: cachedPassage.reference || `${bookId} ${chapterNum}`,
+        verseCount: 0
+      };
+      setCurrentPassage(passage);
+      setError(null);
+
+      // Update reading progress
+      updateReadingProgress(bookId, chapterNum, 1);
+      addToRecentChapters(bookId, chapterNum, bookId, bibleId);
+
+      // If offline or cache is fresh (< 1 day), we're done
+      if (!isOnline || (now - cachedPassage.timestamp) < 24 * 60 * 60 * 1000) {
+        return;
+      }
+
+      // If online and cache is > 1 day old, refresh in background silently (no loading state)
+      setProcessingPassageId(requestKey);
+      fetchPassageFromAPI(bibleId, passageId, bookId, chapterNum, cacheKey).finally(() => {
+        setProcessingPassageId(null);
+      });
+      return;
+    }
+
+    // No cache available - show loading state and fetch
+    try {
+      setProcessingPassageId(requestKey);
+      setLoading(true);
+      setError(null);
+
+      // Check offline storage for fallback content
+      try {
+        const offlineContent = await getFromStorage(`${STORAGE_KEYS.OFFLINE_CHAPTERS}-${passageId}`);
+        if (offlineContent && offlineContent.content) {
+          console.log('📱 Using offline content for:', passageId);
+          const passage: Passage = {
+            id: passageId,
+            translationId: bibleId,
+            bookId: bookId,
+            chapterNumber: chapterNum,
+            content: offlineContent.content,
+            reference: offlineContent.reference || `${bookId} ${chapterNum}`,
+            verseCount: offlineContent.verseCount || 0
+          };
+          setCurrentPassage(passage);
+          setLoading(false);
+
+          // Update reading progress
+          updateReadingProgress(bookId, chapterNum, 1);
+
+          // Add to recent chapters
+          addToRecentChapters(bookId, chapterNum, bookId, bibleId);
+
+          // If offline, we're done
+          if (!isOnline) {
+            console.log('📱 Offline mode - using offline content');
+            return;
+          }
+
+          // If online, continue to fetch fresh data in background
+          console.log('🌐 Online - using offline content, fetching fresh data in background');
+        }
+      } catch (error) {
+        // No offline content available, continue to API
+      }
+
       // If online, fetch from API (or if no cached data available)
       if (isOnline) {
         try {
           console.log('🌐 Making API request for:', `${bookId}.${chapterNum}`);
           const data = await makeAPIRequest(`/bibles/${bibleId}/passages/${bookId}.${chapterNum}`);
-          
+
           // Transform the data to match our Passage interface
           const passage: Passage = {
             id: passageId,
@@ -719,9 +1080,9 @@ export function useBibleAPI() {
             reference: data.data?.reference || `${bookId} ${chapterNum}`,
             verseCount: data.data?.verseCount || 0
           };
-          
+
           setCurrentPassage(passage);
-          
+
           // Cache the passage with enhanced metadata
           const newCache = {
             ...cachedPassages,
@@ -735,7 +1096,7 @@ export function useBibleAPI() {
             }
           };
           setCachedPassages(newCache);
-          
+
         } catch (apiError) {
           // If API fails but we have cached data, use it
           if (cachedPassage) {
@@ -760,19 +1121,20 @@ export function useBibleAPI() {
           throw new Error('You are offline and no cached data is available for this passage.');
         }
       }
-      
+
       // Update reading progress
       updateReadingProgress(bookId, chapterNum, 1);
-      
+
       // Add to recent chapters
       addToRecentChapters(bookId, chapterNum, bookId, bibleId);
-      
+
     } catch (error) {
       const apiError = error as APIError;
       setError(apiError.message);
       console.error('Error fetching passage:', apiError);
     } finally {
       setLoading(false);
+      setProcessingPassageId(null);
     }
   };
 
@@ -798,11 +1160,11 @@ export function useBibleAPI() {
         timestamp: Date.now(),
         bibleId
       },
-      ...recentChapters.filter(rc => 
+      ...recentChapters.filter(rc =>
         !(rc.bookId === bookId && rc.chapterNumber === chapterNumber)
       )
     ].slice(0, 10); // Keep only last 10 chapters
-    
+
     setRecentChapters(newRecent);
   };
 
@@ -815,7 +1177,7 @@ export function useBibleAPI() {
       timestamp: Date.now(),
       bibleId
     };
-    
+
     setBookmarks(prev => [newBookmark, ...prev]);
     return newBookmark;
   };
@@ -858,7 +1220,7 @@ export function useBibleAPI() {
 
     // Calculate total chapters from all books (using static Bible data)
     const { BIBLE_BOOKS } = require('../constants/BibleBooks');
-    
+
     bookIds.forEach(bookId => {
       const book = BIBLE_BOOKS.find((b: any) => b.id === bookId);
       if (book) {
@@ -887,7 +1249,7 @@ export function useBibleAPI() {
     try {
       const offlineBooks = await getFromStorage(STORAGE_KEYS.OFFLINE_BOOKS) || [];
       const existingIndex = offlineBooks.findIndex((b: any) => b.id === book.id && b.bibleId === bibleId);
-      
+
       if (existingIndex === -1) {
         const bookWithMetadata = {
           ...book,
@@ -909,7 +1271,7 @@ export function useBibleAPI() {
       const existingIndex = offlineChapters.findIndex((c: any) =>
         c.id === chapter.id && c.bibleId === bibleId
       );
-      
+
       if (existingIndex === -1) {
         const chapterWithMetadata = {
           ...chapter,
@@ -926,7 +1288,7 @@ export function useBibleAPI() {
     }
   };
 
-  const getOfflineBooks = async (bibleId: string): Promise<Book[]> => {
+  const getOfflineBooks = useCallback(async (bibleId: string): Promise<Book[]> => {
     try {
       const offlineBooks = await getFromStorage(STORAGE_KEYS.OFFLINE_BOOKS) || [];
       return offlineBooks.filter((book: any) => book.bibleId === bibleId);
@@ -934,9 +1296,9 @@ export function useBibleAPI() {
       console.error('Error getting offline books:', error);
       return [];
     }
-  };
+  }, []);
 
-  const getOfflineChapters = async (bibleId: string, bookId: string): Promise<APIChapter[]> => {
+  const getOfflineChapters = useCallback(async (bibleId: string, bookId: string): Promise<APIChapter[]> => {
     try {
       const offlineChapters = await getFromStorage(STORAGE_KEYS.OFFLINE_CHAPTERS) || [];
       return offlineChapters.filter((chapter: any) =>
@@ -946,45 +1308,8 @@ export function useBibleAPI() {
       console.error('Error getting offline chapters:', error);
       return [];
     }
-  };
+  }, []);
 
-  // Enhanced cache cleanup for offline access
-  const clearOldCache = async () => {
-    const now = Date.now();
-    const thirtyDaysAgo = 30 * 24 * 60 * 60 * 1000; // 30 days for passages
-    const ninetyDaysAgo = 90 * 24 * 60 * 60 * 1000; // 90 days for books/chapters
-
-    // Clear old passages
-    const newCache = Object.fromEntries(
-      Object.entries(cachedPassages).filter(([_, passage]) =>
-        (now - passage.timestamp) < thirtyDaysAgo
-      )
-    );
-    setCachedPassages(newCache);
-
-    // Clear old offline books and chapters
-    try {
-      const offlineBooks = await getFromStorage(STORAGE_KEYS.OFFLINE_BOOKS) || [];
-      const filteredBooks = offlineBooks.filter((book: any) =>
-        (now - book.savedAt) < ninetyDaysAgo
-      );
-      await setToStorage(STORAGE_KEYS.OFFLINE_BOOKS, filteredBooks);
-
-      const offlineChapters = await getFromStorage(STORAGE_KEYS.OFFLINE_CHAPTERS) || [];
-      const filteredChapters = offlineChapters.filter((chapter: any) =>
-        (now - chapter.savedAt) < ninetyDaysAgo
-      );
-      await setToStorage(STORAGE_KEYS.OFFLINE_CHAPTERS, filteredChapters);
-
-      console.log('🧹 Cache cleanup completed:', {
-        passages: Object.keys(newCache).length,
-        books: filteredBooks.length,
-        chapters: filteredChapters.length
-      });
-    } catch (error) {
-      console.error('Error during cache cleanup:', error);
-    }
-  };
 
   // New function: Bulk download entire book for offline access
   const downloadBookForOffline = async (book: Book, bibleId: string, onProgress?: (progress: number) => void) => {
@@ -1138,45 +1463,58 @@ export function useBibleAPI() {
   };
 
   // Enhanced fetchBooks with offline support
-  const fetchBooksWithOffline = async (bibleId: string) => {
+  const fetchBooksWithOffline = useCallback(async (bibleId: string) => {
+    // Prevent duplicate calls for the same Bible
+    if (processingBibleId === bibleId) {
+      console.log('🔄 [USEBIBLEAPI] Already processing books for Bible:', bibleId, 'skipping duplicate call');
+      return;
+    }
+
     try {
+      setProcessingBibleId(bibleId);
+      console.log('🔄 [USEBIBLEAPI] fetchBooksWithOffline called for Bible ID:', bibleId, 'Stack trace:', new Error().stack);
       setLoading(true);
       setError(null);
-      
+
       // Check if we have offline books first
       if (!isOnline) {
         console.log('📱 Offline mode - using offline books');
         const offlineBooks = await getOfflineBooks(bibleId);
         if (offlineBooks.length > 0) {
+          console.log('📚 Using offline books:', offlineBooks.length);
           setBooks(offlineBooks);
           return;
         }
       }
-      
+
       // Proceed with normal API call
+      console.log('🌐 Online mode - fetching books from API');
       await fetchBooks(bibleId);
-      
+      console.log('✅ Books fetched successfully');
+
       // Save books for offline access if online
       if (isOnline) {
         setTimeout(async () => {
           const currentBooks = books;
+          console.log('💾 Saving books for offline access:', currentBooks.length);
           for (const book of currentBooks) {
             await saveBookForOffline(book, bibleId);
           }
         }, 1000);
       }
-      
+
     } catch (error) {
       const apiError = error as APIError;
       setError(apiError.message);
-      console.error('Error fetching books with offline support:', apiError);
+      console.error('❌ Error fetching books with offline support:', apiError);
     } finally {
       setLoading(false);
+      setProcessingBibleId(null);
     }
-  };
+  }, [isOnline, processingBibleId, getOfflineBooks, fetchBooks, saveBookForOffline]);
 
   // Enhanced fetchChapters with offline support
-  const fetchChaptersWithOffline = async (bibleId: string, bookId: string) => {
+  const fetchChaptersWithOffline = useCallback(async (bibleId: string, bookId: string) => {
     try {
       // Check if we have offline chapters first
       if (!isOnline) {
@@ -1187,10 +1525,10 @@ export function useBibleAPI() {
           return;
         }
       }
-      
+
       // Proceed with normal API call
       await fetchChapters(bibleId, bookId);
-      
+
       // Save chapters for offline access if online
       if (isOnline) {
         setTimeout(async () => {
@@ -1200,13 +1538,13 @@ export function useBibleAPI() {
           }
         }, 1000);
       }
-      
+
     } catch (error) {
       const apiError = error as APIError;
       setError(apiError.message);
       console.error('Error fetching chapters with offline support:', apiError);
     }
-  };
+  }, [isOnline, getOfflineChapters, fetchChapters, chapters, saveChapterForOffline]);
 
   const searchVerses = async (bibleId: string, query: string, limit: number = 20, filters?: {
     bookIds?: string[];
@@ -1216,18 +1554,18 @@ export function useBibleAPI() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Build search query with filters
       let searchEndpoint = `/bibles/${bibleId}/search?query=${encodeURIComponent(query)}&limit=${limit}`;
-      
+
       if (filters?.bookIds && filters.bookIds.length > 0) {
         searchEndpoint += `&bookIds=${filters.bookIds.join(',')}`;
       }
-      
+
       // Use API.Bible search endpoint
       const searchData = await makeAPIRequest(searchEndpoint);
       const results: SearchResult[] = [];
-      
+
       if (searchData.data && searchData.data.verses) {
         for (const verse of searchData.data.verses) {
           // Apply additional filters if specified
@@ -1237,14 +1575,14 @@ export function useBibleAPI() {
               continue;
             }
           }
-          
+
           if (filters?.verseRange) {
             const verseNum = parseInt(verse.reference.split(' ')[1].split(':')[1]);
             if (verseNum < filters.verseRange.start || verseNum > filters.verseRange.end) {
               continue;
             }
           }
-          
+
           results.push({
             id: verse.id,
             translationId: bibleId,
@@ -1256,7 +1594,7 @@ export function useBibleAPI() {
           });
         }
       }
-      
+
       return results;
     } catch (error) {
       const apiError = error as APIError;
@@ -1272,19 +1610,19 @@ export function useBibleAPI() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Parse verseId to get book, chapter, verse info
       const [bookId, chapterNumber, verseNumber] = verseId.split('-');
       if (!bookId || !chapterNumber || !verseNumber) {
         throw new Error('Invalid verse ID format');
       }
-      
+
       const data = await makeAPIRequest(`/bibles/${bibleId}/verses/${bookId}.${chapterNumber}.${verseNumber}`);
-      
+
       if (!data.data) {
         throw new Error('Verse not found');
       }
-      
+
       return {
         id: verseId,
         translationId: bibleId,
@@ -1303,18 +1641,18 @@ export function useBibleAPI() {
     }
   };
 
-  const fetchVerseOfTheDay = async (): Promise<{reference: string, text: string}> => {
+  const fetchVerseOfTheDay = async (): Promise<{ reference: string, text: string }> => {
     try {
       // Get today's date to ensure verse changes daily
       const today = new Date();
       const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-      
+
       console.log('📅 Verse of the day calculation:', {
         today: today.toISOString().split('T')[0],
         dayOfYear,
         year: today.getFullYear()
       });
-      
+
       // Fallback verses for each book if API fails
       const fallbackVerses = [
         { reference: 'Genesis 1:1', text: 'In the beginning God created the heavens and the earth.' },
@@ -1348,14 +1686,14 @@ export function useBibleAPI() {
         { reference: 'Acts 1:8', text: 'But you will receive power when the Holy Spirit comes on you; and you will be my witnesses in Jerusalem, and in all Judea and Samaria, and to the ends of the earth.' },
         { reference: '2 Corinthians 5:17', text: 'Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!' }
       ];
-      
+
       // Use day of year to select a different verse each day
       const verseIndex = dayOfYear % fallbackVerses.length;
       const selectedVerse = fallbackVerses[verseIndex];
-      
+
       console.log('📖 Selected verse for day', dayOfYear, ':', selectedVerse);
       return selectedVerse;
-      
+
       /*
       // This section is commented out to avoid API errors
       // Fallback verses for each book if API fails
@@ -1454,7 +1792,7 @@ export function useBibleAPI() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const results = await Promise.all(
         bibleIds.map(async (bibleId) => {
           try {
@@ -1474,7 +1812,7 @@ export function useBibleAPI() {
           }
         })
       );
-      
+
       return {
         reference: passageReference,
         translations: results

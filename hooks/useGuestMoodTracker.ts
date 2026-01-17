@@ -79,10 +79,13 @@ export function useGuestMoodTracker() {
   const fetchMoods = async () => {
     setLoading(true);
     try {
+      console.log('🔴 GUEST MOOD: Fetching guest moods...');
       const guestMoods = await getGuestMoods();
+      console.log('🔴 GUEST MOOD: Fetched moods:', guestMoods.length);
       setMoodEntries(guestMoods);
     } catch (error) {
       console.error('🔴 Error fetching guest moods:', error);
+      setMoodEntries([]);
     } finally {
       setLoading(false);
     }
@@ -96,21 +99,40 @@ export function useGuestMoodTracker() {
     mood: string,
     rating: number,
     influences: string[],
-    note: string
+    note: string,
+    emoji?: string,
+    verse?: {
+      reference: string;
+      text: string;
+      explanation: string;
+      application?: string;
+      moodAlignment?: string;
+    }
   ): Promise<{ data: GuestMoodEntry | null; error: any }> => {
-    console.log('🔴 GUEST MOOD: saveMoodEntry called with:', { mood, rating, influences, note });
+    console.log('🔴 GUEST MOOD: saveMoodEntry called with:', { mood, rating, influences, note, emoji });
 
     try {
       setSaving(true);
       const today = new Date().toISOString().split('T')[0];
       console.log('🔴 GUEST MOOD: Today date:', today);
-      
-      const moodData = moodOptions.find(m => m.label === mood);
-      if (!moodData) {
-        console.log('🔴 GUEST MOOD: Invalid mood selected:', mood);
-        return { data: null, error: 'Invalid mood selected' };
+
+      // Use the passed emoji if available, otherwise try to find from moodOptions
+      let moodEmoji = emoji;
+      let moodColor = '#8B5CF6';
+      let moodValue = rating || 5;
+
+      if (!moodEmoji) {
+        const moodData = moodOptions.find(m => m.label.toLowerCase() === mood.toLowerCase());
+        if (moodData) {
+          moodEmoji = moodData.emoji;
+          moodColor = moodData.color;
+          moodValue = moodData.value;
+        } else {
+          console.log('🔴 GUEST MOOD: Mood not found in options, using fallback for:', mood);
+          moodEmoji = '😊';
+        }
       }
-      console.log('🔴 GUEST MOOD: Found mood data:', moodData);
+      console.log('🔴 GUEST MOOD: Using emoji:', moodEmoji);
 
       // Mood ID mapping (simplified for guest users)
       const moodIdMapping: Record<string, string> = {
@@ -149,47 +171,34 @@ export function useGuestMoodTracker() {
         'Balanced': 'health_003_balanced'
       };
 
-      const moodId = moodIdMapping[mood] || moodData.label;
+      const moodId = moodIdMapping[mood] || mood;
 
-      // Check if user already has a mood entry for today
-      const existingEntry = moodEntries.find(e => e.entry_date === today);
-      
-      let result;
-      if (existingEntry) {
-        // Update existing entry
-        console.log('🔴 GUEST MOOD: Updating existing mood entry');
-        const entryData = {
-          mood_type: mood,
-          mood_id: moodId,
-          intensity_rating: rating,
-          emoji: moodData.emoji,
-          note: note || null,
-          updated_at: Date.now(),
-        };
-        
-        const updatedMood = await updateGuestMood(existingEntry.id, entryData);
-        if (!updatedMood) {
-          return { data: null, error: 'Failed to update mood entry' };
-        }
-        result = updatedMood;
-      } else {
-        // Create new entry
-        console.log('🔴 GUEST MOOD: Creating new mood entry');
-        const entryData = {
-          entry_date: today,
-          mood_type: mood,
-          mood_id: moodId,
-          intensity_rating: rating,
-          emoji: moodData.emoji,
-          note: note || null,
-          created_at: Date.now(),
-          updated_at: Date.now(),
-        };
-        
-        const newMood = await saveGuestMood(entryData);
-        result = newMood;
+      // Always create new entry to allow multiple moods per day
+      console.log('🔴 GUEST MOOD: Creating new mood entry');
+      // Add a small delay to ensure unique timestamps
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const currentTime = Date.now();
+      const entryData: Omit<GuestMoodEntry, 'id'> = {
+        entry_date: today,
+        mood_type: mood,
+        mood_id: moodId,
+        intensity_rating: rating,
+        emoji: moodEmoji,
+        note: note || null,
+        created_at: currentTime,
+        updated_at: currentTime,
+      };
+      if (verse) {
+        entryData.verse_reference = verse.reference || null;
+        entryData.verse_text = verse.text || null;
+        entryData.verse_explanation = verse.explanation || null;
+        entryData.verse_application = verse.application || null;
+        entryData.verse_mood_alignment = verse.moodAlignment || null;
       }
-      
+
+      const newMood = await saveGuestMood(entryData);
+      const result = newMood;
+
       // Refresh the mood entries
       await fetchMoods();
       return { data: result, error: null };
@@ -207,7 +216,7 @@ export function useGuestMoodTracker() {
       if (!success) {
         return { error: 'Failed to delete mood entry' };
       }
-      
+
       // Refresh the mood entries
       await fetchMoods();
       return { error: null };
@@ -227,12 +236,12 @@ export function useGuestMoodTracker() {
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
-    
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
       const dateString = date.toISOString().split('T')[0];
-      
+
       const entry = moodEntries.find(e => e.entry_date === dateString);
       weekData.push({
         date: dateString,
@@ -256,12 +265,12 @@ export function useGuestMoodTracker() {
 
   const getCurrentStreak = useCallback((): number => {
     let streak = 0;
-    const sortedEntries = [...moodEntries].sort((a, b) => 
+    const sortedEntries = [...moodEntries].sort((a, b) =>
       new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
     );
     const today = new Date().toISOString().split('T')[0];
     let currentDate = new Date(today);
-    
+
     for (const entry of sortedEntries) {
       const entryDate = currentDate.toISOString().split('T')[0];
       if (entry.entry_date === entryDate) {
@@ -271,7 +280,7 @@ export function useGuestMoodTracker() {
         break;
       }
     }
-    
+
     return streak;
   }, [moodEntries]);
 
@@ -279,7 +288,7 @@ export function useGuestMoodTracker() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
-    
+
     return moodEntries.filter(entry => entry.entry_date >= dateFilter);
   }, [moodEntries]);
 
@@ -301,11 +310,22 @@ export function useGuestMoodTracker() {
   }, [moodEntries, getTodaysMood, getWeeklyMoodData, getMonthlyTrend, getAverageWeeklyMood, getCurrentStreak]);
 
   const refetch = useCallback(async () => {
-    await fetchMoods();
-  }, []);
+    // Prevent multiple simultaneous refetches
+    if (loading) {
+      console.log('🔴 GUEST MOOD: Already loading, skipping refetch');
+      return;
+    }
+
+    try {
+      await fetchMoods();
+    } catch (error) {
+      console.error('Error refetching guest moods:', error);
+    }
+  }, [loading]);
 
   return {
     moodStats,
+    moodEntries,
     loading,
     saving,
     moodOptions,

@@ -13,20 +13,35 @@ const config = getDefaultConfig(__dirname);
 // };
 
 // Basic configuration to prevent file watcher timeouts
-config.watchFolders = [__dirname];
+const path = require('path');
 config.maxWorkers = 2;
+
+// Ensure the polyfill directory is watched
+config.watchFolders = [
+  __dirname,
+  path.resolve(__dirname, 'lib/polyfills')
+];
 
 // Add polyfills for Node.js modules that Supabase needs
 config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,
-  '@supabase/node-fetch': require.resolve('@supabase/node-fetch'),
-  'node-fetch': require.resolve('@supabase/node-fetch'),
+  '@supabase/node-fetch': path.resolve(__dirname, 'lib/polyfills/supabase-fetch.js')
 };
 
-// Add global polyfill for fetch in React Native
-config.resolver.extraNodeModules['@supabase/node-fetch/polyfill/global'] = require.resolve('@supabase/node-fetch');
+// Add module resolution for Supabase packages
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === '@supabase/node-fetch') {
+    return {
+      filePath: path.resolve(__dirname, 'lib/polyfills/supabase-fetch.js'),
+      type: 'sourceFile',
+    };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 // Cache configuration for better performance
 config.cacheVersion = '1.0';
+config.cacheVersion = '1.0';
+config.resetCache = true;
 
 module.exports = config;

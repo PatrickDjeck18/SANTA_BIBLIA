@@ -1,19 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { db } from '@/lib/firebase';
-import {
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  query,
-  where,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  limit,
-} from 'firebase/firestore';
-import { useAuth } from './useAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define activity goals
 const DAILY_GOALS = {
@@ -23,10 +9,12 @@ const DAILY_GOALS = {
   mood_rating: 1, // Just needs to be set
 };
 
-// Define the data types for Firestore documents
+const ACTIVITY_STORAGE_KEY = '@daily_activities';
+
+// Define the data types
 export interface DailyActivity {
   id?: string;
-  user_id: string;
+  user_id: string; // Keep for interface compatibility, but will be 'guest'
   activity_date: string;
   bible_reading_minutes: number;
   prayer_minutes: number;
@@ -39,32 +27,26 @@ export interface DailyActivity {
 }
 
 export function useDailyActivity() {
-  const { user } = useAuth();
   const [todayActivity, setTodayActivity] = useState<DailyActivity | null>(null);
   const [loading, setLoading] = useState(true);
   const [weeklyProgress, setWeeklyProgress] = useState<DailyActivity[]>([]);
 
   // Fetches today's activity, creating it if it doesn't exist
   const fetchTodayActivity = useCallback(async () => {
-    if (!user) {
-      setTodayActivity(null);
-      setLoading(false);
-      return;
-    }
-
     try {
       const today = new Date().toISOString().split('T')[0];
-      const todayDocRef = doc(db, 'daily_activities', `${user.uid}_${today}`);
-      const docSnap = await getDoc(todayDocRef);
+      const storedData = await AsyncStorage.getItem(ACTIVITY_STORAGE_KEY);
+      const activities: DailyActivity[] = storedData ? JSON.parse(storedData) : [];
 
-      if (docSnap.exists()) {
-        console.log('🔴 Found existing daily activity:', docSnap.data());
-        setTodayActivity({ ...docSnap.data(), id: docSnap.id } as DailyActivity);
+      const todayItem = activities.find(a => a.activity_date === today);
+
+      if (todayItem) {
+        setTodayActivity(todayItem);
       } else {
         // Create today's activity if it doesn't exist
-        console.log('🔴 Creating new daily activity for user:', user.uid);
-        const newActivityData = {
-          user_id: user.uid,
+        const newActivityData: DailyActivity = {
+          id: `activity_${today}_${Date.now()}`,
+          user_id: 'guest',
           activity_date: today,
           bible_reading_minutes: 0,
           prayer_minutes: 0,
@@ -75,21 +57,20 @@ export function useDailyActivity() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        await setDoc(todayDocRef, newActivityData);
-        setTodayActivity({ ...newActivityData, id: todayDocRef.id });
-        console.log('🔴 Successfully created daily activity.');
+
+        const updatedActivities = [...activities, newActivityData];
+        await AsyncStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(updatedActivities));
+        setTodayActivity(newActivityData);
       }
     } catch (error) {
       console.error('Error fetching/creating daily activity:', error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
 
   // Fetches the last 7 days of activity
   const fetchWeeklyProgress = useCallback(async () => {
-    if (!user) return;
-
     try {
       const today = new Date();
       const sevenDaysAgo = new Date(today);
@@ -97,78 +78,74 @@ export function useDailyActivity() {
       const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
       const todayStr = today.toISOString().split('T')[0];
 
-      const q = query(
-        collection(db, 'daily_activities'),
-        where('user_id', '==', user.uid),
-        where('activity_date', '>=', sevenDaysAgoStr),
-        where('activity_date', '<=', todayStr),
-        orderBy('activity_date', 'asc')
-      );
+      const storedData = await AsyncStorage.getItem(ACTIVITY_STORAGE_KEY);
+      const activities: DailyActivity[] = storedData ? JSON.parse(storedData) : [];
 
-      const querySnapshot = await getDocs(q);
-      const progress: DailyActivity[] = [];
-      querySnapshot.forEach((doc) => {
-        progress.push({ ...doc.data(), id: doc.id } as DailyActivity);
-      });
-      setWeeklyProgress(progress);
+      // Filter for last 7 days
+      const weeklyData = activities.filter(a =>
+        a.activity_date >= sevenDaysAgoStr &&
+        a.activity_date <= todayStr
+      ).sort((a, b) => a.activity_date.localeCompare(b.activity_date));
+
+      setWeeklyProgress(weeklyData);
     } catch (error) {
       console.error('Error fetching weekly progress:', error);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
-    if (user) {
-      fetchTodayActivity();
-      fetchWeeklyProgress();
-    } else {
-      setTodayActivity(null);
-      setWeeklyProgress([]);
-      setLoading(false);
-    }
-  }, [user, fetchTodayActivity, fetchWeeklyProgress]);
-
-  // Realtime subscription to keep today's progress in sync
-  useEffect(() => {
-    if (!user) return;
-    const today = new Date().toISOString().split('T')[0];
-    const todayDocRef = doc(db, 'daily_activities', `${user.uid}_${today}`);
-
-    const unsubscribe = onSnapshot(todayDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setTodayActivity({ ...docSnap.data(), id: docSnap.id } as DailyActivity);
-      } else {
-        setTodayActivity(null);
-      }
-      fetchWeeklyProgress();
-    }, (error) => {
-      console.error('Realtime update failed:', error);
-    });
-
-    return () => unsubscribe();
-  }, [user, fetchWeeklyProgress]);
+    fetchTodayActivity();
+    fetchWeeklyProgress();
+  }, [fetchTodayActivity, fetchWeeklyProgress]);
 
   const updateTodayActivity = useCallback(async (updates: Partial<DailyActivity>) => {
-    if (!user || !todayActivity) return { error: 'No activity found or user not authenticated' };
+    if (!todayActivity) return { error: 'No activity found' };
 
     try {
-      const todayDocRef = doc(db, 'daily_activities', todayActivity.id!);
+      const storedData = await AsyncStorage.getItem(ACTIVITY_STORAGE_KEY);
+      const activities: DailyActivity[] = storedData ? JSON.parse(storedData) : [];
+
       const updatedActivity = { ...todayActivity, ...updates };
       const activitiesCompleted = calculateActivitiesCompleted(updatedActivity);
 
-      const finalUpdates = {
-        ...updates,
+      const finalActivity: DailyActivity = {
+        ...updatedActivity,
         activities_completed: activitiesCompleted,
         goal_percentage: Math.round((activitiesCompleted / 4) * 100),
         updated_at: new Date().toISOString(),
       };
 
-      await updateDoc(todayDocRef, finalUpdates);
-      return { data: finalUpdates, error: null };
+      const activityIndex = activities.findIndex(a => a.activity_date === finalActivity.activity_date);
+
+      let newActivities;
+      if (activityIndex >= 0) {
+        newActivities = [...activities];
+        newActivities[activityIndex] = finalActivity;
+      } else {
+        newActivities = [...activities, finalActivity];
+      }
+
+      await AsyncStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(newActivities));
+      setTodayActivity(finalActivity);
+
+      // Update weekly progress as well if needed, or just let the next fetch handle it
+      // For immediate UI update in streaks:
+      setWeeklyProgress(prev => {
+        const idx = prev.findIndex(p => p.activity_date === finalActivity.activity_date);
+        if (idx >= 0) {
+          const newProg = [...prev];
+          newProg[idx] = finalActivity;
+          return newProg;
+        }
+        return [...prev, finalActivity]; // Should be in sync
+      });
+
+      return { data: finalActivity, error: null };
     } catch (error) {
       console.error('Error updating daily activity:', error);
       return { error };
     }
-  }, [todayActivity, user]);
+  }, [todayActivity]);
 
   const calculateActivitiesCompleted = (activity: DailyActivity) => {
     const goals = [
@@ -189,9 +166,8 @@ export function useDailyActivity() {
     if (weeklyProgress.length === 0) return { averagePercentage: 0, totalDays: 0, completedDays: 0 };
     const totalDays = weeklyProgress.length;
     const completedDays = weeklyProgress.filter(day => day.goal_percentage >= 100).length;
-    const averagePercentage = Math.round(
-      weeklyProgress.reduce((sum, day) => sum + (day.goal_percentage || 0), 0) / totalDays
-    );
+    const totalPercentage = weeklyProgress.reduce((sum, day) => sum + (day.goal_percentage || 0), 0);
+    const averagePercentage = totalDays > 0 ? Math.round(totalPercentage / totalDays) : 0;
     return { averagePercentage, totalDays, completedDays };
   };
 
@@ -254,16 +230,25 @@ export function useDailyActivity() {
   };
 
   const getCurrentStreak = () => {
-    if (!user || weeklyProgress.length === 0) return 0;
+    if (weeklyProgress.length === 0) return 0;
     let streak = 0;
-    const sortedDays = [...weeklyProgress].reverse();
+    const sortedDays = [...weeklyProgress].sort((a, b) => b.activity_date.localeCompare(a.activity_date)); // Newest first
     for (const day of sortedDays) {
       if (day.goal_percentage >= 100) {
         streak++;
       } else {
+        // If it's today and not completed yet, don't break streak if yesterday was completed
+        // But the logic here is simple counting. 
+        // If strictly consecutive days:
+        // We need to check gaps.
+        // For simplicity, let's just count completed entries in the sorted list, but a gap breaks it.
         break;
       }
     }
+    // Note: The original logic in the file might have been simplistic too. 
+    // This assumes the list contains consecutive days. FetchWeeklyProgress fetches range. 
+    // If a day is missing (no activity record), it won't be in the list, so streak calc might need to handle gaps if we want "true" streak.
+    // However, existing logic just iterated. Let's keep it simple as user requested migration, not logic overhaul.
     return streak;
   };
 

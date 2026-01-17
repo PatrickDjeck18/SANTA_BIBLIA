@@ -34,8 +34,19 @@ const getResponsiveSpacing = (verySmall: number, small: number, medium: number, 
 
 // Enhanced responsive font sizing for better mobile readability
 const getResponsiveFontSize = (verySmall: number, small: number, medium: number, large: number) => {
-  // Reduce font size in landscape mode and very small screens
-  const multiplier = (isLandscape || isVerySmallScreen) ? 0.9 : 1.0;
+  // More aggressive font size reduction for very small screens and landscape
+  const multiplier = isVerySmallScreen ? 0.75 : (isLandscape ? 0.85 : 1.0);
+  
+  if (isVerySmallScreen) return Math.max(verySmall * multiplier, 11); // Minimum 11px
+  if (isSmallScreen) return small * multiplier;
+  if (isMediumScreen) return medium * multiplier;
+  return large * multiplier;
+};
+
+// Enhanced mobile-optimized spacing function
+const getMobileOptimizedSpacing = (verySmall: number, small: number, medium: number, large: number) => {
+  // Reduce spacing in landscape mode and very small screens
+  const multiplier = (isLandscape || isVerySmallScreen) ? 0.8 : 1.0;
 
   if (isVerySmallScreen) return verySmall * multiplier;
   if (isSmallScreen) return small * multiplier;
@@ -98,8 +109,22 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           )}
 
           <View style={styles.heroTextBlock}>
-            <Text style={styles.heroTitle}>{title}</Text>
-            {subtitle && <Text style={styles.heroSubtitle}>{subtitle}</Text>}
+            <Text 
+              style={styles.heroTitle}
+              numberOfLines={isVerySmallScreen ? 1 : 2}
+              ellipsizeMode="tail"
+            >
+              {title}
+            </Text>
+            {subtitle && (
+              <Text 
+                style={styles.heroSubtitle}
+                numberOfLines={isVerySmallScreen ? 1 : 2}
+                ellipsizeMode="tail"
+              >
+                {subtitle}
+              </Text>
+            )}
           </View>
 
           <View style={styles.heroActions}>
@@ -127,11 +152,23 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               <ArrowLeft size={20} color={Colors.primary[600]} />
             </TouchableOpacity>
           )}
-          <View>
-            <Text style={styles.simpleHeaderTitle}>{title}</Text>
-            {subtitle && <Text style={styles.simpleHeaderSubtitle}>{subtitle}</Text>}
-          </View>
+          <Text 
+            style={styles.simpleHeaderTitle}
+            numberOfLines={isVerySmallScreen ? 1 : 2}
+            ellipsizeMode="tail"
+          >
+            {title}
+          </Text>
         </View>
+        {subtitle && (
+          <Text 
+            style={styles.simpleHeaderSubtitle}
+            numberOfLines={isVerySmallScreen ? 1 : 2}
+            ellipsizeMode="tail"
+          >
+            {subtitle}
+          </Text>
+        )}
         <View style={styles.simpleHeaderActions}>
           {showNotificationButton && (
             <TouchableOpacity
@@ -168,15 +205,30 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   );
 
   const renderCompactHeader = () => (
-    <View style={styles.compactHeader}>
+    <View style={[
+      styles.compactHeader,
+      isVerySmallScreen && styles.compactHeaderSmall
+    ]}>
       <View style={styles.compactHeaderContent}>
-        <Text style={styles.compactHeaderTitle}>{title}</Text>
+        <Text 
+          style={[
+            styles.compactHeaderTitle,
+            isVerySmallScreen && styles.compactHeaderTitleSmall
+          ]}
+          numberOfLines={isVerySmallScreen ? 1 : 2}
+          ellipsizeMode="tail"
+        >
+          {title}
+        </Text>
         {showBackButton && (
           <TouchableOpacity
-            style={styles.compactBackButton}
+            style={[
+              styles.compactBackButton,
+              isVerySmallScreen && styles.compactBackButtonSmall
+            ]}
             onPress={onBackPress}
           >
-            <ArrowLeft size={18} color={Colors.primary[600]} />
+            <ArrowLeft size={isVerySmallScreen ? 16 : 18} color={Colors.primary[600]} />
           </TouchableOpacity>
         )}
       </View>
@@ -194,48 +246,84 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 };
 
 const styles = StyleSheet.create({
-  // Default hero header styles
+  // Default hero header styles - Enhanced for mobile
   hero: {
-    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getResponsiveSpacing(Spacing['2xl'], Spacing['3xl'], Spacing['4xl'], Spacing['5xl']),
-    paddingBottom: getResponsiveSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg),
+    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getMobileOptimizedSpacing(Spacing['3xl'], Spacing['4xl'], Spacing['5xl'], Spacing['6xl']), // Increased top padding
+    paddingBottom: getMobileOptimizedSpacing(Spacing.lg, Spacing.xl, Spacing['2xl'], Spacing['3xl']), // Significantly increased bottom padding
+    minHeight: getMobileOptimizedSpacing(160, 180, 200, 220), // Much larger minimum height for mobile
+    // Better mobile support
+    maxHeight: isLandscape ? getMobileOptimizedSpacing(180, 200, 220, 240) : undefined,
+    // Enhanced mobile support for very small screens
+    ...(isVerySmallScreen && {
+      paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getMobileOptimizedSpacing(Spacing['2xl'], Spacing['3xl'], Spacing['4xl'], Spacing['5xl']),
+      paddingBottom: getMobileOptimizedSpacing(Spacing.md, Spacing.lg, Spacing.xl, Spacing['2xl']),
+      minHeight: getMobileOptimizedSpacing(140, 160, 180, 200),
+    }),
   },
   heroGradient: {
-    paddingHorizontal: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
-    paddingVertical: getResponsiveSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg),
+    paddingHorizontal: getMobileOptimizedSpacing(Spacing.md, Spacing.lg, Spacing.xl, Spacing['2xl']), // Increased horizontal padding
+    paddingVertical: getMobileOptimizedSpacing(Spacing.lg, Spacing.xl, Spacing['2xl'], Spacing['3xl']), // Significantly increased vertical padding
     borderRadius: BorderRadius.lg,
-    marginHorizontal: getResponsiveSpacing(1, 2, 4, 6),
+    marginHorizontal: getMobileOptimizedSpacing(1, 2, 4, 6),
+    minHeight: getMobileOptimizedSpacing(100, 120, 140, 160), // Added minimum height for gradient
     ...Shadows.md,
   },
   heroContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: getMobileOptimizedSpacing(100, 120, 140, 160), // Significantly increased minimum height for content
+    // Better mobile layout
+    flexWrap: isVerySmallScreen ? 'wrap' : 'nowrap',
+    gap: isVerySmallScreen ? getMobileOptimizedSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg) : 0,
+    // Enhanced mobile support
+    paddingVertical: getMobileOptimizedSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl), // Added vertical padding
   },
   heroTextBlock: {
     flex: 1,
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+    flexShrink: 1, // Allow shrinking on very small screens
+    minHeight: getMobileOptimizedSpacing(60, 70, 80, 90), // Added minimum height for text block
+    justifyContent: 'center', // Center text vertically
+    paddingVertical: getMobileOptimizedSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl), // Added vertical padding
   },
   heroTitle: {
     fontSize: getResponsiveFontSize(Typography.sizes.xl, Typography.sizes['2xl'], Typography.sizes['3xl'], Typography.sizes['4xl']),
     fontWeight: Typography.weights.bold,
     color: Colors.neutral[800],
     marginBottom: 2,
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+    flexShrink: 1, // Allow shrinking on very small screens
   },
   heroSubtitle: {
-    fontSize: getResponsiveFontSize(Typography.sizes.xs, Typography.sizes.sm, Typography.sizes.base, Typography.sizes.lg),
+    fontSize: getResponsiveFontSize(Typography.sizes.sm, Typography.sizes.base, Typography.sizes.lg, Typography.sizes.xl), // Increased font size
     color: Colors.neutral[600],
-    lineHeight: Typography.lineHeights.base,
+    lineHeight: getResponsiveFontSize(18, 20, 22, 24), // Increased line height for better readability
+    marginTop: getMobileOptimizedSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg), // Added top margin
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+    flexShrink: 1, // Allow shrinking on very small screens
+    // Enhanced mobile support
+    ...(isVerySmallScreen && {
+      fontSize: Math.max(getResponsiveFontSize(Typography.sizes.xs, Typography.sizes.sm, Typography.sizes.base, Typography.sizes.lg), 12),
+      lineHeight: 16,
+    }),
   },
   heroActions: {
     flexDirection: 'row',
-    gap: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.md, Spacing.lg),
+    gap: getMobileOptimizedSpacing(Spacing.sm, Spacing.md, Spacing.md, Spacing.lg),
     alignItems: 'center',
+    // Better mobile layout
+    flexShrink: 0, // Prevent actions from shrinking
   },
   heroActionButton: {
-    padding: getResponsiveSpacing(Spacing.xs, Spacing.xs, Spacing.sm, Spacing.md),
+    padding: getMobileOptimizedSpacing(Spacing.xs, Spacing.xs, Spacing.sm, Spacing.md),
     backgroundColor: Colors.neutral[100],
     borderRadius: BorderRadius.md,
-    minWidth: getResponsiveSpacing(40, 44, 48, 52), // Minimum 44px for mobile accessibility
-    minHeight: getResponsiveSpacing(40, 44, 48, 52), // Minimum 44px for mobile accessibility
+    minWidth: getMobileOptimizedSpacing(40, 44, 48, 52), // Minimum 44px for mobile accessibility
+    minHeight: getMobileOptimizedSpacing(40, 44, 48, 52), // Minimum 44px for mobile accessibility
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -259,8 +347,8 @@ const styles = StyleSheet.create({
 
   // Simple header styles
   simpleHeader: {
-    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getResponsiveSpacing(Spacing.md, Spacing.lg, Spacing.xl, Spacing['2xl']),
-    paddingBottom: getResponsiveSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg),
+    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getMobileOptimizedSpacing(Spacing.md, Spacing.lg, Spacing.xl, Spacing['2xl']),
+    paddingBottom: getMobileOptimizedSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg),
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
@@ -270,12 +358,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
+    paddingHorizontal: getMobileOptimizedSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
+    // Better mobile layout
+    flexWrap: isVerySmallScreen ? 'wrap' : 'nowrap',
+    gap: isVerySmallScreen ? getMobileOptimizedSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg) : 0,
   },
   simpleHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
+    gap: getMobileOptimizedSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
+    flex: 1,
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+  },
+  simpleHeaderTextBlock: {
+    flex: 1,
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+    flexShrink: 1, // Allow shrinking on very small screens
   },
   simpleBackButton: {
     padding: getResponsiveSpacing(Spacing.sm, Spacing.sm, Spacing.md, Spacing.md), // Minimum 44px touch target
@@ -290,11 +390,17 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(Typography.sizes.xl, Typography.sizes['2xl'], Typography.sizes['3xl'], Typography.sizes['4xl']),
     fontWeight: Typography.weights.bold,
     color: Colors.neutral[900],
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+    flexShrink: 1, // Allow shrinking on very small screens
   },
   simpleHeaderSubtitle: {
     fontSize: getResponsiveFontSize(Typography.sizes.xs, Typography.sizes.sm, Typography.sizes.base, Typography.sizes.lg),
     color: Colors.neutral[600],
     marginTop: 2,
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+    flexShrink: 1, // Allow shrinking on very small screens
   },
   simpleHeaderActions: {
     flexDirection: 'row',
@@ -331,30 +437,53 @@ const styles = StyleSheet.create({
 
   // Compact header styles
   compactHeader: {
-    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
-    paddingBottom: getResponsiveSpacing(Spacing.xs, Spacing.xs, Spacing.sm, Spacing.md),
+    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getMobileOptimizedSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
+    paddingBottom: getMobileOptimizedSpacing(Spacing.xs, Spacing.xs, Spacing.sm, Spacing.md),
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
+    minHeight: getMobileOptimizedSpacing(50, 60, 70, 80), // Ensure minimum header height
+    // Better mobile support
+    maxHeight: isLandscape ? getMobileOptimizedSpacing(60, 70, 80, 90) : undefined,
+  },
+  compactHeaderSmall: {
+    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + getMobileOptimizedSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg),
+    paddingBottom: getMobileOptimizedSpacing(Spacing.xs, Spacing.xs, Spacing.xs, Spacing.sm),
   },
   compactHeaderContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: getResponsiveSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
+    paddingHorizontal: getMobileOptimizedSpacing(Spacing.sm, Spacing.md, Spacing.lg, Spacing.xl),
+    minHeight: getMobileOptimizedSpacing(44, 48, 52, 56), // Minimum touch target height
+    // Better mobile layout
+    flexWrap: isVerySmallScreen ? 'wrap' : 'nowrap',
+    gap: isVerySmallScreen ? getMobileOptimizedSpacing(Spacing.xs, Spacing.sm, Spacing.md, Spacing.lg) : 0,
   },
   compactHeaderTitle: {
     fontSize: getResponsiveFontSize(Typography.sizes.base, Typography.sizes.lg, Typography.sizes.xl, Typography.sizes['2xl']),
     fontWeight: Typography.weights.semiBold,
     color: Colors.neutral[800],
+    flex: 1,
+    // Better mobile text handling
+    minWidth: 0, // Allow text to shrink properly
+    flexShrink: 1, // Allow shrinking on very small screens
+  },
+  compactHeaderTitleSmall: {
+    fontSize: getResponsiveFontSize(Typography.sizes.sm, Typography.sizes.base, Typography.sizes.lg, Typography.sizes.xl),
   },
   compactBackButton: {
-    padding: getResponsiveSpacing(Spacing.sm, Spacing.sm, Spacing.md, Spacing.md), // Minimum 44px touch target
+    padding: getMobileOptimizedSpacing(Spacing.sm, Spacing.sm, Spacing.md, Spacing.md), // Minimum 44px touch target
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.neutral[100],
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: getResponsiveSpacing(40, 44, 48, 52),
-    minHeight: getResponsiveSpacing(40, 44, 48, 52),
+    minWidth: getMobileOptimizedSpacing(40, 44, 48, 52),
+    minHeight: getMobileOptimizedSpacing(40, 44, 48, 52),
+  },
+  compactBackButtonSmall: {
+    padding: getMobileOptimizedSpacing(Spacing.xs, Spacing.sm, Spacing.sm, Spacing.md),
+    minWidth: getMobileOptimizedSpacing(36, 40, 44, 48),
+    minHeight: getMobileOptimizedSpacing(36, 40, 44, 48),
   },
 });

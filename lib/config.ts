@@ -11,7 +11,9 @@ export const config = {
     webClientId: '354959331079-faisqnjq2nd81nrhnikm2t0clfc49kle.apps.googleusercontent.com',
   },
   deepseek: {
-    apiKey: Constants.expoConfig?.extra?.deepseekApiKey || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY || '',
+    apiKey: Constants.expoConfig?.extra?.deepseekApiKey ||
+      process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY ||
+      'sk-0f724d9ce2c34b24bd446adcbf26118f', // Fallback for development
     apiUrl: 'https://api.deepseek.com/chat/completions',
   },
   // Debug environment variables
@@ -21,6 +23,6 @@ export const config = {
   },
   app: {
     scheme: typeof Constants.expoConfig?.scheme === 'string' ? Constants.expoConfig.scheme : 'daily-bread',
-    name: Constants.expoConfig?.name || 'Daily Bread',
+    name: Constants.expoConfig?.name || 'Faith-Mood Tracker',
   },
 };

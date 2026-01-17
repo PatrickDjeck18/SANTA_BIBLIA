@@ -1,0 +1,440 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  Dimensions,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar as RNStatusBar } from 'expo-status-bar';
+import { router } from 'expo-router';
+import { ChevronLeft, Shield, Lock, Eye, Database, Mail, Globe } from 'lucide-react-native';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../constants/DesignTokens';
+import BackgroundGradient from '@/components/BackgroundGradient';
+import { ModernHeader } from '@/components/ModernHeader';
+
+const { width } = Dimensions.get('window');
+
+export default function PrivacyPolicyScreen() {
+  const handleBack = () => {
+    if (router.canGoBack?.()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <RNStatusBar style="dark" />
+      <BackgroundGradient>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <ModernHeader
+            title="Privacy Policy"
+            variant="simple"
+            showBackButton={true}
+            showReaderButton={false}
+            onBackPress={handleBack}
+            readerText="Privacy Policy. Your data protection and privacy rights. Learn how we protect your personal information and respect your privacy."
+          />
+        </View>
+
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Introduction Card */}
+          <View style={styles.introCard}>
+            <LinearGradient
+              colors={['#F8FAFC', '#F1F5F9']}
+              style={styles.introGradient}
+            >
+              <View style={styles.introHeader}>
+                <View style={styles.introIcon}>
+                  <Shield size={32} color={Colors.primary[600]} />
+                </View>
+                <View style={styles.introContent}>
+                  <Text style={styles.introTitle}>Privacy Policy</Text>
+                  <Text style={styles.introSubtitle}>
+                    Last updated: {new Date().toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.introText}>
+                At Daily Faith, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, and safeguard your data.
+              </Text>
+            </LinearGradient>
+          </View>
+
+          {/* Information We Collect */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Database size={24} color={Colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Information We Collect</Text>
+            </View>
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionText}>
+                We collect information you provide directly to us, such as when you create an account, use our services, or contact us for support.
+              </Text>
+              <View style={styles.listContainer}>
+                <Text style={styles.listItem}>• Account information (name, email, password)</Text>
+                <Text style={styles.listItem}>• Spiritual content (prayers, dreams, notes)</Text>
+                <Text style={styles.listItem}>• Usage data and app interactions</Text>
+                <Text style={styles.listItem}>• Device information and analytics</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* How We Use Your Information */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Eye size={24} color={Colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>How We Use Your Information</Text>
+            </View>
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionText}>
+                We use your information to provide, maintain, and improve our services:
+              </Text>
+              <View style={styles.listContainer}>
+                <Text style={styles.listItem}>• Deliver personalized spiritual content</Text>
+                <Text style={styles.listItem}>• Provide AI-powered dream interpretations</Text>
+                <Text style={styles.listItem}>• Send prayer reminders and notifications</Text>
+                <Text style={styles.listItem}>• Improve app functionality and user experience</Text>
+                <Text style={styles.listItem}>• Ensure security and prevent fraud</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Data Protection */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Lock size={24} color={Colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Data Protection & Security</Text>
+            </View>
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionText}>
+                We implement industry-standard security measures to protect your data:
+              </Text>
+              <View style={styles.listContainer}>
+                <Text style={styles.listItem}>• End-to-end encryption for sensitive data</Text>
+                <Text style={styles.listItem}>• Secure cloud storage with encryption at rest</Text>
+                <Text style={styles.listItem}>• Regular security audits and updates</Text>
+                <Text style={styles.listItem}>• Limited access to authorized personnel only</Text>
+                <Text style={styles.listItem}>• Secure data transmission protocols</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Your Rights */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Shield size={24} color={Colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Your Privacy Rights</Text>
+            </View>
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionText}>
+                You have the following rights regarding your personal data:
+              </Text>
+              <View style={styles.listContainer}>
+                <Text style={styles.listItem}>• Access your personal data</Text>
+                <Text style={styles.listItem}>• Correct inaccurate information</Text>
+                <Text style={styles.listItem}>• Delete your account and data</Text>
+                <Text style={styles.listItem}>• Export your spiritual content</Text>
+                <Text style={styles.listItem}>• Opt-out of data processing</Text>
+                <Text style={styles.listItem}>• Withdraw consent at any time</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Third-Party Services */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Globe size={24} color={Colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Third-Party Services</Text>
+            </View>
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionText}>
+                We may use third-party services to enhance your experience:
+              </Text>
+              <View style={styles.listContainer}>
+                <Text style={styles.listItem}>• Firebase for authentication and data storage</Text>
+                <Text style={styles.listItem}>• OpenAI for AI-powered dream interpretations</Text>
+                <Text style={styles.listItem}>• Analytics services for app improvement</Text>
+                <Text style={styles.listItem}>• Cloud storage providers for data backup</Text>
+              </View>
+              <Text style={styles.sectionText}>
+                These services have their own privacy policies and we ensure they meet our security standards.
+              </Text>
+            </View>
+          </View>
+
+          {/* Data Retention */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Database size={24} color={Colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Data Retention</Text>
+            </View>
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionText}>
+                We retain your data only as long as necessary:
+              </Text>
+              <View style={styles.listContainer}>
+                <Text style={styles.listItem}>• Account data: Until you delete your account</Text>
+                <Text style={styles.listItem}>• Spiritual content: Permanently (unless deleted)</Text>
+                <Text style={styles.listItem}>• Analytics data: Up to 2 years</Text>
+                <Text style={styles.listItem}>• Support communications: Up to 3 years</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Children's Privacy */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Shield size={24} color={Colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Children's Privacy</Text>
+            </View>
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionText}>
+                Our service is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.
+              </Text>
+            </View>
+          </View>
+
+          {/* Contact Information */}
+          <View style={styles.contactCard}>
+            <LinearGradient
+              colors={[Colors.primary[50], Colors.primary[100]]}
+              style={styles.contactGradient}
+            >
+              <View style={styles.contactHeader}>
+                <View style={styles.contactIcon}>
+                  <Mail size={24} color={Colors.primary[600]} />
+                </View>
+                <Text style={styles.contactTitle}>Contact Us</Text>
+              </View>
+              <Text style={styles.contactText}>
+                If you have any questions about this Privacy Policy or our data practices, please contact us:
+              </Text>
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactItem}>Email: privacy@dailyfaith.me</Text>
+                <Text style={styles.contactItem}>Data Protection Officer: dpo@dailyfaith.me</Text>
+                <Text style={styles.contactItem}>Response Time: We typically respond within 48 hours</Text>
+                <Text style={styles.contactItem}>Mailing Address: Available upon request for legal matters</Text>
+                <Text style={styles.contactItem}>Website: https://dailyfaith.me</Text>
+              </View>
+              <Text style={styles.contactFooter}>
+                For EU residents: You have the right to lodge a complaint with your local data protection authority if you believe your data has been processed unlawfully.
+              </Text>
+            </LinearGradient>
+          </View>
+
+          {/* Bottom spacing */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      </BackgroundGradient>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  headerContainer: {
+    backgroundColor: Colors.white,
+    zIndex: 1000,
+    elevation: 4,
+    shadowColor: Colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[200],
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  
+  // Introduction Card
+  introCard: {
+    marginTop: 20,
+    marginBottom: 24,
+    borderRadius: BorderRadius['2xl'],
+    overflow: 'hidden',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  introGradient: {
+    padding: Spacing.xl,
+  },
+  introHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  introIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  introContent: {
+    flex: 1,
+  },
+  introTitle: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    color: Colors.neutral[800],
+    marginBottom: Spacing.xs,
+  },
+  introSubtitle: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.neutral[500],
+  },
+  introText: {
+    fontSize: Typography.sizes.base,
+    color: Colors.neutral[600],
+    lineHeight: Typography.lineHeights.relaxed * Typography.sizes.base,
+  },
+
+  // Section Cards
+  sectionCard: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl,
+    marginBottom: Spacing.lg,
+    padding: Spacing.lg,
+    shadowColor: 'rgba(0, 0, 0, 0.08)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.neutral[100],
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  sectionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: Colors.neutral[800],
+    flex: 1,
+  },
+  sectionContent: {
+    gap: Spacing.md,
+  },
+  sectionText: {
+    fontSize: Typography.sizes.base,
+    color: Colors.neutral[600],
+    lineHeight: Typography.lineHeights.relaxed * Typography.sizes.base,
+  },
+  listContainer: {
+    gap: Spacing.sm,
+  },
+  listItem: {
+    fontSize: Typography.sizes.base,
+    color: Colors.neutral[700],
+    lineHeight: Typography.lineHeights.relaxed * Typography.sizes.base,
+    paddingLeft: Spacing.sm,
+  },
+
+  // Contact Card
+  contactCard: {
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
+    borderRadius: BorderRadius['2xl'],
+    overflow: 'hidden',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  contactGradient: {
+    padding: Spacing.xl,
+  },
+  contactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  contactIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  contactTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: Colors.primary[800],
+  },
+  contactText: {
+    fontSize: Typography.sizes.base,
+    color: Colors.neutral[700],
+    lineHeight: Typography.lineHeights.relaxed * Typography.sizes.base,
+    marginBottom: Spacing.lg,
+  },
+  contactInfo: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  contactItem: {
+    fontSize: Typography.sizes.base,
+    color: Colors.neutral[700],
+    fontWeight: Typography.weights.medium,
+  },
+  contactFooter: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.neutral[600],
+    fontStyle: 'italic',
+    lineHeight: Typography.lineHeights.relaxed * Typography.sizes.sm,
+  },
+
+  bottomSpacing: {
+    height: 100,
+  },
+});

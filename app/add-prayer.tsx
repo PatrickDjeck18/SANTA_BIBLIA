@@ -13,11 +13,12 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Heart, Users, Share, Calendar, Target, BookOpen, Bell, Globe, MoreHorizontal } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { usePrayers } from '@/hooks/usePrayers';
+import { useUnifiedPrayers } from '@/hooks/useUnifiedPrayers';
 import { Colors } from '@/constants/DesignTokens';
+import { AppTheme } from '@/constants/AppTheme';
 
 export default function AddPrayerScreen() {
-  const { addPrayer } = usePrayers();
+  const { addPrayer } = useUnifiedPrayers();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
@@ -76,7 +77,7 @@ export default function AddPrayerScreen() {
     setPrayerNotes('');
     setGratitudeNotes('');
     Alert.alert('Template Applied', `Template "${template.title}" applied.`, [
-      { text: 'OK', onPress: () => {} }
+      { text: 'OK', onPress: () => { } }
     ]);
   };
 
@@ -87,7 +88,7 @@ export default function AddPrayerScreen() {
     }
 
     setLoading(true);
-    
+
     const { error } = await addPrayer({
       title: title.trim(),
       description: description.trim() || null,
@@ -122,7 +123,7 @@ export default function AddPrayerScreen() {
   const renderFrequencyOption = (freq: typeof frequencies[0]) => {
     const Icon = freq.icon;
     const isSelected = frequency === freq.value;
-    
+
     return (
       <TouchableOpacity
         key={freq.value}
@@ -130,10 +131,10 @@ export default function AddPrayerScreen() {
         onPress={() => setFrequency(freq.value)}
       >
         <LinearGradient
-          colors={isSelected ? ['#667eea', '#764ba2'] : ['rgba(255,255,255,0.8)', 'rgba(255,255,255,0.6)']}
+          colors={isSelected ? AppTheme.gradients.accent : AppTheme.gradients.card}
           style={styles.optionGradient}
         >
-          <Icon size={24} color={isSelected ? 'white' : '#374151'} />
+          <Icon size={24} color={isSelected ? 'white' : AppTheme.text.primary} />
           <Text style={[styles.optionLabel, isSelected && styles.selectedOptionText]}>
             {freq.label}
           </Text>
@@ -148,7 +149,7 @@ export default function AddPrayerScreen() {
   const renderCategoryOption = (cat: typeof categories[0]) => {
     const Icon = cat.icon;
     const isSelected = category === cat.value;
-    
+
     return (
       <TouchableOpacity
         key={cat.value}
@@ -176,7 +177,7 @@ export default function AddPrayerScreen() {
 
   const renderPriorityOption = (pri: typeof priorities[0]) => {
     const isSelected = priority === pri.value;
-    
+
     return (
       <TouchableOpacity
         key={pri.value}
@@ -199,11 +200,11 @@ export default function AddPrayerScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#E8F5E8', '#F0F8F0', '#F8FDF8']}
+        colors={AppTheme.gradients.background}
         style={styles.gradient}
       >
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
@@ -212,11 +213,11 @@ export default function AddPrayerScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.backButton}
               onPress={() => router.back()}
             >
-              <ArrowLeft size={24} color="#374151" />
+              <ArrowLeft size={24} color={AppTheme.icon.primary} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
               <Text style={styles.headerTitle}>Add Prayer</Text>
@@ -343,8 +344,8 @@ export default function AddPrayerScreen() {
                 <Switch
                   value={enableReminders}
                   onValueChange={setEnableReminders}
-                  trackColor={{ false: '#E5E7EB', true: '#667eea' }}
-                  thumbColor={enableReminders ? '#4F46E5' : '#9CA3AF'}
+                  trackColor={{ false: AppTheme.border.medium, true: AppTheme.accent.light }}
+                  thumbColor={enableReminders ? AppTheme.accent.primary : AppTheme.icon.inactive}
                 />
               </View>
               {enableReminders && (
@@ -393,7 +394,7 @@ export default function AddPrayerScreen() {
               disabled={loading}
             >
               <LinearGradient
-                colors={['#667eea', '#764ba2']}
+                colors={AppTheme.gradients.accent}
                 style={styles.submitGradient}
               >
                 <Text style={styles.submitButtonText}>
@@ -401,7 +402,7 @@ export default function AddPrayerScreen() {
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
-            
+
             {/* Bottom spacing for better scrolling */}
             <View style={styles.bottomSpacing} />
           </View>
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#374151',
+    color: AppTheme.text.primary,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -637,13 +638,13 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: AppTheme.text.primary,
     marginTop: 8,
     textAlign: 'center',
   },
   selectedOption: {
     borderWidth: 2,
-    borderColor: '#667eea',
+    borderColor: AppTheme.accent.primary,
   },
   selectedOptionText: {
     color: 'white',
@@ -683,17 +684,17 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   selectedCategory: {
-    backgroundColor: '#E0E7FF',
-    borderColor: '#667eea',
+    backgroundColor: AppTheme.accent.ultraLight,
+    borderColor: AppTheme.accent.primary,
     borderWidth: 3,
-    shadowColor: '#667eea',
+    shadowColor: AppTheme.accent.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
   },
   selectedCategoryText: {
-    color: '#667eea',
+    color: AppTheme.accent.secondary,
   },
   prioritiesContainer: {
     flexDirection: 'row',
@@ -790,12 +791,12 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   selectedPrivacy: {
-    backgroundColor: '#E0E7FF',
-    borderColor: '#667eea',
+    backgroundColor: AppTheme.accent.ultraLight,
+    borderColor: AppTheme.accent.primary,
     borderWidth: 2,
   },
   selectedPrivacyText: {
-    color: '#667eea',
+    color: AppTheme.accent.secondary,
   },
   submitGradient: {
     borderRadius: 16,

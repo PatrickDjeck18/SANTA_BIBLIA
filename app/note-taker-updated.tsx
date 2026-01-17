@@ -291,7 +291,6 @@ export default function NoteTakerScreen() {
       {/* Hero Header */}
       <HeaderCard
         title="Notes"
-        subtitle="Capture your thoughts and reflections"
         showBackButton={true}
         onBackPress={() => router.back()}
         rightActions={
@@ -500,7 +499,9 @@ const styles = StyleSheet.create({
   // Search
   searchContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingTop: Spacing['2xl'], // Further increased top padding for more separation
+    paddingBottom: Spacing.sm,
+    marginTop: Spacing.xl, // Further increased top margin for better separation
   },
   searchBar: {
     flexDirection: 'row',

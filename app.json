@@ -15,11 +15,44 @@
           },
           "imageWidth": 200
         }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "iosAppId": "ca-app-pub-4253750298784159~6004098078",
+          "androidAppId": "ca-app-pub-4253750298784159~6198188122",
+          "android_app_id": "ca-app-pub-4253750298784159~6198188122",
+          "ios_app_id": "ca-app-pub-4253750298784159~6004098078"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          },
+          "android": {
+            "kotlinVersion": "2.0.21"
+          }
+        }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "903184625544561",
+          "clientToken": "266c1664f7757ea4bded2afa6c36f404",
+          "displayName": "KJV Bible",
+          "scheme": "fb903184625544561",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "This app uses tracking to deliver personalized ads and improve your experience."
+        }
       ]
     ],
-    "name": "Daily Faith",
+    "name": "KJV Bible",
     "slug": "daily-faith",
-    "version": "1.0.0",
+    "version": "1.2.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "daily-faith",
@@ -28,7 +61,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dailybread.dailyfaithbible",
+      "buildNumber": "14",
       "infoPlist": {
+        "CFBundleDisplayName": "KJV Bible",
+        "NSUserNotificationsUsageDescription": "We'll send you daily morning reminders to read your Bible verse and start your day with God's word.",
         "NSUserTrackingUsageDescription": "This app uses tracking to deliver personalized ads and improve your experience.",
         "SKAdNetworkItems": [
           {
@@ -216,10 +252,17 @@
           },
           {
             "SKAdNetworkIdentifier": "rvh3l7un93.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
           }
         ],
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "requireFullScreen": true
     },
     "web": {
       "bundler": "metro",
@@ -227,25 +270,26 @@
       "favicon": "./assets/images/favicon.png"
     },
     "extra": {
-      "firebaseApiKey": "AIzaSyDbcPSejp8kJKEJBomRtAvPsWCAz9HSCCg",
-      "firebaseAuthDomain": "daily-bread-88f42.firebaseapp.com",
-      "firebaseProjectId": "daily-bread-88f42",
-      "firebaseStorageBucket": "daily-bread-88f42.firebasestorage.app",
-      "firebaseMessagingSenderId": "354959331079",
-      "firebaseAppId": "1:354959331079:android:7484ecb8076d9ee686ffa2",
-      "firebaseDatabaseUrl": "https://daily-bread-88f42.firebaseio.com",
-      "supabaseUrl": "https://wpseewgauosvockglpdv.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwc2Vld2dhdW9zdm9ja2dscGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NjkyNDksImV4cCI6MjA3NDE0NTI0OX0.Uunu2UFH49W-a1NhTp21E9OjPS1UBev8drfyXxWdIxU",
+      "deepseekApiKey": "sk-0f724d9ce2c34b24bd446adcbf26118f",
       "router": {},
       "eas": {
-        "projectId": "993816b5-9cca-432f-877d-7fac0aa45c05"
+        "projectId": "28cfa921-c1c8-4b94-8c4d-6b03b4fd263d"
       }
     },
     "experiments": {
       "typedRoutes": true
     },
     "android": {
-      "package": "com.dailybread.dailyfaithbible"
-    }
+      "package": "com.dailybread.dailyfaithbible",
+      "applicationLabel": "Bible KJV",
+      "versionCode": 11,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.INTERNET"
+      ]
+    },
+    "owner": "goodllc18"
   }
 }

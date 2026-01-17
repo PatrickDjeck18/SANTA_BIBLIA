@@ -1,31 +1,22 @@
-// src/hooks/useAIBibleChat.js
-
 import { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
-import { db } from '@/lib/firebase';
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-  orderBy,
-  deleteDoc,
-  serverTimestamp,
-  limit,
-} from 'firebase/firestore';
-import { useAuth } from './useAuth'; // ⬅️ Assumes a useAuth hook exists
 import { cleanAIResponse } from '@/utils/textFormatting';
 import { config } from '@/lib/config';
+import {
+  getGuestAIConversations,
+  saveGuestAIConversation,
+  updateGuestAIConversation,
+  deleteGuestAIConversation,
+  ensureGuestUserConsistency
+} from '@/utils/guestAIChatStorage';
+import { getGuestUserId } from '@/utils/guestStorage';
 
 // Re-defining interfaces for clarity
 export interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
-  timestamp: Date | { toDate: () => Date }; // Handles Firestore Timestamp
+  timestamp: Date | { toDate: () => Date }; // Handles Firestore Timestamp -> kept for compatibility
   category?: string;
 }
 
@@ -47,7 +38,6 @@ export interface Conversation {
 }
 
 export function useAIBibleChat() {
-  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
@@ -118,45 +108,45 @@ export function useAIBibleChat() {
     }
   ]).current;
 
-  // Load conversations from Firestore on mount and when user changes
+  // Load conversations from local storage on mount
   useEffect(() => {
     const fetchConversations = async () => {
-      if (!user) {
-        setConversations([]);
-        setLoading(false);
-        return;
-      }
       setLoading(true);
       try {
-        const q = query(
-          collection(db, 'ai_conversations'),
-          where('userId', '==', user.uid),
-          orderBy('lastMessageTime', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const fetchedConversations = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          lastMessageTime: doc.data().lastMessageTime.toDate(),
-          messages: doc.data().messages.map((msg: any) => ({
-            ...msg,
-            timestamp: msg.timestamp.toDate(),
-          })),
-        })) as Conversation[];
-        setConversations(fetchedConversations);
+        // Ensure guest user ID consistency before loading conversations
+        await ensureGuestUserConsistency();
+
+        // Fetch from local storage for guest users using dedicated storage utilities
+        const guestConversations = await getGuestAIConversations();
+        if (guestConversations.length > 0) {
+          // Convert timestamp strings back to Date objects for compatibility
+          const conversationsWithDates = guestConversations.map((conv: any) => ({
+            ...conv,
+            lastMessageTime: new Date(conv.lastMessageTime),
+            messages: conv.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            })),
+          }));
+          setConversations(conversationsWithDates);
+          console.log('📱 Loaded guest conversations from local storage:', conversationsWithDates.length);
+        } else {
+          setConversations([]);
+          console.log('📱 No guest conversations found in local storage');
+        }
       } catch (error) {
         console.error('Error fetching conversations:', error);
+        setConversations([]);
       } finally {
         setLoading(false);
       }
     };
     fetchConversations();
-  }, [user]);
+  }, []);
 
   const createNewConversation = async (categoryId: string): Promise<string> => {
-    if (!user) {
-      throw new Error('User not authenticated.');
-    }
+    console.log('🆕 Creating new conversation for category:', categoryId);
+
     const category = chatCategories.find(c => c.id === categoryId);
     const welcomeMessage: ChatMessage = {
       id: `${Date.now()}`,
@@ -165,60 +155,93 @@ export function useAIBibleChat() {
       timestamp: new Date(),
       category: categoryId,
     };
-  
+
     const conversationData = {
-      userId: user.uid,
+      userId: await getGuestUserId(),
       category: categoryId,
       title: `${category?.title} Chat`,
       preview: welcomeMessage.text,
-      lastMessageTime: serverTimestamp(),
-      messages: [{ 
-        ...welcomeMessage, 
-        timestamp: serverTimestamp() 
+      lastMessageTime: new Date(),
+      messages: [{
+        ...welcomeMessage,
+        timestamp: new Date()
       }],
     };
-  
+
     try {
-      const docRef = await addDoc(collection(db, 'ai_conversations'), conversationData);
-      
+      console.log('💾 Creating conversation in local storage for guest user');
+      // Create in local storage for guest users
+      const conversationId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🆔 Generated guest conversation ID:', conversationId);
+
       const newConversation: Conversation = {
-        id: docRef.id,
+        id: conversationId,
         ...conversationData,
         lastMessageTime: new Date(),
         messages: [{ ...welcomeMessage }],
       } as Conversation;
-  
+
+      // Save to local storage using dedicated storage utilities
+      const guestConversation = {
+        ...newConversation,
+        lastMessageTime: newConversation.lastMessageTime.toISOString(),
+        messages: newConversation.messages.map(msg => ({
+          ...msg,
+          timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() :
+            typeof msg.timestamp === 'string' ? msg.timestamp :
+              new Date().toISOString(),
+        })),
+      };
+      await saveGuestAIConversation(guestConversation);
+      console.log('✅ Guest conversation saved to local storage');
+
       setConversations(prev => [newConversation, ...prev]);
       setCurrentCategory(categoryId);
-      setCurrentConversationId(docRef.id);
+      setCurrentConversationId(conversationId);
       setMessages(newConversation.messages);
-      
-      return docRef.id;
+
+      return conversationId;
     } catch (error) {
-      console.error('Error creating new conversation:', error);
+      console.error('❌ Error creating new conversation:', error);
       throw error;
     }
   };
 
   const updateConversation = async (conversationId: string, newMessages: ChatMessage[]): Promise<void> => {
-    if (!user) return;
     try {
-      const docRef = doc(db, 'ai_conversations', conversationId);
+      console.log('🔄 Updating conversation:', { conversationId, messageCount: newMessages.length });
+
       const lastMessage = newMessages[newMessages.length - 1];
       const firstUserMessage = newMessages.find(m => m.isUser);
-      
-      await updateDoc(docRef, {
+
+      const updatedConversation = {
         messages: newMessages.map(msg => ({
           ...msg,
-          timestamp: new Date(msg.timestamp as any) // Convert Date object back to Firestore Timestamp
+          timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date()
         })),
         preview: lastMessage.text.substring(0, 100) + (lastMessage.text.length > 100 ? '...' : ''),
-        lastMessageTime: new Date(lastMessage.timestamp as any),
-        title: firstUserMessage ? 
-          (firstUserMessage.text.substring(0, 50) + (firstUserMessage.text.length > 50 ? '...' : '')) : 
+        lastMessageTime: new Date(),
+        title: firstUserMessage ?
+          (firstUserMessage.text.substring(0, 50) + (firstUserMessage.text.length > 50 ? '...' : '')) :
           'New Chat',
-      });
-      
+      };
+
+      console.log('💾 Updating in local storage for guest user');
+      // Update in local storage for guest users using dedicated storage utilities
+      const guestConversationUpdate = {
+        ...updatedConversation,
+        lastMessageTime: new Date().toISOString(),
+        messages: updatedConversation.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() :
+            typeof msg.timestamp === 'string' ? msg.timestamp :
+              new Date().toISOString(),
+        })),
+      };
+      await updateGuestAIConversation(conversationId, guestConversationUpdate);
+      console.log('✅ Local storage update successful');
+
+      console.log('🔄 Updating local state...');
       setConversations(prev => prev.map(conv => {
         if (conv.id === conversationId) {
           return {
@@ -226,23 +249,27 @@ export function useAIBibleChat() {
             messages: newMessages,
             preview: lastMessage.text.substring(0, 100) + (lastMessage.text.length > 100 ? '...' : ''),
             lastMessageTime: lastMessage.timestamp as Date,
-            title: firstUserMessage ? 
-              (firstUserMessage.text.substring(0, 50) + (firstUserMessage.text.length > 50 ? '...' : '')) : 
+            title: firstUserMessage ?
+              (firstUserMessage.text.substring(0, 50) + (firstUserMessage.text.length > 50 ? '...' : '')) :
               conv.title,
           };
         }
         return conv;
       }));
+      console.log('✅ Local state updated successfully');
     } catch (error) {
-      console.error('Error updating conversation:', error);
+      console.error('❌ Error updating conversation:', error);
+      Alert.alert('Save Error', 'Failed to save your message. Please try again.');
     }
   };
 
   const sendMessage = async (userMessage: string, categoryId: string): Promise<void> => {
-    if (!userMessage.trim() || !user || !currentConversationId) {
+    if (!userMessage.trim() || !currentConversationId) {
+      console.log('❌ Cannot send message: missing text or conversation ID');
       return;
     }
 
+    console.log('📤 Sending message:', { userMessage: userMessage.substring(0, 50), categoryId, conversationId: currentConversationId });
     setIsTyping(true);
 
     const userMsg: ChatMessage = {
@@ -255,6 +282,7 @@ export function useAIBibleChat() {
 
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
+    console.log('💬 User message added to state');
 
     try {
       const aiResponse = await _fetchAIResponse(userMessage, categoryId, updatedMessages);
@@ -269,10 +297,13 @@ export function useAIBibleChat() {
 
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
+      console.log('🤖 AI response added to state, updating conversation...');
+
       await updateConversation(currentConversationId, finalMessages);
+      console.log('✅ Conversation updated successfully');
 
     } catch (error) {
-      console.error('Error getting AI response:', error);
+      console.error('❌ Error getting AI response:', error);
       const fallbackMessage: ChatMessage = {
         id: `${Date.now() + 1}`,
         text: "I apologize, but I'm having trouble connecting to the AI service right now. Please try again in a moment. In the meantime, I encourage you to pray about your question and seek wisdom from God's Word.",
@@ -282,7 +313,10 @@ export function useAIBibleChat() {
       };
       const finalMessages = [...updatedMessages, fallbackMessage];
       setMessages(finalMessages);
+      console.log('🔄 Fallback message added, updating conversation...');
+
       await updateConversation(currentConversationId, finalMessages);
+      console.log('✅ Fallback conversation updated successfully');
 
       Alert.alert('Connection Issue', 'Unable to connect to the AI service. Please check your internet connection and try again.');
     } finally {
@@ -349,7 +383,7 @@ Guidelines:
         console.error('❌ DeepSeek API error:', errorText);
         throw new Error(`DeepSeek API request failed: ${response.status}`);
       }
-      
+
       const responseData = await response.json();
       const content = responseData.choices?.[0]?.message?.content;
       if (!content) {
@@ -362,17 +396,17 @@ Guidelines:
     }
   };
 
-const startNewConversation = async (categoryId: string): Promise<string> => {
-  try {
-    const conversationId = await createNewConversation(categoryId);
-    return conversationId;
-  } catch (error) {
-    console.error('Failed to start new conversation:', error);
-    // You might want to throw the error or return a specific value
-    // to indicate failure, e.g., an empty string or null.
-    throw error;
-  }
-};
+  const startNewConversation = async (categoryId: string): Promise<string> => {
+    try {
+      const conversationId = await createNewConversation(categoryId);
+      return conversationId;
+    } catch (error) {
+      console.error('Failed to start new conversation:', error);
+      // You might want to throw the error or return a specific value
+      // to indicate failure, e.g., an empty string or null.
+      throw error;
+    }
+  };
 
   const openExistingConversation = (conversationId: string) => {
     const conversation = conversations.find(c => c.id === conversationId);
@@ -391,7 +425,9 @@ const startNewConversation = async (categoryId: string): Promise<string> => {
 
   const deleteConversation = async (conversationId: string) => {
     try {
-      await deleteDoc(doc(db, 'ai_conversations', conversationId));
+      // Delete from local storage for guest users using dedicated storage utilities
+      await deleteGuestAIConversation(conversationId);
+
       setConversations(prev => prev.filter(c => c.id !== conversationId));
       if (currentConversationId === conversationId) {
         clearConversation();
@@ -400,7 +436,7 @@ const startNewConversation = async (categoryId: string): Promise<string> => {
       console.error('Error deleting conversation:', error);
     }
   };
-  
+
   const getRecentConversations = (limit: number = 10): Conversation[] => {
     return [...conversations].sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime()).slice(0, limit);
   };
@@ -419,6 +455,49 @@ const startNewConversation = async (categoryId: string): Promise<string> => {
     return date.toLocaleDateString();
   };
 
+  // Delete a specific message from the current conversation
+  const deleteMessage = async (messageId: string): Promise<void> => {
+    if (!currentConversationId) {
+      console.warn('❌ No current conversation to delete message from');
+      return;
+    }
+
+    try {
+      console.log('🗑️ Deleting message:', { messageId, conversationId: currentConversationId });
+
+      // Remove message from local state
+      const updatedMessages = messages.filter(msg => msg.id !== messageId);
+      setMessages(updatedMessages);
+
+      // Update conversation in storage
+      await updateConversation(currentConversationId, updatedMessages);
+
+      console.log('✅ Message deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting message:', error);
+      Alert.alert('Delete Error', 'Failed to delete message. Please try again.');
+    }
+  };
+
+  // Debug function to verify message saving
+  const verifyMessageSaving = async (): Promise<void> => {
+    try {
+      console.log('🔍 Verifying message saving...');
+      console.log('📊 Current state:', {
+        conversationsCount: conversations.length,
+        currentConversationId,
+        currentCategory,
+        messagesCount: messages.length,
+      });
+
+      // Check local storage
+      const guestConversations = await getGuestAIConversations();
+      console.log('💾 Local storage conversations count:', guestConversations.length);
+    } catch (error) {
+      console.error('❌ Error verifying message saving:', error);
+    }
+  };
+
   return {
     messages,
     conversations,
@@ -433,6 +512,8 @@ const startNewConversation = async (categoryId: string): Promise<string> => {
     clearConversation,
     getRecentConversations,
     deleteConversation,
+    deleteMessage,
     formatTimeAgo,
+    verifyMessageSaving,
   };
 }

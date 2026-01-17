@@ -1,660 +1,859 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Dimensions,
   Animated,
   Platform,
-  ActivityIndicator,
   StatusBar,
+  useColorScheme,
+  Share,
 } from 'react-native';
-import { collection, doc, getDoc, getDocs, query, where, limit } from 'firebase/firestore';
-
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
+import { AppTheme } from '@/constants/AppTheme';
 import { Colors, Shadows, BorderRadius, Spacing, Typography } from '@/constants/DesignTokens';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { ModernHeader } from '@/components/ModernHeader';
-import BannerAd from '@/components/BannerAd';
+import { useUnifiedMoodTracker } from '@/hooks/useUnifiedMoodTracker';
+import { useUnifiedPrayers } from '@/hooks/useUnifiedPrayers';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  BookOpen,
-  ArrowRight,
-  Sparkles,
-  FileText,
   Heart,
+  BookOpen,
   MessageCircle,
-  Cloud,
-  Smile,
+  Feather,
+  Users,
+  Zap,
+  ChevronRight,
+  Play,
+  Crown,
+  Sparkles,
+  Share as ShareIcon,
 } from 'lucide-react-native';
-import { useBibleAPI } from '../../hooks/useBibleAPI';
-import MoodTrackerCard from '@/components/MoodTrackerCard';
+import { useSubscription } from '@/context/SubscriptionContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import BackgroundGradient from '@/components/BackgroundGradient';
-import { db, auth } from '@/lib/firebase';
-import { useAuth } from '@/hooks/useAuth'; // Import the useAuth hook
-import { useInterstitialAds } from '@/hooks/useInterstitialAds';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-// Mood data and utility functions (keep these as they are)
-const moodCategories = {
-  // ... your mood categories
-};
-
-const buildAllMoods = () => {
-  const result: any[] = [];
-  const categories = Object.values(moodCategories || {});
-  for (const category of categories) {
-    const moods = (category as any)?.moods || [];
-    for (const mood of moods) {
-      result.push({
-        ...mood,
-        gradient: (mood.gradient as readonly [string, string, string])
-      });
-    }
-  }
-  return result;
-};
-const allMoods = buildAllMoods();
-
-const getMoodData = (moodId: string) => {
-  return allMoods.find(mood => mood.id === moodId) || {
-    id: 'unknown',
-    label: '❓ Unknown',
-    color: '#6B7280',
-    gradient: ['#6B7280', '#4B5563', '#374151'] as readonly [string, string, string]
-  };
-};
-
-const getActionGradient = (baseColor: string) => {
-  // Return colorful gradients based on the base color
-  if (baseColor.includes('#3B82F6')) return Colors.gradients.card.blue;
-  if (baseColor.includes('#10B981')) return Colors.gradients.card.green;
-  if (baseColor.includes('#8B5CF6')) return Colors.gradients.card.purple;
-  if (baseColor.includes('#EF4444')) return Colors.gradients.card.pink;
-  if (baseColor.includes('#F59E0B')) return Colors.gradients.card.orange;
-  return Colors.gradients.main;
-};
-
-// Interface definitions (ensure these are correct)
-interface UserProfile {
-  full_name: string;
-  journey_start_date: string;
-}
-
-interface MoodEntry {
-  mood_id: string;
-  mood_type: string;
-  intensity_rating: number;
-  created_at: { toDate: () => Date };
-}
-
-
+const STREAK_KEY = '@daily_bread_streak';
+const LAST_VISIT_KEY = '@daily_bread_last_visit';
 
 export default function HomeScreen() {
-  const tabBarHeight = useBottomTabBarHeight();
-  const { fetchVerseOfTheDay } = useBibleAPI();
-  const { user, loading: authLoading } = useAuth(); // Use the new useAuth hook
-  const { showInterstitialAd } = useInterstitialAds('home');
+  const { moodEntries } = useUnifiedMoodTracker();
+  const { prayers } = useUnifiedPrayers();
+  const { isPremium } = useSubscription();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activePrayers, setActivePrayers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true); // State for all data fetching on this screen
-  const [verseLoading, setVerseLoading] = useState(true);
-  const [dailyVerse, setDailyVerse] = useState<{ reference: string, text: string } | null>(null);
-
+  // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
-  // Combine all data fetching into a single function
-  const fetchAllData = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  // Streak state
+  const [streakCount, setStreakCount] = useState(0);
 
-    try {
-      setLoading(true);
-
-      // Fetch user profile
-      const usersCollectionRef = collection(db, 'users');
-      const userDocRef = doc(usersCollectionRef, user.uid);
-      const docSnap = await getDoc(userDocRef);
-      if (docSnap.exists()) {
-        setProfile(docSnap.data() as UserProfile);
-      } else {
-        setProfile(null);
-      }
-
-      // Remove direct mood fetching logic
-      
-      
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      Alert.alert('Error', 'Failed to load data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  // Use useFocusEffect to fetch data whenever the screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      if (!authLoading && user) {
-        fetchAllData();
-      } else if (!user) {
-        // If no user is logged in, stop the loading indicator
-        setLoading(false);
-      }
-      return () => {};
-    }, [user, authLoading, fetchAllData])
-  );
-  
-  // Animate the entrance of the screen
+  // Load and update streak on app open
   useEffect(() => {
-    loadVerseOfTheDay();
+    const updateStreak = async () => {
+      try {
+        const today = new Date().toDateString();
+        const lastVisit = await AsyncStorage.getItem(LAST_VISIT_KEY);
+        const savedStreak = await AsyncStorage.getItem(STREAK_KEY);
+        let currentStreak = savedStreak ? parseInt(savedStreak, 10) : 0;
 
+        if (lastVisit === today) {
+          // Already visited today, just show current streak
+          setStreakCount(currentStreak);
+          return;
+        }
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toDateString();
+
+        if (lastVisit === yesterdayStr) {
+          // Visited yesterday, increment streak
+          currentStreak += 1;
+        } else if (lastVisit) {
+          // Missed a day, reset streak
+          currentStreak = 1;
+        } else {
+          // First visit ever
+          currentStreak = 1;
+        }
+
+        await AsyncStorage.setItem(STREAK_KEY, currentStreak.toString());
+        await AsyncStorage.setItem(LAST_VISIT_KEY, today);
+        setStreakCount(currentStreak);
+      } catch (error) {
+        console.error('Error updating streak:', error);
+        setStreakCount(1);
+      }
+    };
+
+    updateStreak();
+  }, []);
+
+  const currentDayIndex = new Date().getDay(); // 0-6 Sun-Sat
+  // Adjust to make Monday index 0 for the UI
+  const uiDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
+
+  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  const todaysVerse = useMemo(() => ({
+    text: "The Lord is with me; I will not be afraid.",
+    reference: "Psalm 118:6"
+  }), []);
+
+  // Daily inspirational quotes with prayers from various authors
+  const dailyQuotes = useMemo(() => [
+    {
+      quote: "God can't give us peace and happiness apart from Himself because there is no such thing.",
+      author: "C.S. Lewis",
+      prayer: "Lord, help me find my peace and joy in You alone, not in the things of this world. Amen."
+    },
+    {
+      quote: "Pray as though everything depended on God. Work as though everything depended on you.",
+      author: "Saint Augustine",
+      prayer: "Father, help me balance trust in You with faithful action in my daily life. Amen."
+    },
+    {
+      quote: "God never said that the journey would be easy, but He did say that the arrival would be worthwhile.",
+      author: "Max Lucado",
+      prayer: "Lord, strengthen me for today's journey, knowing the destination is worth every step. Amen."
+    },
+    {
+      quote: "Faith is taking the first step even when you don't see the whole staircase.",
+      author: "Martin Luther King Jr.",
+      prayer: "God, give me courage to step forward in faith, trusting You to light my path. Amen."
+    },
+    {
+      quote: "If you can't fly then run, if you can't run then walk, if you can't walk then crawl, but whatever you do you have to keep moving forward.",
+      author: "Martin Luther King Jr.",
+      prayer: "Father, help me persevere no matter what obstacles I face today. Amen."
+    },
+    {
+      quote: "God loves each of us as if there were only one of us.",
+      author: "Saint Augustine",
+      prayer: "Lord, let me rest in Your personal, infinite love for me today. Amen."
+    },
+    {
+      quote: "Never be afraid to trust an unknown future to a known God.",
+      author: "Corrie ten Boom",
+      prayer: "Jesus, I surrender my fears about tomorrow into Your capable hands. Amen."
+    },
+    {
+      quote: "Worry does not empty tomorrow of its sorrow, it empties today of its strength.",
+      author: "Corrie ten Boom",
+      prayer: "Father, free me from anxiety and fill me with Your peace and power today. Amen."
+    },
+    {
+      quote: "The will of God will never take you where the grace of God cannot keep you.",
+      author: "Billy Graham",
+      prayer: "Lord, I trust that wherever You lead me, Your grace will sustain me. Amen."
+    },
+    {
+      quote: "God has given us two hands, one to receive with and the other to give with.",
+      author: "Billy Graham",
+      prayer: "Father, make me generous with all the blessings You've given me. Amen."
+    },
+    {
+      quote: "Do not let what you cannot do interfere with what you can do.",
+      author: "John Wooden",
+      prayer: "God, help me focus on the abilities You've given me and use them fully. Amen."
+    },
+    {
+      quote: "God doesn't call the qualified, He qualifies the called.",
+      author: "Mark Batterson",
+      prayer: "Lord, equip me for the calling You've placed on my life. Amen."
+    },
+    {
+      quote: "Not all of us can do great things. But we can do small things with great love.",
+      author: "Mother Teresa",
+      prayer: "Jesus, help me show Your love in the small moments of today. Amen."
+    },
+    {
+      quote: "If you judge people, you have no time to love them.",
+      author: "Mother Teresa",
+      prayer: "Father, replace my judgmental thoughts with compassion and understanding. Amen."
+    },
+    {
+      quote: "Yesterday is gone. Tomorrow has not yet come. We have only today. Let us begin.",
+      author: "Mother Teresa",
+      prayer: "Lord, help me live fully present in this day You've given me. Amen."
+    },
+    {
+      quote: "God has a purpose for your pain, a reason for your struggle, and a gift for your faithfulness.",
+      author: "Unknown",
+      prayer: "Father, help me trust Your purpose even when I don't understand my circumstances. Amen."
+    },
+    {
+      quote: "When you go through deep waters, I will be with you.",
+      author: "Isaiah 43:2",
+      prayer: "Lord, thank You for never leaving me, especially in life's hardest moments. Amen."
+    },
+    {
+      quote: "Joy does not simply happen to us. We have to choose joy and keep choosing it every day.",
+      author: "Henri Nouwen",
+      prayer: "God, I choose joy today regardless of my circumstances. Amen."
+    },
+    {
+      quote: "Our greatest fear should not be of failure but of succeeding at things in life that don't really matter.",
+      author: "Francis Chan",
+      prayer: "Father, align my priorities with Your eternal purposes. Amen."
+    },
+    {
+      quote: "God is most glorified in us when we are most satisfied in Him.",
+      author: "John Piper",
+      prayer: "Lord, let my deepest satisfaction be found in knowing You. Amen."
+    },
+    {
+      quote: "A man who was completely innocent offered himself as a sacrifice for the good of others. It was a perfect act.",
+      author: "Mahatma Gandhi",
+      prayer: "Jesus, thank You for Your perfect sacrifice. Help me live sacrificially for others. Amen."
+    },
+    {
+      quote: "God writes the gospel not in the Bible alone, but on trees and flowers and clouds and stars.",
+      author: "Martin Luther",
+      prayer: "Father, open my eyes to see Your glory in creation today. Amen."
+    },
+    {
+      quote: "There is not a single moment in which God does not present Himself under the cover of some pain to be endured, some consolation to be enjoyed, or some duty to be performed.",
+      author: "Jean-Pierre de Caussade",
+      prayer: "Lord, help me recognize Your presence in every moment of this day. Amen."
+    },
+    {
+      quote: "God does not give us everything we want, but He does fulfill His promises.",
+      author: "Dietrich Bonhoeffer",
+      prayer: "Father, I trust in Your promises even when my prayers go unanswered. Amen."
+    },
+    {
+      quote: "The Christian life is not a constant high. I have my moments of deep discouragement.",
+      author: "Billy Graham",
+      prayer: "Lord, thank You that it's okay to struggle. Meet me in my low moments. Amen."
+    },
+    {
+      quote: "We are not makers of history. We are made by history.",
+      author: "Martin Luther King Jr.",
+      prayer: "God, use my life as part of Your great story of redemption. Amen."
+    },
+    {
+      quote: "Be faithful in small things because it is in them that your strength lies.",
+      author: "Mother Teresa",
+      prayer: "Father, help me be faithful in the small responsibilities You've given me. Amen."
+    },
+    {
+      quote: "I have held many things in my hands, and I have lost them all; but whatever I have placed in God's hands, that I still possess.",
+      author: "Martin Luther",
+      prayer: "Lord, I place everything I hold dear into Your faithful hands. Amen."
+    },
+    {
+      quote: "The measure of a life is not its duration, but its donation.",
+      author: "Corrie ten Boom",
+      prayer: "Father, help me live a life that gives rather than takes. Amen."
+    },
+    {
+      quote: "Let God's promises shine on your problems.",
+      author: "Corrie ten Boom",
+      prayer: "Lord, let Your Word illuminate every dark situation I face today. Amen."
+    },
+    {
+      quote: "A room without books is like a body without a soul.",
+      author: "Marcus Tullius Cicero",
+      prayer: "God, cultivate in me a love for wisdom and Your Word. Amen."
+    },
+  ], []);
+
+  const dayOfYear = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now.getTime() - start.getTime();
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.floor(diff / oneDay);
+  }, []);
+
+  const todaysQuote = dailyQuotes[dayOfYear % dailyQuotes.length];
+
+  const onShareQuote = async () => {
+    try {
+      const result = await Share.share({
+        message: `"${todaysQuote.quote}" - ${todaysQuote.author}\n\nRead more in the Daily Bread app!`,
+        title: 'Daily Inspiration',
+      });
+    } catch (error) {
+      console.error('Error sharing quote:', error);
+    }
+  };
+
+  // Calculate dates for the current week (Monday to Sunday)
+  const weekDates = useMemo(() => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (currentDay === 0 ? 6 : currentDay - 1));
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      return date.getDate();
+    });
+  }, []);
+
+
+
+  useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
+        useNativeDriver: true
       }),
       Animated.spring(slideAnim, {
         toValue: 0,
-        tension: 100,
+        tension: 50,
         friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
+        useNativeDriver: true
       }),
     ]).start();
   }, []);
 
-  const loadVerseOfTheDay = async () => {
-    try {
-      setVerseLoading(true);
-      const verse = await fetchVerseOfTheDay();
-      setDailyVerse(verse);
-    } catch (error) {
-      console.error('Error loading verse of the day:', error);
-      const fallbackVerse = {
-        reference: 'Jeremiah 29:11',
-        text: 'For I know the plans I have for you," declares the Lord, "plans to prosper you and not to harm you, to give you hope and a future.'
-      };
-      setDailyVerse(fallbackVerse);
-    } finally {
-      setVerseLoading(false);
-    }
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
-  const calculateJourneyDays = () => {
-    if (!profile?.journey_start_date) return 1;
-    const startDate = new Date(profile.journey_start_date);
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await auth.signOut();
-              router.replace('/signup');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to sign out');
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  
-  
-  const journeyDays = user ? calculateJourneyDays() : 1;
-
-  const quickActions = [
-    {
-      icon: BookOpen,
-      title: "Bible Reading",
-      subtitle: "Daily Scripture",
-      color: '#3B82F6',
-      route: '/(tabs)/bible'
-    },
-    {
-      icon: FileText,
-      title: "Notes",
-      subtitle: "Capture thoughts",
-      color: '#8B5CF6',
-      route: '/note-taker'
-    },
-    {
-      icon: Heart,
-      title: "Prayer Tracker",
-      subtitle: "Track your prayers",
-      color: '#EF4444',
-      route: '/(tabs)/prayer-tracker'
-    },
-    {
-      icon: Smile,
-      title: "Mood Tracker",
-      subtitle: "Track your mood",
-      color: '#10B981',
-      route: '/(tabs)/mood-tracker'
-    },
-    {
-      icon: MessageCircle,
-      title: "Bible Quiz",
-      subtitle: "Test knowledge",
-      color: '#8B5CF6',
-      route: '/bible-quiz'
-    },
-    {
-      icon: Cloud,
-      title: "Dream Journal",
-      subtitle: "Interpret dreams",
-      color: '#F59E0B',
-      route: '/dream-interpretation'
-    },
-  ];
+  const DailyItemCard = ({
+    icon,
+    title,
+    meta,
+    onPress,
+    delay = 0
+  }: {
+    icon: React.ReactNode,
+    title: string,
+    meta: string,
+    onPress: () => void,
+    delay?: number
+  }) => (
+    <TouchableOpacity
+      style={styles.dailyItemCard}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.dailyItemContent}>
+        <View style={styles.dailyItemIcon}>{icon}</View>
+        <Text style={styles.dailyItemTitle}>{title}</Text>
+      </View>
+      <Text style={styles.dailyItemMeta}>{meta}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
-      <BackgroundGradient>
-        <Animated.ScrollView 
-          style={[styles.scrollView, { opacity: fadeAnim }]} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + Spacing['4xl'] }]}
-        >
-          <Animated.View style={[{ transform: [{ translateY: slideAnim }] }]}>
-            <ModernHeader
-              title={getGreeting()}
-              subtitle={`${user ? (profile?.full_name || user.email?.split('@')[0] || 'User') : 'Welcome, Guest'} • Day ${journeyDays}`}
-              variant="simple"
-              showNotificationButton={true}
-              showProfileButton={true}
-              onNotificationPress={() => {
-                // Handle notification press
-                console.log('Notifications pressed');
-              }}
-              onProfilePress={() => {
-                router.push('/(tabs)/profile');
-              }}
-            />
-            
-            {/* Banner Ad below header */}
-            {/* <BannerAd placement="home" /> */}
-          </Animated.View>
+      <StatusBar barStyle="dark-content" />
 
-          <Animated.View style={[{ transform: [{ translateY: slideAnim }] }]}>
-            <LinearGradient
-              colors={Colors.gradients.main}
-              style={styles.verseCard}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={styles.verseHeader}>
-                <View style={styles.verseBadge}>
-                  <BookOpen size={18} color={Colors.primary[600]} />
-                  <Text style={[styles.verseBadgeText, { color: Colors.primary[600] }]}>Daily Bread</Text>
-                </View>
-                <Text style={[styles.verseDate, { color: Colors.neutral[600] }]}>
-                  {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </Text>
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Header Section */}
+        <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          <View style={styles.headerTop}>
+            <View style={styles.userInfo}>
+              <Text style={styles.greetingText}>Connect with God</Text>
+            </View>
+
+            <View style={styles.headerActions}>
+              <View style={styles.streakBadge}>
+                <Zap size={14} color={AppTheme.accent.primary} fill={AppTheme.accent.primary} />
+                <Text style={styles.streakText}>{streakCount}</Text>
               </View>
-              
-              {verseLoading ? (
-                <View style={styles.verseLoading}>
-                  <ActivityIndicator size="small" color={Colors.primary[500]} />
-                  <Text style={[styles.verseLoadingText, { color: Colors.neutral[700] }]}>Loading today's verse...</Text>
+            </View>
+          </View>
+
+          {/* Week Selector */}
+          <View style={styles.weekSelector}>
+            {weekDays.map((day, index) => {
+              const isActive = index === uiDayIndex;
+              return (
+                <View key={index} style={styles.dayColumn}>
+                  <Text style={styles.dayText}>
+                    {day}
+                  </Text>
+                  <View style={styles.dateCircleContainer}>
+                    {isActive && <View style={styles.activeDayIndicator} />}
+                    <Text style={[
+                      styles.dateText,
+                      isActive && styles.activeDateText
+                    ]}>
+                      {weekDates[index]}
+                    </Text>
+                  </View>
                 </View>
-              ) : (
-                <>
-                  <Text style={[styles.verseReference, { color: Colors.neutral[900] }]}>
-                    {dailyVerse?.reference || 'Jeremiah 29:11'}
-                  </Text>
-                  <Text style={[styles.verseText, { color: Colors.neutral[800] }]}>
-                    "{dailyVerse?.text || 'For I know the plans I have for you," declares the Lord, "plans to prosper you and not to harm you, to give you hope and a future.'}"
-                  </Text>
-                </>
-              )}
-              
-              <TouchableOpacity
-                style={[styles.verseButton, { backgroundColor: Colors.primary[50] }]}
+              );
+            })}
+          </View>
+        </Animated.View>
+
+        {/* Main Content Card */}
+        <Animated.View style={[
+          styles.mainCard,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}>
+          <View style={styles.mainCardContent}>
+            <Text style={styles.dateLabel}>
+              {new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+              }).toUpperCase()}
+            </Text>
+
+
+
+            <Text style={styles.sectionLabel}>DAILY DEVOTIONAL</Text>
+
+            {/* Quote Card */}
+            <View style={styles.quoteCard}>
+              <View style={styles.quoteCardHeader}>
+                <View style={styles.quoteHeaderLeft}>
+                  <Feather size={20} color={AppTheme.text.primary} />
+                  <Text style={styles.quoteLabel}>Daily Quote</Text>
+                </View>
+                <TouchableOpacity onPress={onShareQuote} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <ShareIcon size={20} color={AppTheme.text.primary} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.quoteIntro}>TODAY'S QUOTE FROM:</Text>
+              <Text style={styles.quoteAuthor}>{todaysQuote.author}</Text>
+
+              <Text style={styles.quoteText}>"{todaysQuote.quote}"</Text>
+
+              <View style={styles.prayerSection}>
+                <Text style={styles.prayerLabel}>🙏 TODAY'S PRAYER</Text>
+                <Text style={styles.prayerText}>{todaysQuote.prayer}</Text>
+              </View>
+            </View>
+
+            {/* Daily Items List */}
+            <View style={styles.dailyItemsList}>
+              <DailyItemCard
+                icon={<BookOpen size={20} color={AppTheme.text.primary} />}
+                title="Passage"
+                meta=""
                 onPress={() => router.push('/(tabs)/bible')}
-              >
-                <Text style={[styles.verseButtonText, { color: Colors.primary[600] }]}>Read Full Chapter</Text>
-                <ArrowRight size={18} color={Colors.primary[600]} />
-              </TouchableOpacity>
-            </LinearGradient>
-          </Animated.View>
+              />
 
-          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <MoodTrackerCard />
-          </Animated.View>
+              <DailyItemCard
+                icon={<MessageCircle size={20} color={AppTheme.text.primary} />}
+                title="Bible Study Notes"
+                meta=""
+                onPress={() => router.push('/bible-study-notes')}
+              />
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-          </View>
-          
-          <View style={styles.quickActionsGrid}>
-            {quickActions.map((action, index) => (
+              <DailyItemCard
+                icon={<View style={{ transform: [{ rotate: '-45deg' }] }}><Users size={20} color={AppTheme.text.primary} /></View>} // Using Users as Hands placeholder
+                title="Prayer"
+                meta=""
+                onPress={() => router.push('/(tabs)/prayer-tracker')}
+              />
+
+              {/* Added Mood Tracker to fit the list style */}
+              <DailyItemCard
+                icon={<Play size={20} color={AppTheme.text.primary} />}
+                title="Mood Check-in"
+                meta=""
+                onPress={() => router.push('/(tabs)/mood-tracker')}
+              />
+            </View>
+
+            {/* Remove Ads Card - Only show for non-premium iOS users */}
+            {Platform.OS !== 'android' && !isPremium && (
               <TouchableOpacity
-                key={action.title}
-                onPress={() => router.push(action.route as any)}
-                activeOpacity={0.8}
+                style={styles.removeAdsCard}
+                onPress={() => router.push('/paywall')}
+                activeOpacity={0.9}
               >
-                <Animated.View
-                  style={[
-                    styles.actionCard,
-                    {
-                      transform: [{
-                        translateY: slideAnim.interpolate({
-                          inputRange: [0, 30],
-                          outputRange: [0, 30 + (index * 10)],
-                        })
-                      }]
-                    }
-                  ]}
+                <LinearGradient
+                  colors={['#1a1a2e', '#16213e']}
+                  style={styles.removeAdsGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 >
-                  <LinearGradient
-                    colors={getActionGradient(action.color)}
-                    style={styles.actionButton}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <View style={[styles.actionIcon, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }] }>
-                      {React.createElement(action.icon, { size: 24, color: 'white' })}
+                  <View style={styles.removeAdsContent}>
+                    <View style={styles.removeAdsLeft}>
+                      <View style={styles.removeAdsIconContainer}>
+                        <Zap size={24} color="#F97316" />
+                      </View>
+                      <View style={styles.removeAdsTextContainer}>
+                        <Text style={styles.removeAdsTitle}>Go Ad-Free</Text>
+                        <Text style={styles.removeAdsSubtitle}>Enjoy without interruptions • $3.99/mo</Text>
+                      </View>
                     </View>
-                    <Text style={[styles.actionTitle, { color: 'white' }]}>{action.title}</Text>
-                    <Text style={[styles.actionSubtitle, { color: 'rgba(255, 255, 255, 0.85)' }]}>{action.subtitle}</Text>
-                  </LinearGradient>
-                </Animated.View>
+                    <View style={styles.removeAdsButton}>
+                      <Text style={styles.removeAdsButtonText}>Remove Ads</Text>
+                    </View>
+                  </View>
+                  {/* Decorative sparkles */}
+                  <View style={styles.sparkleDecor1}>
+                    <Sparkles size={12} color="rgba(249, 115, 22, 0.3)" />
+                  </View>
+                  <View style={styles.sparkleDecor2}>
+                    <Sparkles size={10} color="rgba(249, 115, 22, 0.2)" />
+                  </View>
+                </LinearGradient>
               </TouchableOpacity>
-            ))}
-          </View>
+            )}
 
-        </Animated.ScrollView>
-      </BackgroundGradient>
+          </View>
+        </Animated.View>
+
+        {/* Bottom padding for tab bar */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAF5EF', // Matches the warm cream bg
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.lg,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
   },
   header: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0) + Spacing.lg,
-    paddingBottom: Spacing.lg,
-    marginBottom: Spacing['2xl'],
+    marginBottom: Spacing.xl,
   },
-  headerTitle: {
-    fontSize: Typography.sizes['4xl'],
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[800],
-  },
-  headerSubtitle: {
-    fontSize: Typography.sizes.lg,
-    color: Colors.neutral[600],
-  },
-  headerIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.md,
-  },
-  journeyBadge: {
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[100],
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    alignSelf: 'flex-start',
+    gap: 2,
   },
-  journeyText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
-    color: Colors.neutral[600],
-    marginLeft: Spacing.xs,
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFD8B4', // Light orange
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarText: {
+    color: '#000000',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  greetingText: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: '700',
+    color: '#1E293B',
   },
   headerActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
   },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.neutral[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: Colors.error[500],
-    borderRadius: BorderRadius.full,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  notificationBadgeText: {
-    fontSize: 10,
-    fontWeight: Typography.weights.bold,
-    color: 'white',
-  },
-  profileButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.neutral[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verseCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: BorderRadius['3xl'],
-    padding: Spacing['3xl'],
-    marginBottom: Spacing['2xl'],
-    ...Shadows.lg,
-    borderWidth: 1,
-    borderColor: Colors.neutral[100],
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  verseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing['2xl'],
-  },
-  verseBadge: {
+  streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary[50],
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.primary[100],
-  },
-  verseBadgeText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.primary[700],
-    marginLeft: Spacing.sm,
-    letterSpacing: 0.5,
-  },
-  verseDate: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.neutral[600],
-    fontWeight: Typography.weights.medium,
-  },
-  verseLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing['3xl'],
-  },
-  verseLoadingText: {
-    fontSize: Typography.sizes.base,
-    color: Colors.neutral[600],
-    marginLeft: Spacing.sm,
-    fontWeight: Typography.weights.medium,
-  },
-  verseReference: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[900],
-    marginBottom: Spacing.md,
-    letterSpacing: 0.3,
-  },
-  verseText: {
-    fontSize: Typography.sizes.lg,
-    lineHeight: Typography.sizes.lg * 1.6,
-    color: Colors.neutral[800],
-    marginBottom: Spacing['2xl'],
-    fontStyle: 'italic',
-    fontWeight: Typography.weights.medium,
-    textAlign: 'left',
-  },
-  verseButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary[600],
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.xl,
-    ...Shadows.md,
-  },
-  verseButtonText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semiBold,
-    color: 'white',
-    marginRight: Spacing.sm,
-    letterSpacing: 0.3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    color: Colors.neutral[900],
-  },
-  sectionMore: {
-    padding: Spacing.sm,
-  },
-  sectionMoreText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
-    color: Colors.primary[600],
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.primary[50],
-    borderWidth: 1,
-    borderColor: Colors.primary[200],
-  },
-  viewAllText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
-    color: Colors.primary[600],
-    marginRight: Spacing.xs,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    marginBottom: Spacing['2xl'],
-  },
-  actionCard: {
-    width: (screenWidth - (Spacing.lg * 2) - Spacing.md) / 2,
-  },
-  actionButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
     ...Shadows.sm,
-    borderWidth: 1,
-    borderColor: Colors.neutral[100],
   },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.xl,
+  streakText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  communityBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFD8B4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  weekSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
+  },
+  dayColumn: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  dayText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#C2410C',
+  },
+  activeDayText: {
+    color: '#C2410C',
+  },
+  dateCircleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: 36,
+    height: 36,
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#C2410C',
+    zIndex: 1,
+  },
+  activeDateText: {
+    color: '#FFFFFF',
+  },
+  activeDayIndicator: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EA580C',
+  },
+  viewCalendarBtn: {
     marginBottom: Spacing.sm,
   },
-  actionTitle: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semiBold,
-    color: Colors.neutral[900],
+  viewCalendarText: {
+    color: '#EA580C',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  // Main Card Styles
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    minHeight: Dimensions.get('window').height * 0.7,
+    paddingHorizontal: Spacing.md,
+    paddingTop: 32,
+    ...Shadows.md,
+  },
+  mainCardContent: {
+    gap: Spacing.md,
+  },
+  dateLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.md,
+  },
+  mainTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1E293B',
+    flex: 1,
+    marginRight: Spacing.md,
+    lineHeight: 34,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 1,
+    marginTop: Spacing.sm,
     marginBottom: Spacing.xs,
-    textAlign: 'center',
   },
-  actionSubtitle: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.neutral[600],
-    textAlign: 'center',
+
+  // Quote Card
+  quoteCard: {
+    backgroundColor: '#FAF5EF',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: Spacing.lg,
   },
-  
-  bottomSpacing: {
-    height: Spacing['4xl'],
+  quoteCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  quoteHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quoteLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  quoteIntro: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  quoteAuthor: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 16,
+  },
+  quoteText: {
+    fontSize: 17,
+    fontWeight: '500',
+    fontStyle: 'italic',
+    color: '#475569',
+    lineHeight: 26,
+    marginBottom: 20,
+  },
+  prayerSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+  },
+  prayerLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: AppTheme.accent.primary,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  prayerText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#475569',
+    lineHeight: 22,
+  },
+  readButton: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  readButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+
+  // Daily List Items
+  dailyItemsList: {
+    gap: Spacing.md,
+  },
+  dailyItemCard: {
+    backgroundColor: '#FAF5EF',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dailyItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  dailyItemIcon: {
+    width: 24,
+    alignItems: 'center',
+  },
+  dailyItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  dailyItemMeta: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+
+  // Remove Ads Card Styles
+  removeAdsCard: {
+    marginTop: Spacing.lg,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Shadows.lg,
+  },
+  removeAdsGradient: {
+    padding: 20,
+    position: 'relative',
+  },
+  removeAdsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  removeAdsLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  removeAdsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeAdsTextContainer: {
+    flex: 1,
+  },
+  removeAdsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  removeAdsSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  removeAdsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F97316',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  removeAdsButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  sparkleDecor1: {
+    position: 'absolute',
+    top: 10,
+    right: 80,
+  },
+  sparkleDecor2: {
+    position: 'absolute',
+    bottom: 12,
+    left: 60,
   },
 });

@@ -1,4 +1,3 @@
-
 /**
  * Enhanced Bible Quiz Screen with Advanced Randomization
  * Uses the new enhanced quiz system for better question distribution
