@@ -1,10 +1,13 @@
 /**
- * Local Bible Service
- * Provides Bible data from local JSON files in the assets folder
+ * Local Bible Service - Spanish Version
+ * Provides Bible data from local biblia_spanish.json file in the assets folder
  * No API calls required - fully offline capable
  */
 
-import { BIBLE_BOOKS, BibleBookInfo } from '@/constants/BibleBooks';
+import { BIBLE_BOOKS, BibleBookInfo, BOOK_ID_TO_SPANISH_NAME } from '@/constants/BibleBooks';
+
+// Import the Spanish Bible JSON
+const SPANISH_BIBLE = require('../assets/biblia_spanish.json');
 
 // Type definitions
 export interface BibleVerse {
@@ -22,79 +25,6 @@ export interface BibleBookData {
     chapters: BibleChapter[];
 }
 
-// Static imports for all Bible books (required for React Native bundling)
-// Note: File names must match exactly what's in the assets folder
-const BIBLE_DATA: { [key: string]: BibleBookData } = {
-    // Old Testament
-    'GEN': require('../assets/Genesis.json'),
-    'EXO': require('../assets/Exodus.json'),
-    'LEV': require('../assets/Leviticus.json'),
-    'NUM': require('../assets/Numbers.json'),
-    'DEU': require('../assets/Deuteronomy.json'),
-    'JOS': require('../assets/Joshua.json'),
-    'JDG': require('../assets/Judges.json'),
-    'RUT': require('../assets/Ruth.json'),
-    '1SA': require('../assets/1Samuel.json'),
-    '2SA': require('../assets/2Samuel.json'),
-    '1KI': require('../assets/1Kings.json'),
-    '2KI': require('../assets/2Kings.json'),
-    '1CH': require('../assets/1Chronicles.json'),
-    '2CH': require('../assets/2Chronicles.json'),
-    'EZR': require('../assets/Ezra.json'),
-    'NEH': require('../assets/Nehemiah.json'),
-    'EST': require('../assets/Esther.json'),
-    'JOB': require('../assets/Job.json'),
-    'PSA': require('../assets/Psalms.json'),
-    'PRO': require('../assets/Proverbs.json'),
-    'ECC': require('../assets/Ecclesiastes.json'),
-    'SNG': require('../assets/SongofSolomon.json'),
-    'ISA': require('../assets/Isaiah.json'),
-    'JER': require('../assets/Jeremiah.json'),
-    'LAM': require('../assets/Lamentations.json'),
-    'EZK': require('../assets/Ezekiel.json'),
-    'DAN': require('../assets/Daniel.json'),
-    'HOS': require('../assets/Hosea.json'),
-    'JOL': require('../assets/Joel.json'),
-    'AMO': require('../assets/Amos.json'),
-    'OBA': require('../assets/Obadiah.json'),
-    'JON': require('../assets/Jonah.json'),
-    'MIC': require('../assets/Micah.json'),
-    'NAM': require('../assets/Nahum.json'),
-    'HAB': require('../assets/Habakkuk.json'),
-    'ZEP': require('../assets/Zephaniah.json'),
-    'HAG': require('../assets/Haggai.json'),
-    'ZEC': require('../assets/Zechariah.json'),
-    'MAL': require('../assets/Malachi.json'),
-    // New Testament
-    'MAT': require('../assets/Matthew.json'),
-    'MRK': require('../assets/Mark.json'),
-    'LUK': require('../assets/Luke.json'),
-    'JHN': require('../assets/John.json'),
-    'ACT': require('../assets/Acts.json'),
-    'ROM': require('../assets/Romans.json'),
-    '1CO': require('../assets/1Corinthians.json'),
-    '2CO': require('../assets/2Corinthians.json'),
-    'GAL': require('../assets/Galatians.json'),
-    'EPH': require('../assets/Ephesians.json'),
-    'PHP': require('../assets/Philippians.json'),
-    'COL': require('../assets/Colossians.json'),
-    '1TH': require('../assets/1Thessalonians.json'),
-    '2TH': require('../assets/2Thessalonians.json'),
-    '1TI': require('../assets/1Timothy.json'),
-    '2TI': require('../assets/2Timothy.json'),
-    'TIT': require('../assets/Titus.json'),
-    'PHM': require('../assets/Philemon.json'),
-    'HEB': require('../assets/Hebrews.json'),
-    'JAS': require('../assets/James.json'),
-    '1PE': require('../assets/1Peter.json'),
-    '2PE': require('../assets/2Peter.json'),
-    '1JN': require('../assets/1John.json'),
-    '2JN': require('../assets/2John.json'),
-    '3JN': require('../assets/3John.json'),
-    'JUD': require('../assets/Jude.json'),
-    'REV': require('../assets/Revelation.json'),
-};
-
 /**
  * Get all Bible books with metadata
  */
@@ -110,11 +40,43 @@ export function getBooksByTestament(testament: 'old' | 'new'): BibleBookInfo[] {
 }
 
 /**
- * Get a specific book's data
+ * Get a specific book's data from Spanish Bible
  */
 export function getBookData(bookId: string): BibleBookData | null {
-    const data = BIBLE_DATA[bookId];
-    return data || null;
+    const spanishName = BOOK_ID_TO_SPANISH_NAME[bookId];
+    if (!spanishName) return null;
+
+    const bookData = SPANISH_BIBLE[spanishName];
+    if (!bookData) return null;
+
+    // Convert the Spanish Bible format to our format
+    const chapters: BibleChapter[] = [];
+    const chapterNumbers = Object.keys(bookData).map(n => parseInt(n)).sort((a, b) => a - b);
+
+    for (const chapterNum of chapterNumbers) {
+        const chapterData = bookData[chapterNum.toString()];
+        if (!chapterData) continue;
+
+        const verses: BibleVerse[] = [];
+        const verseNumbers = Object.keys(chapterData).map(n => parseInt(n)).sort((a, b) => a - b);
+
+        for (const verseNum of verseNumbers) {
+            verses.push({
+                verse: verseNum.toString(),
+                text: chapterData[verseNum.toString()]
+            });
+        }
+
+        chapters.push({
+            chapter: chapterNum.toString(),
+            verses
+        });
+    }
+
+    return {
+        book: spanishName,
+        chapters
+    };
 }
 
 /**
@@ -128,11 +90,29 @@ export function getBookInfo(bookId: string): BibleBookInfo | undefined {
  * Get a specific chapter from a book
  */
 export function getChapter(bookId: string, chapterNumber: number): BibleChapter | null {
-    const bookData = getBookData(bookId);
+    const spanishName = BOOK_ID_TO_SPANISH_NAME[bookId];
+    if (!spanishName) return null;
+
+    const bookData = SPANISH_BIBLE[spanishName];
     if (!bookData) return null;
 
-    const chapter = bookData.chapters.find(c => parseInt(c.chapter) === chapterNumber);
-    return chapter || null;
+    const chapterData = bookData[chapterNumber.toString()];
+    if (!chapterData) return null;
+
+    const verses: BibleVerse[] = [];
+    const verseNumbers = Object.keys(chapterData).map(n => parseInt(n)).sort((a, b) => a - b);
+
+    for (const verseNum of verseNumbers) {
+        verses.push({
+            verse: verseNum.toString(),
+            text: chapterData[verseNum.toString()]
+        });
+    }
+
+    return {
+        chapter: chapterNumber.toString(),
+        verses
+    };
 }
 
 /**

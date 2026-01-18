@@ -281,7 +281,7 @@ export default function PrayerTrackerScreen() {
     startTimeRef.current = null;
 
     if (currentSeconds < 10) {
-      Alert.alert('Too Short', 'Pray for at least 10 seconds to save.');
+      Alert.alert('Muy Corto', 'Ora al menos 10 segundos para guardar.');
       setTimerSeconds(0);
       saveTimerState(0, false);
       return;
@@ -293,8 +293,8 @@ export default function PrayerTrackerScreen() {
       const durationMin = Math.max(1, Math.round(currentSeconds / 60));
 
       const prayerData = {
-        title: `Prayer Session`,
-        description: `${durationMin} minutes of prayer`,
+        title: `Sesión de Oración`,
+        description: `${durationMin} minutos de oración`,
         status: 'active' as const,
         category: 'personal' as const,
         priority: 'medium' as const,
@@ -317,17 +317,17 @@ export default function PrayerTrackerScreen() {
       const result = await addPrayer(prayerData);
 
       if (result.error) {
-        Alert.alert('Error', 'Failed to save session.');
+        Alert.alert('Error', 'Error al guardar la sesión.');
         return;
       }
 
       setTimerSeconds(0);
       saveTimerState(0, false);
 
-      Alert.alert('Saved! ✨', `${durationMin} ${durationMin === 1 ? 'minute' : 'minutes'} of prayer recorded.`);
+      Alert.alert('¡Guardado! ✨', `${durationMin} ${durationMin === 1 ? 'minuto' : 'minutos'} de oración registrados.`);
 
     } catch (error) {
-      Alert.alert('Error', 'Could not save session.');
+      Alert.alert('Error', 'No se pudo guardar la sesión.');
     }
   }, [timerSeconds, addPrayer, saveTimerState]);
 
@@ -354,13 +354,13 @@ export default function PrayerTrackerScreen() {
     const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     if (sessionDay.getTime() === today.getTime()) {
-      return `Today at ${time}`;
+      return `Hoy a las ${time}`;
     }
 
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     if (sessionDay.getTime() === yesterday.getTime()) {
-      return `Yesterday at ${time}`;
+      return `Ayer a las ${time}`;
     }
 
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -377,7 +377,7 @@ export default function PrayerTrackerScreen() {
             <View style={styles.userAvatar}>
               <Heart size={20} color="#EA580C" />
             </View>
-            <Text style={styles.headerTitle}>Prayer Journal</Text>
+            <Text style={styles.headerTitle}>Diario de Oración</Text>
           </View>
 
           <View style={styles.headerActions}>
@@ -399,12 +399,12 @@ export default function PrayerTrackerScreen() {
           {showCalendar ? (
             <>
               <X size={14} color="#EA580C" />
-              <Text style={styles.viewCalendarText}>CLOSE CALENDAR</Text>
+              <Text style={styles.viewCalendarText}>CERRAR CALENDARIO</Text>
             </>
           ) : (
             <>
               <CalendarDays size={14} color="#EA580C" />
-              <Text style={styles.viewCalendarText}>VIEW CALENDAR</Text>
+              <Text style={styles.viewCalendarText}>VER CALENDARIO</Text>
             </>
           )}
         </TouchableOpacity>
@@ -482,7 +482,7 @@ export default function PrayerTrackerScreen() {
         ) : (
           /* Week Selector */
           <View style={styles.weekSelector}>
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => {
+            {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => {
               const currentDay = new Date().getDay();
               const uiDayIndex = currentDay === 0 ? 6 : currentDay - 1;
               const isActive = index === uiDayIndex;
@@ -531,23 +531,23 @@ export default function PrayerTrackerScreen() {
             <View style={styles.statCardNew}>
               <Text style={styles.statEmojiNew}>🔥</Text>
               <Text style={styles.statValueNew}>{stats.streak}</Text>
-              <Text style={styles.statLabelNew}>Streak</Text>
+              <Text style={styles.statLabelNew}>Racha</Text>
             </View>
             <View style={styles.statCardNew}>
               <Text style={styles.statEmojiNew}>🙏</Text>
               <Text style={styles.statValueNew}>{stats.sessionCount}</Text>
-              <Text style={styles.statLabelNew}>Sessions</Text>
+              <Text style={styles.statLabelNew}>Sesiones</Text>
             </View>
             <View style={styles.statCardNew}>
               <Text style={styles.statEmojiNew}>⏱️</Text>
               <Text style={styles.statValueNew}>{stats.totalMinutes}</Text>
-              <Text style={styles.statLabelNew}>Minutes</Text>
+              <Text style={styles.statLabelNew}>Minutos</Text>
             </View>
           </View>
 
           {/* Timer Card */}
           <View style={styles.timerCard}>
-            <Text style={styles.sectionTitle}>Prayer Timer</Text>
+            <Text style={styles.sectionTitle}>Temporizador de Oración</Text>
 
             <View style={styles.timerContainer}>
               <Animated.View style={[
@@ -565,7 +565,7 @@ export default function PrayerTrackerScreen() {
                   {isTimerRunning && (
                     <View style={styles.recordingIndicator}>
                       <View style={styles.recordingDot} />
-                      <Text style={styles.recordingText}>RECORDING</Text>
+                      <Text style={styles.recordingText}>GRABANDO</Text>
                     </View>
                   )}
                 </LinearGradient>
@@ -582,7 +582,7 @@ export default function PrayerTrackerScreen() {
                 <View style={styles.iconContainer}>
                   <Square size={20} color={Colors.neutral[500]} />
                 </View>
-                <Text style={styles.controlLabel}>Reset</Text>
+                <Text style={styles.controlLabel}>Reiniciar</Text>
               </TouchableOpacity>
 
               {/* Play/Pause Button (Center, Large) */}
@@ -614,12 +614,12 @@ export default function PrayerTrackerScreen() {
                 <View style={[styles.iconContainer, timerSeconds > 0 && styles.saveIconContainer]}>
                   <Heart size={20} color={timerSeconds > 0 ? '#EA580C' : Colors.neutral[500]} fill={timerSeconds > 0 ? '#EA580C' : 'transparent'} />
                 </View>
-                <Text style={[styles.controlLabel, timerSeconds > 0 && styles.saveLabel]}>Save</Text>
+                <Text style={[styles.controlLabel, timerSeconds > 0 && styles.saveLabel]}>Guardar</Text>
               </TouchableOpacity>
             </View>
 
             <Text style={styles.timerHint}>
-              {isTimerRunning ? 'Keep going, God is listening...' : 'Tap play to start your prayer session'}
+              {isTimerRunning ? 'Sigue orando, Dios te escucha...' : 'Toca play para iniciar tu sesión de oración'}
             </Text>
           </View>
 
@@ -627,7 +627,7 @@ export default function PrayerTrackerScreen() {
           <View style={styles.sessionsSection}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                {selectedDate ? 'SESSIONS' : 'RECENT SESSIONS'}
+                {selectedDate ? 'SESIONES' : 'SESIONES RECIENTES'}
               </Text>
               {selectedDate && (
                 <TouchableOpacity
@@ -637,7 +637,7 @@ export default function PrayerTrackerScreen() {
                     setSelectedDate(null);
                   }}
                 >
-                  <Text style={styles.clearFilterText}>Clear Filter</Text>
+                  <Text style={styles.clearFilterText}>Limpiar Filtro</Text>
                   <X size={12} color="#64748B" />
                 </TouchableOpacity>
               )}
@@ -647,14 +647,14 @@ export default function PrayerTrackerScreen() {
             {selectedDate && filteredSessions.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyEmoji}>📅</Text>
-                <Text style={styles.emptyTitle}>No sessions found</Text>
-                <Text style={styles.emptySubtitle}>No prayer sessions recorded on this date</Text>
+                <Text style={styles.emptyTitle}>Sin sesiones encontradas</Text>
+                <Text style={styles.emptySubtitle}>No hay sesiones de oración en esta fecha</Text>
               </View>
             ) : filteredSessions.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyEmoji}>🕊️</Text>
-                <Text style={styles.emptyTitle}>No sessions yet</Text>
-                <Text style={styles.emptySubtitle}>Start your first prayer session above</Text>
+                <Text style={styles.emptyTitle}>Sin sesiones aún</Text>
+                <Text style={styles.emptySubtitle}>Inicia tu primera sesión de oración arriba</Text>
               </View>
             ) : (
               filteredSessions.map((session, index) => {
@@ -665,7 +665,7 @@ export default function PrayerTrackerScreen() {
                       <Timer size={16} color="#EA580C" />
                     </View>
                     <View style={styles.sessionInfo}>
-                      <Text style={styles.sessionDuration}>{duration} minutes</Text>
+                      <Text style={styles.sessionDuration}>{duration} minutos</Text>
                       <Text style={styles.sessionTime}>
                         {formatSessionTime(session.created_at)}
                       </Text>
@@ -1121,30 +1121,12 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
 
-  // Calendar Styles
   calendarCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: Spacing.sm,
     marginBottom: Spacing.lg,
     ...Shadows.sm,
-  },
-  viewCalendarBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    alignSelf: 'flex-end',
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    backgroundColor: '#FFF7ED',
-    borderRadius: 12,
-  },
-  viewCalendarText: {
-    color: '#EA580C',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
   },
   calendarDay: {
     width: 38,

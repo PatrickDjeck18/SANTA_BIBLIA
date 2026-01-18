@@ -1,4 +1,4 @@
-export const initializeAdMob = async () => {};
+export const initializeAdMob = async () => { };
 
 export interface BannerAdProps {
   unitId: string;
@@ -8,20 +8,15 @@ export interface BannerAdProps {
 }
 
 export class InterstitialAdService {
-  constructor(private unitId: string) {}
+  constructor(private unitId: string) { }
   async showAd(): Promise<boolean> { return false; }
 }
 
-export class RewardedAdService {
-  constructor(private unitId: string) {}
-  async showAd(): Promise<{ success: boolean; reward?: any }> { return { success: false }; }
-}
 
 export class AdManager {
-  static async initialize() {}
+  static async initialize() { }
   static getInterstitial(unitId: string): InterstitialAdService { return new InterstitialAdService(unitId); }
-  static getRewarded(unitId: string): RewardedAdService { return new RewardedAdService(unitId); }
-  static destroyAll() {}
+  static destroyAll() { }
   static isAvailable(): boolean { return false; }
 }
 

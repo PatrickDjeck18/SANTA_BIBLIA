@@ -53,92 +53,92 @@ interface MoodCategory {
 // Comprehensive mood categories like the screenshot
 const defaultMoodCategories: MoodCategory[] = [
     {
-        name: 'Love',
+        name: 'Amor',
         color: '#EC4899',
         moods: [
-            { id: 'love', emoji: '❤️', label: 'Love', color: '#EC4899' },
-            { id: 'tenderness', emoji: '🥰', label: 'Tenderness', color: '#F472B6' },
-            { id: 'compassion', emoji: '🙏', label: 'Compassion', color: '#A78BFA' },
-            { id: 'bliss', emoji: '🤗', label: 'Bliss', color: '#FBBF24' },
-            { id: 'gratitude', emoji: '😊', label: 'Gratitude', color: '#8B5CF6' },
-            { id: 'pride', emoji: '😎', label: 'Pride', color: '#F59E0B' },
-            { id: 'admiration', emoji: '🤩', label: 'Admiration', color: '#10B981' },
-            { id: 'infatuation', emoji: '😍', label: 'Infatuation', color: '#EF4444' },
-            { id: 'enchantment', emoji: '💕', label: 'Enchantment', color: '#EC4899' },
+            { id: 'love', emoji: '❤️', label: 'Amor', color: '#EC4899' },
+            { id: 'tenderness', emoji: '🥰', label: 'Ternura', color: '#F472B6' },
+            { id: 'compassion', emoji: '🙏', label: 'Compasión', color: '#A78BFA' },
+            { id: 'bliss', emoji: '🤗', label: 'Dicha', color: '#FBBF24' },
+            { id: 'gratitude', emoji: '😊', label: 'Gratitud', color: '#8B5CF6' },
+            { id: 'pride', emoji: '😎', label: 'Orgullo', color: '#F59E0B' },
+            { id: 'admiration', emoji: '🤩', label: 'Admiración', color: '#10B981' },
+            { id: 'infatuation', emoji: '😍', label: 'Encaprichamiento', color: '#EF4444' },
+            { id: 'enchantment', emoji: '💕', label: 'Encanto', color: '#EC4899' },
         ],
     },
     {
-        name: 'Joy',
+        name: 'Alegría',
         color: '#22C55E',
         moods: [
-            { id: 'joy', emoji: '😊', label: 'Joy', color: '#22C55E' },
-            { id: 'happiness', emoji: '😄', label: 'Happiness', color: '#16A34A' },
-            { id: 'delight', emoji: '😁', label: 'Delight', color: '#FBBF24' },
-            { id: 'triumph', emoji: '🥳', label: 'Triumph', color: '#8B5CF6' },
-            { id: 'exhilaration', emoji: '😜', label: 'Exhilaration', color: '#EC4899' },
-            { id: 'interest', emoji: '🤓', label: 'Interest', color: '#06B6D4' },
-            { id: 'anticipation', emoji: '🤔', label: 'Anticipation', color: '#F59E0B' },
-            { id: 'hope', emoji: '🙏', label: 'Hope', color: '#10B981' },
-            { id: 'curiosity', emoji: '🧐', label: 'Curiosity', color: '#8B5CF6' },
-            { id: 'enthusiasm', emoji: '🤗', label: 'Enthusiasm', color: '#22C55E' },
+            { id: 'joy', emoji: '😊', label: 'Alegría', color: '#22C55E' },
+            { id: 'happiness', emoji: '😄', label: 'Felicidad', color: '#16A34A' },
+            { id: 'delight', emoji: '😁', label: 'Deleite', color: '#FBBF24' },
+            { id: 'triumph', emoji: '🥳', label: 'Triunfo', color: '#8B5CF6' },
+            { id: 'exhilaration', emoji: '😜', label: 'Regocijo', color: '#EC4899' },
+            { id: 'interest', emoji: '🤓', label: 'Interés', color: '#06B6D4' },
+            { id: 'anticipation', emoji: '🤔', label: 'Anticipación', color: '#F59E0B' },
+            { id: 'hope', emoji: '🙏', label: 'Esperanza', color: '#10B981' },
+            { id: 'curiosity', emoji: '🧐', label: 'Curiosidad', color: '#8B5CF6' },
+            { id: 'enthusiasm', emoji: '🤗', label: 'Entusiasmo', color: '#22C55E' },
         ],
     },
     {
-        name: 'Sadness',
+        name: 'Tristeza',
         color: '#6B7280',
         moods: [
-            { id: 'sadness', emoji: '😢', label: 'Sadness', color: '#6B7280' },
-            { id: 'bitterness', emoji: '😞', label: 'Bitterness', color: '#4B5563' },
-            { id: 'longing', emoji: '😔', label: 'Longing', color: '#94A3B8' },
-            { id: 'grief', emoji: '😭', label: 'Grief', color: '#374151' },
-            { id: 'pity', emoji: '🥺', label: 'Pity', color: '#64748B' },
-            { id: 'detachment', emoji: '😐', label: 'Detachment', color: '#9CA3AF' },
-            { id: 'despair', emoji: '😩', label: 'Despair', color: '#4B5563' },
-            { id: 'helplessness', emoji: '🆘', label: 'Helplessness', color: '#EF4444' },
-            { id: 'alienation', emoji: '😶', label: 'Alienation', color: '#64748B' },
-            { id: 'disappointment', emoji: '😕', label: 'Disappointment', color: '#6B7280' },
-            { id: 'shock', emoji: '😲', label: 'Shock', color: '#F59E0B' },
-            { id: 'regret', emoji: '😣', label: 'Regret', color: '#94A3B8' },
-            { id: 'boredom', emoji: '😑', label: 'Boredom', color: '#9CA3AF' },
-            { id: 'hopelessness', emoji: '🚫', label: 'Hopelessness', color: '#374151' },
+            { id: 'sadness', emoji: '😢', label: 'Tristeza', color: '#6B7280' },
+            { id: 'bitterness', emoji: '😞', label: 'Amargura', color: '#4B5563' },
+            { id: 'longing', emoji: '😔', label: 'Anhelo', color: '#94A3B8' },
+            { id: 'grief', emoji: '😭', label: 'Dolor', color: '#374151' },
+            { id: 'pity', emoji: '🥺', label: 'Lástima', color: '#64748B' },
+            { id: 'detachment', emoji: '😐', label: 'Desapego', color: '#9CA3AF' },
+            { id: 'despair', emoji: '😩', label: 'Desesperación', color: '#4B5563' },
+            { id: 'helplessness', emoji: '🆘', label: 'Impotencia', color: '#EF4444' },
+            { id: 'alienation', emoji: '😶', label: 'Alienación', color: '#64748B' },
+            { id: 'disappointment', emoji: '😕', label: 'Decepción', color: '#6B7280' },
+            { id: 'shock', emoji: '😲', label: 'Conmoción', color: '#F59E0B' },
+            { id: 'regret', emoji: '😣', label: 'Arrepentimiento', color: '#94A3B8' },
+            { id: 'boredom', emoji: '😑', label: 'Aburrimiento', color: '#9CA3AF' },
+            { id: 'hopelessness', emoji: '🚫', label: 'Desesperanza', color: '#374151' },
         ],
     },
     {
-        name: 'Fear',
+        name: 'Miedo',
         color: '#F59E0B',
         moods: [
-            { id: 'fear', emoji: '😨', label: 'Fear', color: '#F59E0B' },
-            { id: 'anxiety', emoji: '😰', label: 'Anxiety', color: '#F472B6' },
-            { id: 'worry', emoji: '😟', label: 'Worry', color: '#EAB308' },
-            { id: 'nervousness', emoji: '😬', label: 'Nervousness', color: '#FB923C' },
-            { id: 'dread', emoji: '😱', label: 'Dread', color: '#DC2626' },
-            { id: 'panic', emoji: '🫣', label: 'Panic', color: '#EF4444' },
+            { id: 'fear', emoji: '😨', label: 'Miedo', color: '#F59E0B' },
+            { id: 'anxiety', emoji: '😰', label: 'Ansiedad', color: '#F472B6' },
+            { id: 'worry', emoji: '😟', label: 'Preocupación', color: '#EAB308' },
+            { id: 'nervousness', emoji: '😬', label: 'Nerviosismo', color: '#FB923C' },
+            { id: 'dread', emoji: '😱', label: 'Pavor', color: '#DC2626' },
+            { id: 'panic', emoji: '🫣', label: 'Pánico', color: '#EF4444' },
         ],
     },
     {
-        name: 'Peace',
+        name: 'Paz',
         color: '#06B6D4',
         moods: [
-            { id: 'calm', emoji: '😌', label: 'Calm', color: '#06B6D4' },
-            { id: 'peaceful', emoji: '🕊️', label: 'Peaceful', color: '#0891B2' },
-            { id: 'relaxed', emoji: '😎', label: 'Relaxed', color: '#22D3EE' },
-            { id: 'content', emoji: '☺️', label: 'Content', color: '#67E8F9' },
-            { id: 'serene', emoji: '😇', label: 'Serene', color: '#A78BFA' },
-            { id: 'blessed', emoji: '✨', label: 'Blessed', color: '#FBBF24' },
+            { id: 'calm', emoji: '😌', label: 'Calma', color: '#06B6D4' },
+            { id: 'peaceful', emoji: '🕊️', label: 'Paz', color: '#0891B2' },
+            { id: 'relaxed', emoji: '😎', label: 'Relajado', color: '#22D3EE' },
+            { id: 'content', emoji: '☺️', label: 'Contento', color: '#67E8F9' },
+            { id: 'serene', emoji: '😇', label: 'Sereno', color: '#A78BFA' },
+            { id: 'blessed', emoji: '✨', label: 'Bendecido', color: '#FBBF24' },
         ],
     },
     {
-        name: 'Energy',
+        name: 'Energía',
         color: '#10B981',
         moods: [
-            { id: 'motivated', emoji: '💪', label: 'Motivated', color: '#10B981' },
-            { id: 'energetic', emoji: '⚡', label: 'Energetic', color: '#22C55E' },
-            { id: 'excited', emoji: '🤩', label: 'Excited', color: '#F59E0B' },
-            { id: 'inspired', emoji: '💡', label: 'Inspired', color: '#8B5CF6' },
-            { id: 'determined', emoji: '🎯', label: 'Determined', color: '#059669' },
-            { id: 'tired', emoji: '😴', label: 'Tired', color: '#94A3B8' },
-            { id: 'stressed', emoji: '😓', label: 'Stressed', color: '#EF4444' },
-            { id: 'exhausted', emoji: '🥱', label: 'Exhausted', color: '#64748B' },
+            { id: 'motivated', emoji: '💪', label: 'Motivado', color: '#10B981' },
+            { id: 'energetic', emoji: '⚡', label: 'Enérgico', color: '#22C55E' },
+            { id: 'excited', emoji: '🤩', label: 'Emocionado', color: '#F59E0B' },
+            { id: 'inspired', emoji: '💡', label: 'Inspirado', color: '#8B5CF6' },
+            { id: 'determined', emoji: '🎯', label: 'Determinado', color: '#059669' },
+            { id: 'tired', emoji: '😴', label: 'Cansado', color: '#94A3B8' },
+            { id: 'stressed', emoji: '😓', label: 'Estresado', color: '#EF4444' },
+            { id: 'exhausted', emoji: '🥱', label: 'Agotado', color: '#64748B' },
         ],
     },
 ];
@@ -233,7 +233,7 @@ const AddMoodModal: React.FC<AddMoodModalProps> = ({ isVisible, onClose, onAddMo
 
     const handleAddCustomMood = () => {
         if (!newMoodEmoji.trim() || !newMoodLabel.trim() || !addMoodCategory) {
-            Alert.alert('Missing Information', 'Please enter both an emoji and a label for your mood.');
+            Alert.alert('Falta Información', 'Por favor ingresa un emoji y un nombre para tu estado de ánimo.');
             return;
         }
 
@@ -299,7 +299,7 @@ const AddMoodModal: React.FC<AddMoodModalProps> = ({ isVisible, onClose, onAddMo
                         >
                             <ArrowLeft size={24} color={Colors.neutral[600]} />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Emotions</Text>
+                        <Text style={styles.headerTitle}>Emociones</Text>
                         <View style={styles.headerPlaceholder} />
                     </View>
 
@@ -353,10 +353,10 @@ const AddMoodModal: React.FC<AddMoodModalProps> = ({ isVisible, onClose, onAddMo
                         {/* Notes Section */}
                         {selectedMood && (
                             <View style={styles.notesSection}>
-                                <Text style={styles.sectionTitle}>Add a note (optional)</Text>
+                                <Text style={styles.sectionTitle}>Añadir nota (opcional)</Text>
                                 <TextInput
                                     style={styles.notesInput}
-                                    placeholder="What's on your mind?"
+                                    placeholder="¿Qué tienes en mente?"
                                     placeholderTextColor={Colors.neutral[400]}
                                     multiline
                                     value={notes}
@@ -376,7 +376,7 @@ const AddMoodModal: React.FC<AddMoodModalProps> = ({ isVisible, onClose, onAddMo
                             disabled={!selectedMood}
                         >
                             <Text style={[styles.saveButtonText, !selectedMood && styles.saveButtonTextDisabled]}>
-                                Save
+                                Guardar
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -392,8 +392,8 @@ const AddMoodModal: React.FC<AddMoodModalProps> = ({ isVisible, onClose, onAddMo
             >
                 <View style={styles.addMoodOverlay}>
                     <View style={styles.addMoodContainer}>
-                        <Text style={styles.addMoodTitle}>Add Custom Mood</Text>
-                        <Text style={styles.addMoodSubtitle}>to {addMoodCategory}</Text>
+                        <Text style={styles.addMoodTitle}>Añadir Estado de Ánimo</Text>
+                        <Text style={styles.addMoodSubtitle}>a {addMoodCategory}</Text>
 
                         <View style={styles.addMoodInputRow}>
                             <TextInput
@@ -406,7 +406,7 @@ const AddMoodModal: React.FC<AddMoodModalProps> = ({ isVisible, onClose, onAddMo
                             />
                             <TextInput
                                 style={styles.labelInput}
-                                placeholder="Mood name"
+                                placeholder="Nombre de la emoción"
                                 placeholderTextColor={Colors.neutral[400]}
                                 value={newMoodLabel}
                                 onChangeText={setNewMoodLabel}
@@ -423,13 +423,13 @@ const AddMoodModal: React.FC<AddMoodModalProps> = ({ isVisible, onClose, onAddMo
                                     setNewMoodLabel('');
                                 }}
                             >
-                                <Text style={styles.cancelAddBtnText}>Cancel</Text>
+                                <Text style={styles.cancelAddBtnText}>Cancelar</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.confirmAddBtn}
                                 onPress={handleAddCustomMood}
                             >
-                                <Text style={styles.confirmAddBtnText}>Add</Text>
+                                <Text style={styles.confirmAddBtnText}>Añadir</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

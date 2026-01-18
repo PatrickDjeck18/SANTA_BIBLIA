@@ -61,13 +61,13 @@ export default function SettingsScreen() {
       const androidUrl = 'https://play.google.com/store/apps/details?id=com.dailybread.dailyfaithbible';
       const url = Platform.OS === 'ios' ? iosUrl : androidUrl;
       const message = Platform.OS === 'ios'
-        ? 'Check out Daily Faith Bible KJV! Download it here:'
-        : `Check out Daily Faith Bible KJV! Download it here: ${url}`;
+        ? '¡Echa un vistazo a Santa Biblia! Descárgala aquí:'
+        : `¡Echa un vistazo a Santa Biblia! Descárgala aquí: ${url}`;
 
       await Share.share({
         message,
         url: Platform.OS === 'ios' ? url : undefined, // Android adds text to message often
-        title: 'Daily Faith Bible KJV',
+        title: 'Santa Biblia',
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -173,7 +173,7 @@ export default function SettingsScreen() {
           style={styles.modalGradient}
         >
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Help & Support</Text>
+            <Text style={styles.modalTitle}>Ayuda y Soporte</Text>
             <TouchableOpacity
               onPress={() => setShowHelpSupport(false)}
               style={styles.modalCloseButton}
@@ -192,55 +192,55 @@ export default function SettingsScreen() {
             alwaysBounceVertical={false}
           >
             <View style={styles.helpContent}>
-              <Text style={styles.helpSection}>How can we help you?</Text>
+              <Text style={styles.helpSection}>¿Cómo podemos ayudarte?</Text>
 
-              <Text style={styles.helpHeading}>Frequently Asked Questions</Text>
+              <Text style={styles.helpHeading}>Preguntas Frecuentes</Text>
 
-              <Text style={styles.helpSubheading}>Getting Started</Text>
+              <Text style={styles.helpSubheading}>Comenzando</Text>
               <Text style={styles.helpText}>
-                • Create an account to sync your data across devices
-                • Set up daily reminders for Bible reading and prayer
-                • Customize your spiritual journey preferences
+                • Crea una cuenta para sincronizar tus datos entre dispositivos
+                • Configura recordatorios diarios para lectura bíblica y oración
+                • Personaliza tus preferencias de viaje espiritual
               </Text>
 
-              <Text style={styles.helpSubheading}>Bible Study Features</Text>
+              <Text style={styles.helpSubheading}>Funciones de Estudio Bíblico</Text>
               <Text style={styles.helpText}>
-                • Access the complete Bible with search functionality
-                • Take quizzes to test your biblical knowledge
-                • Save favorite verses and create study notes
+                • Accede a la Biblia completa con función de búsqueda
+                • Realiza cuestionarios para probar tu conocimiento bíblico
+                • Guarda versículos favoritos y crea notas de estudio
               </Text>
 
-              <Text style={styles.helpSubheading}>Prayer Tracking</Text>
+              <Text style={styles.helpSubheading}>Seguimiento de Oración</Text>
               <Text style={styles.helpText}>
-                • Add prayer requests and track answered prayers
-                • Set prayer reminders and daily prayer times
-                • View your prayer history and spiritual growth
+                • Añade peticiones de oración y rastrea oraciones contestadas
+                • Configura recordatorios y tiempos de oración diaria
+                • Ver tu historial de oración y crecimiento espiritual
               </Text>
 
-              <Text style={styles.helpSubheading}>Mood Tracking</Text>
+              <Text style={styles.helpSubheading}>Seguimiento de Ánimo</Text>
               <Text style={styles.helpText}>
-                • Log your daily mood and spiritual well-being
-                • View trends and patterns in your spiritual journey
-                • Connect your mood with Bible verses and prayers
+                • Registra tu estado de ánimo diario y bienestar espiritual
+                • Ver tendencias y patrones en tu viaje espiritual
+                • Conecta tu estado de ánimo con versículos bíblicos y oraciones
               </Text>
 
-              <Text style={styles.helpHeading}>Contact Support</Text>
+              <Text style={styles.helpHeading}>Contactar Soporte</Text>
               <Text style={styles.helpText}>
-                Need additional help? Our support team is here for you:
+                ¿Necesitas ayuda adicional? Nuestro equipo de soporte está aquí para ti:
               </Text>
 
               <View style={styles.contactInfo}>
-                <Text style={styles.contactItem}>📧 Support Email: support@dailyfaith.me</Text>
-                <Text style={styles.contactItem}>📧 Contact Email: legal@dailyfaith.me</Text>
-                <Text style={styles.contactItem}>🌐 Website: www.goodtechnologyllc.com</Text>
-                <Text style={styles.contactItem}>📞 Phone: +13239168235</Text>
-                <Text style={styles.contactItem}>⏰ Response Time: Within 24 hours</Text>
+                <Text style={styles.contactItem}>📧 Email de Soporte: support@dailyfaith.me</Text>
+                <Text style={styles.contactItem}>📧 Email de Contacto: legal@dailyfaith.me</Text>
+                <Text style={styles.contactItem}>🌐 Sitio Web: www.goodtechnologyllc.com</Text>
+                <Text style={styles.contactItem}>📞 Teléfono: +13239168235</Text>
+                <Text style={styles.contactItem}>⏰ Tiempo de Respuesta: Dentro de 24 horas</Text>
               </View>
 
-              <Text style={styles.helpHeading}>App Version</Text>
+              <Text style={styles.helpHeading}>Versión de la App</Text>
               <Text style={styles.helpText}>
-                Current Version: 1.0.0
-                Last Updated: January 2025
+                Versión Actual: 1.0.0
+                Última Actualización: Enero 2025
               </Text>
             </View>
           </ScrollView>
@@ -258,12 +258,12 @@ export default function SettingsScreen() {
         >
           {/* Modern Header */}
           <ModernHeader
-            title="Settings"
+            title="Ajustes"
             variant="simple"
             showBackButton={true}
             onBackPress={() => router.back()}
             showReaderButton={false}
-            readerText="Settings. Manage your account and preferences. Customize your Daily Bread experience."
+            readerText="Ajustes. Administra tu cuenta y preferencias. Personaliza tu experiencia."
           />
 
           {/* Simple Profile Section */}
@@ -273,15 +273,15 @@ export default function SettingsScreen() {
 
           {/* Simple Settings */}
           <Animated.View style={[styles.settingsSection, { transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.sectionTitle}>Notifications</Text>
+            <Text style={styles.sectionTitle}>Notificaciones</Text>
 
             <SimpleSettingItem
               icon={<Bell size={20} color={AppTheme.accent.primary} />}
-              title="Morning Reminder"
+              title="Recordatorio Matutino"
               subtitle={
                 isNotificationEnabled
-                  ? `Daily at ${notificationPreferences.hour}:${notificationPreferences.minute.toString().padStart(2, '0')} AM`
-                  : 'Get daily Bible verse reminders'
+                  ? `Diariamente a las ${notificationPreferences.hour}:${notificationPreferences.minute.toString().padStart(2, '0')} AM`
+                  : 'Recibe recordatorios diarios de versículos'
               }
               rightElement={
                 <Switch
@@ -297,40 +297,40 @@ export default function SettingsScreen() {
           </Animated.View>
 
           <Animated.View style={[styles.settingsSection, { transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.sectionTitle}>Support</Text>
+            <Text style={styles.sectionTitle}>Soporte</Text>
 
             <SimpleSettingItem
               icon={<HelpCircle size={20} color={AppTheme.accent.primary} />}
-              title="Help & Support"
-              subtitle="Get help with the app"
+              title="Ayuda y Soporte"
+              subtitle="Obtén ayuda con la aplicación"
               onPress={handleHelpSupport}
             />
 
             <SimpleSettingItem
               icon={<StarIcon size={20} color="#EAB308" />}
-              title="Rate Us"
-              subtitle="Love the app? Let us know!"
+              title="Califícanos"
+              subtitle="¿Te gusta la app? ¡Háznoslo saber!"
               onPress={rateApp}
             />
 
             <SimpleSettingItem
               icon={<Share2 size={20} color="#3B82F6" />}
-              title="Share App"
-              subtitle="Share with friends & family"
+              title="Compartir App"
+              subtitle="Compartir con amigos y familia"
               onPress={handleShareApp}
             />
 
             <SimpleSettingItem
               icon={<Shield size={20} color="#6B7280" />}
-              title="Privacy Policy"
-              subtitle="How we protect your data"
+              title="Política de Privacidad"
+              subtitle="Cómo protegemos tus datos"
               onPress={handlePrivacyPolicy}
             />
 
             <SimpleSettingItem
               icon={<Book size={20} color="#6B7280" />}
-              title="Terms & Conditions"
-              subtitle="Terms and conditions"
+              title="Términos y Condiciones"
+              subtitle="Términos y condiciones"
               onPress={handleTermsOfService}
             />
 

@@ -12,11 +12,11 @@ import React from 'react';
 
 // Tab configuration
 const TABS = [
-  { name: 'index', title: 'Home', icon: House },
-  { name: 'bible', title: 'Bible', icon: BookOpen },
-  { name: 'mood-tracker', title: 'Mood', icon: Smile },
-  { name: 'prayer-tracker', title: 'Prayers', icon: Heart },
-  { name: 'profile', title: 'More', icon: Menu },
+  { name: 'index', title: 'Inicio', icon: House },
+  { name: 'bible', title: 'Biblia', icon: BookOpen },
+  { name: 'mood-tracker', title: 'Ánimo', icon: Smile },
+  { name: 'prayer-tracker', title: 'Oraciones', icon: Heart },
+  { name: 'profile', title: 'Más', icon: Menu },
 ];
 
 /**
@@ -148,31 +148,31 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Inicio',
         }}
       />
       <Tabs.Screen
         name="bible"
         options={{
-          title: 'Bible',
+          title: 'Biblia',
         }}
       />
       <Tabs.Screen
         name="mood-tracker"
         options={{
-          title: 'Mood',
+          title: 'Ánimo',
         }}
       />
       <Tabs.Screen
         name="prayer-tracker"
         options={{
-          title: 'Prayers',
+          title: 'Oraciones',
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'More',
+          title: 'Más',
         }}
       />
       <Tabs.Screen

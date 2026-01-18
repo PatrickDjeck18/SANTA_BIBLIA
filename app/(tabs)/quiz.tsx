@@ -154,12 +154,12 @@ export default function QuizTabScreen() {
             <View style={styles.heroContent}>
               <View style={styles.heroBadge}>
                 <Sparkles size={14} color="#FCD34D" />
-                <Text style={styles.heroBadgeText}>Test Your Knowledge</Text>
+                <Text style={styles.heroBadgeText}>Pon a Prueba Tu Conocimiento</Text>
               </View>
 
-              <Text style={styles.heroTitle}>Bible Quiz</Text>
+              <Text style={styles.heroTitle}>Quiz Bíblico</Text>
               <Text style={styles.heroSubtitle}>
-                Challenge yourself with questions from Scripture and deepen your understanding of God's Word
+                Desafíate con preguntas de las Escrituras y profundiza tu entendimiento de la Palabra de Dios
               </Text>
 
               <View style={styles.heroIconContainer}>
@@ -174,21 +174,21 @@ export default function QuizTabScreen() {
           <StatCard
             icon={<Trophy size={20} color="white" />}
             value={stats?.totalCorrect || 0}
-            label="Correct"
+            label="Correctas"
             gradient={['#10B981', '#059669', '#047857']}
             animValue={cardAnimations[0]}
           />
           <StatCard
             icon={<Target size={20} color="white" />}
             value={stats?.totalQuestions || 0}
-            label="Questions"
+            label="Preguntas"
             gradient={['#3B82F6', '#2563EB', '#1D4ED8']}
             animValue={cardAnimations[1]}
           />
           <StatCard
             icon={<Award size={20} color="white" />}
             value={stats?.accuracy ? `${stats.accuracy}%` : '0%'}
-            label="Accuracy"
+            label="Precisión"
             gradient={['#F59E0B', '#D97706', '#B45309']}
             animValue={cardAnimations[2]}
           />
@@ -214,9 +214,9 @@ export default function QuizTabScreen() {
             </LinearGradient>
 
             <View style={styles.startContent}>
-              <Text style={[styles.startTitle, { color: theme.text }]}>Start New Quiz</Text>
+              <Text style={[styles.startTitle, { color: theme.text }]}>Iniciar Nuevo Quiz</Text>
               <Text style={[styles.startSubtitle, { color: theme.subtext }]}>
-                200+ questions from the Bible
+                200+ preguntas de la Biblia
               </Text>
             </View>
 
@@ -228,12 +228,12 @@ export default function QuizTabScreen() {
 
         {/* Features List */}
         <Animated.View style={[styles.featuresSection, { opacity: fadeAnim }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Features</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Características</Text>
 
           {[
-            { icon: <Zap size={20} color="#F59E0B" />, title: 'Quick Rounds', desc: '10 questions per quiz' },
-            { icon: <Brain size={20} color="#8B5CF6" />, title: 'Learn & Grow', desc: 'Detailed explanations for each answer' },
-            { icon: <Trophy size={20} color="#10B981" />, title: 'Track Progress', desc: 'See your improvement over time' },
+            { icon: <Zap size={20} color="#F59E0B" />, title: 'Rondas Rápidas', desc: '10 preguntas por quiz' },
+            { icon: <Brain size={20} color="#8B5CF6" />, title: 'Aprende y Crece', desc: 'Explicaciones detalladas para cada respuesta' },
+            { icon: <Trophy size={20} color="#10B981" />, title: 'Rastrea Progreso', desc: 'Mira tu mejora con el tiempo' },
           ].map((feature, index) => (
             <View
               key={index}

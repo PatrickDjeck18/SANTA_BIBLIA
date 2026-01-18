@@ -27,11 +27,8 @@ import {
   Zap,
   ChevronRight,
   Play,
-  Crown,
-  Sparkles,
   Share as ShareIcon,
 } from 'lucide-react-native';
-import { useSubscription } from '@/context/SubscriptionContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
@@ -42,7 +39,6 @@ const LAST_VISIT_KEY = '@daily_bread_last_visit';
 export default function HomeScreen() {
   const { moodEntries } = useUnifiedMoodTracker();
   const { prayers } = useUnifiedPrayers();
-  const { isPremium } = useSubscription();
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -97,109 +93,109 @@ export default function HomeScreen() {
   // Adjust to make Monday index 0 for the UI
   const uiDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
 
-  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   const todaysVerse = useMemo(() => ({
-    text: "The Lord is with me; I will not be afraid.",
-    reference: "Psalm 118:6"
+    text: "El Señor está conmigo; no tendré miedo.",
+    reference: "Salmo 118:6"
   }), []);
 
   // Daily inspirational quotes with prayers from various authors
   const dailyQuotes = useMemo(() => [
     {
-      quote: "God can't give us peace and happiness apart from Himself because there is no such thing.",
+      quote: "Dios no puede darnos paz y felicidad aparte de Él mismo porque no existe tal cosa.",
       author: "C.S. Lewis",
-      prayer: "Lord, help me find my peace and joy in You alone, not in the things of this world. Amen."
+      prayer: "Señor, ayúdame a encontrar mi paz y alegría solo en Ti, no en las cosas de este mundo. Amén."
     },
     {
-      quote: "Pray as though everything depended on God. Work as though everything depended on you.",
-      author: "Saint Augustine",
-      prayer: "Father, help me balance trust in You with faithful action in my daily life. Amen."
+      quote: "Ora como si todo dependiera de Dios. Trabaja como si todo dependiera de ti.",
+      author: "San Agustín",
+      prayer: "Padre, ayúdame a equilibrar la confianza en Ti con la acción fiel en mi vida diaria. Amén."
     },
     {
-      quote: "God never said that the journey would be easy, but He did say that the arrival would be worthwhile.",
+      quote: "Dios nunca dijo que el viaje sería fácil, pero dijo que la llegada valdría la pena.",
       author: "Max Lucado",
-      prayer: "Lord, strengthen me for today's journey, knowing the destination is worth every step. Amen."
+      prayer: "Señor, fortaléceme para el viaje de hoy, sabiendo que el destino vale cada paso. Amén."
     },
     {
-      quote: "Faith is taking the first step even when you don't see the whole staircase.",
+      quote: "La fe es dar el primer paso incluso cuando no ves toda la escalera.",
       author: "Martin Luther King Jr.",
-      prayer: "God, give me courage to step forward in faith, trusting You to light my path. Amen."
+      prayer: "Dios, dame coraje para avanzar con fe, confiando en que Tú alumbrarás mi camino. Amén."
     },
     {
-      quote: "If you can't fly then run, if you can't run then walk, if you can't walk then crawl, but whatever you do you have to keep moving forward.",
+      quote: "Si no puedes volar, corre; si no puedes correr, camina; si no puedes caminar, gatea, pero hagas lo que hagas, tienes que seguir avanzando.",
       author: "Martin Luther King Jr.",
-      prayer: "Father, help me persevere no matter what obstacles I face today. Amen."
+      prayer: "Padre, ayúdame a perseverar sin importar los obstáculos que enfrente hoy. Amén."
     },
     {
-      quote: "God loves each of us as if there were only one of us.",
-      author: "Saint Augustine",
-      prayer: "Lord, let me rest in Your personal, infinite love for me today. Amen."
+      quote: "Dios ama a cada uno de nosotros como si solo hubiera uno de nosotros.",
+      author: "San Agustín",
+      prayer: "Señor, déjame descansar en Tu amor personal e infinito por mí hoy. Amén."
     },
     {
-      quote: "Never be afraid to trust an unknown future to a known God.",
+      quote: "Nunca tengas miedo de confiar un futuro desconocido a un Dios conocido.",
       author: "Corrie ten Boom",
-      prayer: "Jesus, I surrender my fears about tomorrow into Your capable hands. Amen."
+      prayer: "Jesús, entrego mis miedos sobre el mañana en Tus manos capaces. Amén."
     },
     {
-      quote: "Worry does not empty tomorrow of its sorrow, it empties today of its strength.",
+      quote: "La preocupación no vacía el mañana de su dolor, vacía el hoy de su fuerza.",
       author: "Corrie ten Boom",
-      prayer: "Father, free me from anxiety and fill me with Your peace and power today. Amen."
+      prayer: "Padre, libérame de la ansiedad y lléname con Tu paz y poder hoy. Amén."
     },
     {
-      quote: "The will of God will never take you where the grace of God cannot keep you.",
+      quote: "La voluntad de Dios nunca te llevará donde la gracia de Dios no te pueda sostener.",
       author: "Billy Graham",
-      prayer: "Lord, I trust that wherever You lead me, Your grace will sustain me. Amen."
+      prayer: "Señor, confío en que dondequiera que me guíes, Tu gracia me sostendrá. Amén."
     },
     {
-      quote: "God has given us two hands, one to receive with and the other to give with.",
+      quote: "Dios nos ha dado dos manos, una para recibir y otra para dar.",
       author: "Billy Graham",
-      prayer: "Father, make me generous with all the blessings You've given me. Amen."
+      prayer: "Padre, hazme generoso con todas las bendiciones que me has dado. Amén."
     },
     {
-      quote: "Do not let what you cannot do interfere with what you can do.",
+      quote: "No dejes que lo que no puedes hacer interfiera con lo que puedes hacer.",
       author: "John Wooden",
-      prayer: "God, help me focus on the abilities You've given me and use them fully. Amen."
+      prayer: "Dios, ayúdame a concentrarme en las habilidades que me has dado y usarlas plenamente. Amén."
     },
     {
-      quote: "God doesn't call the qualified, He qualifies the called.",
+      quote: "Dios no llama a los calificados, Él califica a los llamados.",
       author: "Mark Batterson",
-      prayer: "Lord, equip me for the calling You've placed on my life. Amen."
+      prayer: "Señor, equípame para el llamado que has puesto en mi vida. Amén."
     },
     {
-      quote: "Not all of us can do great things. But we can do small things with great love.",
-      author: "Mother Teresa",
-      prayer: "Jesus, help me show Your love in the small moments of today. Amen."
+      quote: "No todos podemos hacer grandes cosas. Pero podemos hacer pequeñas cosas con gran amor.",
+      author: "Madre Teresa",
+      prayer: "Jesús, ayúdame a mostrar Tu amor en los pequeños momentos de hoy. Amén."
     },
     {
-      quote: "If you judge people, you have no time to love them.",
-      author: "Mother Teresa",
-      prayer: "Father, replace my judgmental thoughts with compassion and understanding. Amen."
+      quote: "Si juzgas a la gente, no tienes tiempo para amarla.",
+      author: "Madre Teresa",
+      prayer: "Padre, reemplaza mis pensamientos críticos con compasión y comprensión. Amén."
     },
     {
-      quote: "Yesterday is gone. Tomorrow has not yet come. We have only today. Let us begin.",
-      author: "Mother Teresa",
-      prayer: "Lord, help me live fully present in this day You've given me. Amen."
+      quote: "El ayer se ha ido. El mañana aún no ha llegado. Solo tenemos hoy. Comencemos.",
+      author: "Madre Teresa",
+      prayer: "Señor, ayúdame a vivir plenamente presente en este día que me has dado. Amén."
     },
     {
-      quote: "God has a purpose for your pain, a reason for your struggle, and a gift for your faithfulness.",
-      author: "Unknown",
-      prayer: "Father, help me trust Your purpose even when I don't understand my circumstances. Amen."
+      quote: "Dios tiene un propósito para tu dolor, una razón para tu lucha y un regalo para tu fidelidad.",
+      author: "Desconocido",
+      prayer: "Padre, ayúdame a confiar en Tu propósito incluso cuando no entiendo mis circunstancias. Amén."
     },
     {
-      quote: "When you go through deep waters, I will be with you.",
-      author: "Isaiah 43:2",
-      prayer: "Lord, thank You for never leaving me, especially in life's hardest moments. Amen."
+      quote: "Cuando pases por aguas profundas, yo estaré contigo.",
+      author: "Isaías 43:2",
+      prayer: "Señor, gracias por nunca dejarme, especialmente en los momentos más difíciles de la vida. Amén."
     },
     {
-      quote: "Joy does not simply happen to us. We have to choose joy and keep choosing it every day.",
+      quote: "La alegría no nos sucede simplemente. Tenemos que elegir la alegría y seguir eligiéndola todos los días.",
       author: "Henri Nouwen",
-      prayer: "God, I choose joy today regardless of my circumstances. Amen."
+      prayer: "Dios, elijo la alegría hoy independientemente de mis circunstancias. Amén."
     },
     {
-      quote: "Our greatest fear should not be of failure but of succeeding at things in life that don't really matter.",
+      quote: "Nuestro mayor temor no debería ser el fracaso, sino tener éxito en cosas en la vida que realmente no importan.",
       author: "Francis Chan",
-      prayer: "Father, align my priorities with Your eternal purposes. Amen."
+      prayer: "Padre, alinea mis prioridades con Tus propósitos eternos. Amén."
     },
     {
       quote: "God is most glorified in us when we are most satisfied in Him.",
@@ -356,7 +352,7 @@ export default function HomeScreen() {
         <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.headerTop}>
             <View style={styles.userInfo}>
-              <Text style={styles.greetingText}>Connect with God</Text>
+              <Text style={styles.greetingText}>Conecta con Dios</Text>
             </View>
 
             <View style={styles.headerActions}>
@@ -410,27 +406,27 @@ export default function HomeScreen() {
 
 
 
-            <Text style={styles.sectionLabel}>DAILY DEVOTIONAL</Text>
+            <Text style={styles.sectionLabel}>DEVOCIONAL DIARIO</Text>
 
             {/* Quote Card */}
             <View style={styles.quoteCard}>
               <View style={styles.quoteCardHeader}>
                 <View style={styles.quoteHeaderLeft}>
                   <Feather size={20} color={AppTheme.text.primary} />
-                  <Text style={styles.quoteLabel}>Daily Quote</Text>
+                  <Text style={styles.quoteLabel}>Cita del Día</Text>
                 </View>
                 <TouchableOpacity onPress={onShareQuote} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                   <ShareIcon size={20} color={AppTheme.text.primary} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.quoteIntro}>TODAY'S QUOTE FROM:</Text>
+              <Text style={styles.quoteIntro}>CITA DE HOY DE:</Text>
               <Text style={styles.quoteAuthor}>{todaysQuote.author}</Text>
 
               <Text style={styles.quoteText}>"{todaysQuote.quote}"</Text>
 
               <View style={styles.prayerSection}>
-                <Text style={styles.prayerLabel}>🙏 TODAY'S PRAYER</Text>
+                <Text style={styles.prayerLabel}>🙏 ORACIÓN DE HOY</Text>
                 <Text style={styles.prayerText}>{todaysQuote.prayer}</Text>
               </View>
             </View>
@@ -439,21 +435,21 @@ export default function HomeScreen() {
             <View style={styles.dailyItemsList}>
               <DailyItemCard
                 icon={<BookOpen size={20} color={AppTheme.text.primary} />}
-                title="Passage"
+                title="Pasaje"
                 meta=""
                 onPress={() => router.push('/(tabs)/bible')}
               />
 
               <DailyItemCard
                 icon={<MessageCircle size={20} color={AppTheme.text.primary} />}
-                title="Bible Study Notes"
+                title="Notas de Estudio Bíblico"
                 meta=""
                 onPress={() => router.push('/bible-study-notes')}
               />
 
               <DailyItemCard
                 icon={<View style={{ transform: [{ rotate: '-45deg' }] }}><Users size={20} color={AppTheme.text.primary} /></View>} // Using Users as Hands placeholder
-                title="Prayer"
+                title="Oración"
                 meta=""
                 onPress={() => router.push('/(tabs)/prayer-tracker')}
               />
@@ -461,49 +457,11 @@ export default function HomeScreen() {
               {/* Added Mood Tracker to fit the list style */}
               <DailyItemCard
                 icon={<Play size={20} color={AppTheme.text.primary} />}
-                title="Mood Check-in"
+                title="Estado de Ánimo"
                 meta=""
                 onPress={() => router.push('/(tabs)/mood-tracker')}
               />
             </View>
-
-            {/* Remove Ads Card - Only show for non-premium iOS users */}
-            {Platform.OS !== 'android' && !isPremium && (
-              <TouchableOpacity
-                style={styles.removeAdsCard}
-                onPress={() => router.push('/paywall')}
-                activeOpacity={0.9}
-              >
-                <LinearGradient
-                  colors={['#1a1a2e', '#16213e']}
-                  style={styles.removeAdsGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <View style={styles.removeAdsContent}>
-                    <View style={styles.removeAdsLeft}>
-                      <View style={styles.removeAdsIconContainer}>
-                        <Zap size={24} color="#F97316" />
-                      </View>
-                      <View style={styles.removeAdsTextContainer}>
-                        <Text style={styles.removeAdsTitle}>Go Ad-Free</Text>
-                        <Text style={styles.removeAdsSubtitle}>Enjoy without interruptions • $3.99/mo</Text>
-                      </View>
-                    </View>
-                    <View style={styles.removeAdsButton}>
-                      <Text style={styles.removeAdsButtonText}>Remove Ads</Text>
-                    </View>
-                  </View>
-                  {/* Decorative sparkles */}
-                  <View style={styles.sparkleDecor1}>
-                    <Sparkles size={12} color="rgba(249, 115, 22, 0.3)" />
-                  </View>
-                  <View style={styles.sparkleDecor2}>
-                    <Sparkles size={10} color="rgba(249, 115, 22, 0.2)" />
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
 
           </View>
         </Animated.View>

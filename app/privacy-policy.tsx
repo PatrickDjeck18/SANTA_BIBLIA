@@ -34,16 +34,16 @@ export default function PrivacyPolicyScreen() {
         {/* Header */}
         <View style={styles.headerContainer}>
           <ModernHeader
-            title="Privacy Policy"
+            title="Política de Privacidad"
             variant="simple"
             showBackButton={true}
             showReaderButton={false}
             onBackPress={handleBack}
-            readerText="Privacy Policy. Your data protection and privacy rights. Learn how we protect your personal information and respect your privacy."
+            readerText="Política de Privacidad. Protección de datos y derechos de privacidad. Aprende cómo protegemos tu información personal y respetamos tu privacidad."
           />
         </View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -59,14 +59,14 @@ export default function PrivacyPolicyScreen() {
                   <Shield size={32} color={Colors.primary[600]} />
                 </View>
                 <View style={styles.introContent}>
-                  <Text style={styles.introTitle}>Privacy Policy</Text>
+                  <Text style={styles.introTitle}>Política de Privacidad</Text>
                   <Text style={styles.introSubtitle}>
-                    Last updated: {new Date().toLocaleDateString()}
+                    Última actualización: {new Date().toLocaleDateString()}
                   </Text>
                 </View>
               </View>
               <Text style={styles.introText}>
-                At Daily Faith, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, and safeguard your data.
+                En Santa Biblia, estamos comprometidos a proteger tu privacidad y garantizar la seguridad de tu información personal. Esta Política de Privacidad explica cómo recopilamos, usamos y protegemos tus datos.
               </Text>
             </LinearGradient>
           </View>
@@ -77,17 +77,17 @@ export default function PrivacyPolicyScreen() {
               <View style={styles.sectionIcon}>
                 <Database size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Information We Collect</Text>
+              <Text style={styles.sectionTitle}>Información que Recopilamos</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We collect information you provide directly to us, such as when you create an account, use our services, or contact us for support.
+                Recopilamos información que nos proporcionas directamente, como cuando creas una cuenta, usas nuestros servicios o nos contactas para soporte.
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Account information (name, email, password)</Text>
-                <Text style={styles.listItem}>• Spiritual content (prayers, dreams, notes)</Text>
-                <Text style={styles.listItem}>• Usage data and app interactions</Text>
-                <Text style={styles.listItem}>• Device information and analytics</Text>
+                <Text style={styles.listItem}>• Información de cuenta (nombre, email, contraseña)</Text>
+                <Text style={styles.listItem}>• Contenido espiritual (oraciones, sueños, notas)</Text>
+                <Text style={styles.listItem}>• Datos de uso e interacciones con la app</Text>
+                <Text style={styles.listItem}>• Información del dispositivo y análisis</Text>
               </View>
             </View>
           </View>
@@ -98,18 +98,18 @@ export default function PrivacyPolicyScreen() {
               <View style={styles.sectionIcon}>
                 <Eye size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>How We Use Your Information</Text>
+              <Text style={styles.sectionTitle}>Cómo Usamos Tu Información</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We use your information to provide, maintain, and improve our services:
+                Usamos tu información para proporcionar, mantener y mejorar nuestros servicios:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Deliver personalized spiritual content</Text>
-                <Text style={styles.listItem}>• Provide AI-powered dream interpretations</Text>
-                <Text style={styles.listItem}>• Send prayer reminders and notifications</Text>
-                <Text style={styles.listItem}>• Improve app functionality and user experience</Text>
-                <Text style={styles.listItem}>• Ensure security and prevent fraud</Text>
+                <Text style={styles.listItem}>• Entregar contenido espiritual personalizado</Text>
+                <Text style={styles.listItem}>• Proporcionar interpretaciones de sueños con IA</Text>
+                <Text style={styles.listItem}>• Enviar recordatorios de oración y notificaciones</Text>
+                <Text style={styles.listItem}>• Mejorar la funcionalidad de la app y la experiencia</Text>
+                <Text style={styles.listItem}>• Garantizar seguridad y prevenir fraude</Text>
               </View>
             </View>
           </View>
@@ -120,18 +120,18 @@ export default function PrivacyPolicyScreen() {
               <View style={styles.sectionIcon}>
                 <Lock size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Data Protection & Security</Text>
+              <Text style={styles.sectionTitle}>Protección de Datos y Seguridad</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We implement industry-standard security measures to protect your data:
+                Implementamos medidas de seguridad estándar para proteger tus datos:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• End-to-end encryption for sensitive data</Text>
-                <Text style={styles.listItem}>• Secure cloud storage with encryption at rest</Text>
-                <Text style={styles.listItem}>• Regular security audits and updates</Text>
-                <Text style={styles.listItem}>• Limited access to authorized personnel only</Text>
-                <Text style={styles.listItem}>• Secure data transmission protocols</Text>
+                <Text style={styles.listItem}>• Encriptación de extremo a extremo para datos sensibles</Text>
+                <Text style={styles.listItem}>• Almacenamiento seguro en la nube con encriptación</Text>
+                <Text style={styles.listItem}>• Auditorías de seguridad regulares y actualizaciones</Text>
+                <Text style={styles.listItem}>• Acceso limitado solo a personal autorizado</Text>
+                <Text style={styles.listItem}>• Protocolos de transmisión de datos seguros</Text>
               </View>
             </View>
           </View>
@@ -142,19 +142,19 @@ export default function PrivacyPolicyScreen() {
               <View style={styles.sectionIcon}>
                 <Shield size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Your Privacy Rights</Text>
+              <Text style={styles.sectionTitle}>Tus Derechos de Privacidad</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                You have the following rights regarding your personal data:
+                Tienes los siguientes derechos con respecto a tus datos personales:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Access your personal data</Text>
-                <Text style={styles.listItem}>• Correct inaccurate information</Text>
-                <Text style={styles.listItem}>• Delete your account and data</Text>
-                <Text style={styles.listItem}>• Export your spiritual content</Text>
-                <Text style={styles.listItem}>• Opt-out of data processing</Text>
-                <Text style={styles.listItem}>• Withdraw consent at any time</Text>
+                <Text style={styles.listItem}>• Acceder a tus datos personales</Text>
+                <Text style={styles.listItem}>• Corregir información inexacta</Text>
+                <Text style={styles.listItem}>• Eliminar tu cuenta y datos</Text>
+                <Text style={styles.listItem}>• Exportar tu contenido espiritual</Text>
+                <Text style={styles.listItem}>• Optar por no participar en el procesamiento</Text>
+                <Text style={styles.listItem}>• Retirar el consentimiento en cualquier momento</Text>
               </View>
             </View>
           </View>
@@ -165,20 +165,20 @@ export default function PrivacyPolicyScreen() {
               <View style={styles.sectionIcon}>
                 <Globe size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Third-Party Services</Text>
+              <Text style={styles.sectionTitle}>Servicios de Terceros</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We may use third-party services to enhance your experience:
+                Podemos usar servicios de terceros para mejorar tu experiencia:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Firebase for authentication and data storage</Text>
-                <Text style={styles.listItem}>• OpenAI for AI-powered dream interpretations</Text>
-                <Text style={styles.listItem}>• Analytics services for app improvement</Text>
-                <Text style={styles.listItem}>• Cloud storage providers for data backup</Text>
+                <Text style={styles.listItem}>• Firebase para autenticación y almacenamiento</Text>
+                <Text style={styles.listItem}>• OpenAI para interpretaciones de sueños con IA</Text>
+                <Text style={styles.listItem}>• Servicios de análisis para mejora de la app</Text>
+                <Text style={styles.listItem}>• Proveedores de almacenamiento en la nube</Text>
               </View>
               <Text style={styles.sectionText}>
-                These services have their own privacy policies and we ensure they meet our security standards.
+                Estos servicios tienen sus propias políticas de privacidad y nos aseguramos de que cumplan con nuestros estándares de seguridad.
               </Text>
             </View>
           </View>
@@ -189,17 +189,17 @@ export default function PrivacyPolicyScreen() {
               <View style={styles.sectionIcon}>
                 <Database size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Data Retention</Text>
+              <Text style={styles.sectionTitle}>Retención de Datos</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We retain your data only as long as necessary:
+                Retenemos tus datos solo el tiempo necesario:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Account data: Until you delete your account</Text>
-                <Text style={styles.listItem}>• Spiritual content: Permanently (unless deleted)</Text>
-                <Text style={styles.listItem}>• Analytics data: Up to 2 years</Text>
-                <Text style={styles.listItem}>• Support communications: Up to 3 years</Text>
+                <Text style={styles.listItem}>• Datos de cuenta: Hasta que elimines tu cuenta</Text>
+                <Text style={styles.listItem}>• Contenido espiritual: Permanentemente (salvo borrado)</Text>
+                <Text style={styles.listItem}>• Datos de análisis: Hasta 2 años</Text>
+                <Text style={styles.listItem}>• Comunicaciones de soporte: Hasta 3 años</Text>
               </View>
             </View>
           </View>
@@ -210,11 +210,11 @@ export default function PrivacyPolicyScreen() {
               <View style={styles.sectionIcon}>
                 <Shield size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Children's Privacy</Text>
+              <Text style={styles.sectionTitle}>Privacidad de los Niños</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                Our service is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.
+                Nuestro servicio no está destinado a niños menores de 13 años. No recopilamos a sabiendas información personal de niños menores de 13 años. Si eres padre o tutor y crees que tu hijo nos ha proporcionado información personal, por favor contáctanos.
               </Text>
             </View>
           </View>
@@ -229,20 +229,20 @@ export default function PrivacyPolicyScreen() {
                 <View style={styles.contactIcon}>
                   <Mail size={24} color={Colors.primary[600]} />
                 </View>
-                <Text style={styles.contactTitle}>Contact Us</Text>
+                <Text style={styles.contactTitle}>Contáctenos</Text>
               </View>
               <Text style={styles.contactText}>
-                If you have any questions about this Privacy Policy or our data practices, please contact us:
+                Si tienes alguna pregunta sobre esta Política de Privacidad o nuestras prácticas de datos, por favor contáctanos:
               </Text>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactItem}>Email: privacy@dailyfaith.me</Text>
-                <Text style={styles.contactItem}>Data Protection Officer: dpo@dailyfaith.me</Text>
-                <Text style={styles.contactItem}>Response Time: We typically respond within 48 hours</Text>
-                <Text style={styles.contactItem}>Mailing Address: Available upon request for legal matters</Text>
-                <Text style={styles.contactItem}>Website: https://dailyfaith.me</Text>
+                <Text style={styles.contactItem}>Oficial de Protección de Datos: dpo@dailyfaith.me</Text>
+                <Text style={styles.contactItem}>Tiempo de Respuesta: Típicamente respondemos en 48 horas</Text>
+                <Text style={styles.contactItem}>Dirección Postal: Disponible bajo petición para asuntos legales</Text>
+                <Text style={styles.contactItem}>Sitio Web: https://dailyfaith.me</Text>
               </View>
               <Text style={styles.contactFooter}>
-                For EU residents: You have the right to lodge a complaint with your local data protection authority if you believe your data has been processed unlawfully.
+                Para residentes de la UE: Tienes derecho a presentar una queja ante tu autoridad local de protección de datos si crees que tus datos han sido procesados ilegalmente.
               </Text>
             </LinearGradient>
           </View>
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  
+
   // Introduction Card
   introCard: {
     marginTop: 20,

@@ -96,201 +96,201 @@ interface OnboardingPreferences {
 const featureCategories = [
   {
     id: 'bible',
-    title: 'Bible Study',
+    title: 'Estudio Bíblico',
     icon: Book,
     color: Colors.primary[600],
     gradient: Colors.gradients.primary,
-    benefit: 'Transform your daily walk with Scripture',
-    emotional: 'Find peace and guidance in God\'s Word',
+    benefit: 'Transforma tu caminar diario con las Escrituras',
+    emotional: 'Encuentra paz y guía en la Palabra de Dios',
     questions: [
       {
         id: 'frequency',
-        question: 'How often do you read the Bible?',
+        question: '¿Con qué frecuencia lees la Biblia?',
         type: 'single',
         options: [
-          { value: 'daily', label: 'Daily', benefit: 'Build a powerful daily habit' },
-          { value: 'few-times-week', label: 'Few times a week', benefit: 'Create a consistent rhythm' },
-          { value: 'weekly', label: 'Weekly', benefit: 'Start a meaningful journey' },
-          { value: 'occasionally', label: 'Occasionally', benefit: 'Rediscover the joy of Scripture' },
-          { value: 'never', label: 'I\'m new to this', benefit: 'Begin your spiritual adventure' },
+          { value: 'daily', label: 'Diariamente', benefit: 'Construye un hábito poderoso' },
+          { value: 'few-times-week', label: 'Algunas veces por semana', benefit: 'Crea un ritmo constante' },
+          { value: 'weekly', label: 'Semanalmente', benefit: 'Comienza un viaje significativo' },
+          { value: 'occasionally', label: 'Ocasionalmente', benefit: 'Redescubre el gozo de las Escrituras' },
+          { value: 'never', label: 'Soy nuevo en esto', benefit: 'Comienza tu aventura espiritual' },
         ],
       },
       {
         id: 'translation',
-        question: 'What translation do you prefer?',
+        question: '¿Qué traducción prefieres?',
         type: 'single',
         options: [
-          { value: 'niv', label: 'NIV (New International Version)', benefit: 'Clear, modern translation for daily reading' },
-          { value: 'nlt', label: 'NLT (New Living Translation)', benefit: 'Easy-to-understand language for deeper insights' },
-          { value: 'esv', label: 'ESV (English Standard Version)', benefit: 'Word-for-word accuracy for serious study' },
-          { value: 'kjv', label: 'KJV (King James Version)', benefit: 'Timeless, poetic language that resonates' },
-          { value: 'no-preference', label: 'No preference', benefit: 'We\'ll choose the best version for you' },
+          { value: 'niv', label: 'NVI (Nueva Versión Internacional)', benefit: 'Traducción clara y moderna' },
+          { value: 'nlt', label: 'NTV (Nueva Traducción Viviente)', benefit: 'Lenguaje fácil de entender' },
+          { value: 'esv', label: 'RVR (Reina Valera 1960)', benefit: 'Traducción clásica y poética' },
+          { value: 'kjv', label: 'LBLA (La Biblia de las Américas)', benefit: 'Precisión palabra por palabra' },
+          { value: 'no-preference', label: 'Sin preferencia', benefit: 'Elegiremos la mejor para ti' },
         ],
       },
     ],
   },
   {
     id: 'prayer',
-    title: 'Prayer Tracking',
+    title: 'Seguimiento de Oración',
     icon: Heart,
     color: Colors.error[500],
     gradient: ['#DC2626', '#EF4444', '#F87171'],
-    benefit: 'See God\'s faithfulness through answered prayers',
-    emotional: 'Experience the power of prayer in your life',
+    benefit: 'Ve la fidelidad de Dios a través de oraciones contestadas',
+    emotional: 'Experimenta el poder de la oración en tu vida',
     questions: [
       {
         id: 'frequency',
-        question: 'How often do you pray?',
+        question: '¿Con qué frecuencia oras?',
         type: 'single',
         options: [
-          { value: 'multiple-daily', label: 'Multiple times daily', benefit: 'Deepen your prayer life' },
-          { value: 'daily', label: 'Daily', benefit: 'Stay connected with God' },
-          { value: 'few-times-week', label: 'Few times a week', benefit: 'Build a prayer habit' },
-          { value: 'weekly', label: 'Weekly', benefit: 'Start your prayer journey' },
-          { value: 'learning', label: 'I\'m learning', benefit: 'Discover the power of prayer' },
+          { value: 'multiple-daily', label: 'Varias veces al día', benefit: 'Profundiza tu vida de oración' },
+          { value: 'daily', label: 'Diariamente', benefit: 'Mantente conectado con Dios' },
+          { value: 'few-times-week', label: 'Algunas veces por semana', benefit: 'Construye un hábito de oración' },
+          { value: 'weekly', label: 'Semanalmente', benefit: 'Comienza tu viaje de oración' },
+          { value: 'learning', label: 'Estoy aprendiendo', benefit: 'Descubre el poder de la oración' },
         ],
       },
       {
         id: 'requests',
-        question: 'Do you keep track of prayer requests?',
+        question: '¿Llevas un registro de peticiones de oración?',
         type: 'single',
         options: [
-          { value: 'yes-active', label: 'Yes, actively', benefit: 'See prayers answered' },
-          { value: 'yes-sometimes', label: 'Yes, sometimes', benefit: 'Stay organized' },
-          { value: 'no-want', label: 'No, but I want to', benefit: 'Start tracking today' },
-          { value: 'no', label: 'No', benefit: 'Experience the benefits' },
+          { value: 'yes-active', label: 'Sí, activamente', benefit: 'Ve oraciones contestadas' },
+          { value: 'yes-sometimes', label: 'Sí, a veces', benefit: 'Mantente organizado' },
+          { value: 'no-want', label: 'No, pero quiero', benefit: 'Empieza a registrar hoy' },
+          { value: 'no', label: 'No', benefit: 'Experimenta los beneficios' },
         ],
       },
     ],
   },
   {
     id: 'mood',
-    title: 'Mood Tracking',
+    title: 'Registro de Ánimo',
     icon: Brain,
     color: Colors.warning[500],
     gradient: ['#059669', '#10B981', '#34D399'],
-    benefit: 'Connect your emotional well-being with spiritual growth',
-    emotional: 'Find peace and balance in your daily life',
+    benefit: 'Conecta tu bienestar emocional con el crecimiento espiritual',
+    emotional: 'Encuentra paz y equilibrio en tu vida diaria',
     questions: [
       {
         id: 'interest',
-        question: 'How important is emotional well-being to you?',
+        question: '¿Qué tan importante es el bienestar emocional para ti?',
         type: 'single',
         options: [
-          { value: 'very', label: 'Very important', benefit: 'Track your spiritual wellness' },
-          { value: 'somewhat', label: 'Somewhat important', benefit: 'Discover patterns' },
-          { value: 'curious', label: 'Curious about it', benefit: 'Explore connections' },
-          { value: 'not-sure', label: 'Not sure', benefit: 'Learn more' },
+          { value: 'very', label: 'Muy importante', benefit: 'Rastrea tu bienestar espiritual' },
+          { value: 'somewhat', label: 'Algo importante', benefit: 'Descubre patrones' },
+          { value: 'curious', label: 'Curioso al respecto', benefit: 'Explora conexiones' },
+          { value: 'not-sure', label: 'No estoy seguro', benefit: 'Aprende más' },
         ],
       },
     ],
   },
   {
     id: 'quiz',
-    title: 'Bible Quiz',
+    title: 'Quiz Bíblico',
     icon: Target,
     color: Colors.success[500],
     gradient: ['#7C3AED', '#8B5CF6', '#A78BFA'],
-    benefit: 'Grow in knowledge and deepen your understanding',
-    emotional: 'Feel confident in your biblical knowledge',
+    benefit: 'Crece en conocimiento y profundiza tu entendimiento',
+    emotional: 'Siéntete confiado en tu conocimiento bíblico',
     questions: [
       {
         id: 'level',
-        question: 'How familiar are you with the Bible?',
+        question: '¿Qué tan familiarizado estás con la Biblia?',
         type: 'single',
         options: [
-          { value: 'expert', label: 'Very familiar', benefit: 'Challenge yourself' },
-          { value: 'intermediate', label: 'Somewhat familiar', benefit: 'Test your knowledge' },
-          { value: 'beginner', label: 'Just starting', benefit: 'Learn as you go' },
-          { value: 'curious', label: 'Curious to learn', benefit: 'Begin your journey' },
+          { value: 'expert', label: 'Muy familiarizado', benefit: 'Desafíate a ti mismo' },
+          { value: 'intermediate', label: 'Algo familiarizado', benefit: 'Prueba tu conocimiento' },
+          { value: 'beginner', label: 'Recién empezando', benefit: 'Aprende mientras avanzas' },
+          { value: 'curious', label: 'Curioso por aprender', benefit: 'Comienza tu viaje' },
         ],
       },
     ],
   },
   {
     id: 'ai',
-    title: 'AI Bible Chat',
+    title: 'Chat Bíblico IA',
     icon: MessageCircle,
     color: Colors.secondary[500],
     gradient: ['#DB2777', '#EC4899', '#F472B6'],
-    benefit: 'Get instant answers to your spiritual questions',
-    emotional: 'Never feel alone in your search for truth',
+    benefit: 'Obtén respuestas instantáneas a tus preguntas espirituales',
+    emotional: 'Nunca te sientas solo en tu búsqueda de la verdad',
     questions: [
       {
         id: 'usage',
-        question: 'Have you used AI for Bible study?',
+        question: '¿Has usado IA para el estudio bíblico?',
         type: 'single',
         options: [
-          { value: 'yes-regularly', label: 'Yes, regularly', benefit: 'Enhance your study' },
-          { value: 'yes-occasionally', label: 'Yes, occasionally', benefit: 'Explore deeper' },
-          { value: 'no-interest', label: 'No, but interested', benefit: 'Discover AI insights' },
-          { value: 'no', label: 'No', benefit: 'Try something new' },
+          { value: 'yes-regularly', label: 'Sí, regularmente', benefit: 'Mejora tu estudio' },
+          { value: 'yes-occasionally', label: 'Sí, ocasionalmente', benefit: 'Explora más profundo' },
+          { value: 'no-interest', label: 'No, pero interesado', benefit: 'Descubre perspicacias de IA' },
+          { value: 'no', label: 'No', benefit: 'Prueba algo nuevo' },
         ],
       },
     ],
   },
   {
     id: 'dream',
-    title: 'Dream Interpretation',
+    title: 'Interpretación de Sueños',
     icon: Moon,
     color: Colors.primary[500],
     gradient: ['#6366F1', '#8B5CF6', '#A78BFA'],
-    benefit: 'Understand the spiritual meaning of your dreams',
-    emotional: 'Find clarity in your life\'s mysteries',
+    benefit: 'Entiende el significado espiritual de tus sueños',
+    emotional: 'Encuentra claridad en los misterios de tu vida',
     questions: [
       {
         id: 'interest',
-        question: 'Do you remember your dreams often?',
+        question: '¿Recuerdas tus sueños a menudo?',
         type: 'single',
         options: [
-          { value: 'yes-daily', label: 'Yes, almost daily', benefit: 'Unlock their meaning' },
-          { value: 'yes-regularly', label: 'Yes, regularly', benefit: 'Discover insights' },
-          { value: 'sometimes', label: 'Sometimes', benefit: 'Explore interpretation' },
-          { value: 'rarely', label: 'Rarely', benefit: 'Learn more' },
+          { value: 'yes-daily', label: 'Sí, casi a diario', benefit: 'Desbloquea su significado' },
+          { value: 'yes-regularly', label: 'Sí, regularmente', benefit: 'Descubre ideas' },
+          { value: 'sometimes', label: 'A veces', benefit: 'Explora la interpretación' },
+          { value: 'rarely', label: 'Raramente', benefit: 'Aprende más' },
         ],
       },
     ],
   },
   {
     id: 'gratitude',
-    title: 'Gratitude Journal',
+    title: 'Diario de Gratitud',
     icon: Star,
     color: '#F59E0B',
     gradient: ['#D97706', '#F59E0B', '#FBBF24'],
-    benefit: 'Cultivate a heart of gratitude and joy',
-    emotional: 'Discover more joy in everyday blessings',
+    benefit: 'Cultiva un corazón de gratitud y alegría',
+    emotional: 'Descubre más alegría en las bendiciones diarias',
     questions: [
       {
         id: 'practice',
-        question: 'Do you practice gratitude?',
+        question: '¿Practicas la gratitud?',
         type: 'single',
         options: [
-          { value: 'daily', label: 'Yes, daily', benefit: 'Deepen your practice' },
-          { value: 'regularly', label: 'Yes, regularly', benefit: 'Stay consistent' },
-          { value: 'sometimes', label: 'Sometimes', benefit: 'Build the habit' },
-          { value: 'want-to', label: 'Want to start', benefit: 'Begin your journey' },
+          { value: 'daily', label: 'Sí, diariamente', benefit: 'Profundiza tu práctica' },
+          { value: 'regularly', label: 'Sí, regularmente', benefit: 'Mantente constante' },
+          { value: 'sometimes', label: 'A veces', benefit: 'Construye el hábito' },
+          { value: 'want-to', label: 'Quiero empezar', benefit: 'Comienza tu viaje' },
         ],
       },
     ],
   },
   {
     id: 'notes',
-    title: 'Spiritual Notes',
+    title: 'Notas Espirituales',
     icon: FileText,
     color: Colors.neutral[600],
     gradient: ['#6366F1', '#8B5CF6', '#78716C'],
-    benefit: 'Capture insights and revelations',
-    emotional: 'Never lose a moment of divine inspiration',
+    benefit: 'Captura ideas y revelaciones',
+    emotional: 'Nunca pierdas un momento de inspiración divina',
     questions: [
       {
         id: 'usage',
-        question: 'Do you take notes during Bible study?',
+        question: '¿Tomas notas durante el estudio bíblico?',
         type: 'single',
         options: [
-          { value: 'always', label: 'Always', benefit: 'Organize better' },
-          { value: 'often', label: 'Often', benefit: 'Enhance your notes' },
-          { value: 'sometimes', label: 'Sometimes', benefit: 'Capture more insights' },
-          { value: 'never', label: 'Never', benefit: 'Start documenting' },
+          { value: 'always', label: 'Siempre', benefit: 'Organiza mejor' },
+          { value: 'often', label: 'Frecuentemente', benefit: 'Mejora tus notas' },
+          { value: 'sometimes', label: 'A veces', benefit: 'Captura más ideas' },
+          { value: 'never', label: 'Nunca', benefit: 'Empieza a documentar' },
         ],
       },
     ],
@@ -309,27 +309,27 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
   // Emotionally compelling transformation stories that resonate deeply
   const transformationStories = [
     {
-      title: "From Anxiety to Absolute Peace",
-      subtitle: "92% of users report feeling calmer within first week",
-      benefit: "Transform your anxious thoughts into God's perfect peace",
+      title: "De la Ansiedad a la Paz Absoluta",
+      subtitle: "El 92% de los usuarios reportan sentirse más tranquilos en la primera semana",
+      benefit: "Transforma tus pensamientos ansiosos en la paz perfecta de Dios",
       emoji: "🕊️"
     },
     {
-      title: "Break Through Loneliness Forever",
-      subtitle: "Users discover God's presence in 94% of daily moments",
-      benefit: "Never feel alone when you know He's always with you",
+      title: "Rompe con la Soledad para Siempre",
+      subtitle: "Usuarios descubren la presencia de Dios en el 94% de los momentos",
+      benefit: "Nunca te sientas solo cuando sabes que Él siempre está contigo",
       emoji: "💫"
     },
     {
-      title: "Watch Miracles Happen Daily",
-      subtitle: "Track answered prayers that will leave you amazed",
-      benefit: "See God's faithfulness unfold in incredible ways",
+      title: "Mira Milagros Suceder Diariamente",
+      subtitle: "Rastrea oraciones contestadas que te dejarán asombrado",
+      benefit: "Ve la fidelidad de Dios desarrollarse de maneras increíbles",
       emoji: "🌱"
     },
     {
-      title: "Build Unshakeable Confidence",
-      subtitle: "Users report 89% increase in faith strength",
-      benefit: "Face life's challenges with supernatural courage",
+      title: "Construye una Confianza Inquebrantable",
+      subtitle: "Usuarios reportan un aumento del 89% en la fortaleza de su fe",
+      benefit: "Enfronta los desafíos de la vida con coraje sobrenatural",
       emoji: "⚡"
     }
   ];
@@ -338,27 +338,27 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
   const benefits = [
     {
       icon: Heart,
-      text: 'Feel Gods overwhelming love wash over your anxious thoughts',
+      text: 'Siente el amor abrumador de Dios sobre tus pensamientos ansiosos',
       color: Colors.error[500],
-      description: 'Experience instant peace when life feels overwhelming'
+      description: 'Experimenta paz instantánea cuando la vida se siente abrumadora'
     },
     {
       icon: TrendingUp,
-      text: 'Watch your faith transform from scattered to STRONG daily',
+      text: 'Mira cómo tu fe se transforma de dispersa a FUERTE diariamente',
       color: Colors.success[500],
-      description: 'Build unshakeable confidence in His promises'
+      description: 'Construye una confianza inquebrantable en Sus promesas'
     },
     {
       icon: Shield,
-      text: 'Discover supernatural strength you never knew existed',
+      text: 'Descubre una fuerza sobrenatural que nunca supiste que existía',
       color: Colors.primary[600],
-      description: 'Face impossible situations with divine courage'
+      description: 'Enfrenta situaciones imposibles con coraje divino'
     },
     {
       icon: Award,
-      text: 'Celebrate answered prayers that will leave you amazed',
+      text: 'Celebra oraciones contestadas que te dejarán asombrado',
       color: Colors.warning[500],
-      description: 'Document miracles you\'ll treasure forever'
+      description: 'Documenta milagros que atesorarás para siempre'
     },
   ];
 
@@ -389,7 +389,7 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
     // Rotate through benefits with glow effect
     const benefitInterval = setInterval(() => {
       setBenefitIndex((prev) => (prev + 1) % benefits.length);
-      
+
       // Pulse glow animation on benefit change
       Animated.sequence([
         Animated.timing(glowAnim, {
@@ -455,7 +455,7 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
                   ]}
                 />
               </View>
-              
+
               {/* Floating particles effect */}
               <View style={styles.particleContainer}>
                 {[...Array(6)].map((_, i) => (
@@ -474,7 +474,7 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
               </View>
             </LinearGradient>
           </Animated.View>
-          
+
           {/* Transformation Story Section */}
           <Animated.View style={styles.transformationStoryCard}>
             <Text style={styles.storyEmoji}>{currentTransformation.emoji}</Text>
@@ -482,13 +482,13 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
             <Text style={styles.transformationSubtitle}>{currentTransformation.subtitle}</Text>
             <Text style={styles.transformationBenefit}>{currentTransformation.benefit}</Text>
           </Animated.View>
-          
+
           <Text style={styles.welcomeTitle}>
-            Your Journey to Deeper Faith Starts Here
+            Tu Viaje hacia una Fe Más Profunda Comienza Aquí
           </Text>
-          
+
           <Text style={styles.welcomeSubtitle}>
-            More than an app—it's your personal spiritual companion designed to transform your relationship with God
+            Más que una app—es tu compañero espiritual personal diseñado para transformar tu relación con Dios
           </Text>
 
           {/* Dynamic Benefits with Enhanced Design */}
@@ -517,37 +517,37 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
 
           {/* Interactive Features Preview with Hover Effects */}
           <View style={styles.featuresPreview}>
-            <Text style={styles.featuresPreviewTitle}>✨ Powerful Tools for Your Spiritual Growth</Text>
+            <Text style={styles.featuresPreviewTitle}>✨ Herramientas Poderosas para tu Crecimiento Espiritual</Text>
             <View style={styles.featuresList}>
               {[
                 {
                   icon: BookOpen,
-                  title: 'Bible Reading Plans',
-                  description: 'Personalized daily scripture',
+                  title: 'Planes de Lectura',
+                  description: 'Escritura diaria personalizada',
                   color: Colors.primary[600]
                 },
                 {
                   icon: Heart,
-                  title: 'Prayer Tracking',
-                  description: 'See God\'s faithfulness unfold',
+                  title: 'Seguimiento de Oración',
+                  description: 'Ve la fidelidad de Dios',
                   color: Colors.error[500]
                 },
                 {
                   icon: Brain,
-                  title: 'Mood & Wellness',
-                  description: 'Connect soul and spirit',
+                  title: 'Ánimo y Bienestar',
+                  description: 'Conecta alma y espíritu',
                   color: Colors.warning[500]
                 },
                 {
                   icon: Target,
-                  title: 'Bible Quizzes',
-                  description: 'Test and grow your knowledge',
+                  title: 'Quizzes Bíblicos',
+                  description: 'Prueba y crece tu conocimiento',
                   color: Colors.success[500]
                 },
                 {
                   icon: Bot,
-                  title: 'AI Bible Chat',
-                  description: 'Instant spiritual guidance',
+                  title: 'Chat Bíblico IA',
+                  description: 'Guía espiritual instantánea',
                   color: Colors.secondary[500]
                 },
               ].map((feature, index) => (
@@ -571,28 +571,28 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
 
           {/* Social Proof Section */}
           <View style={styles.socialProofCard}>
-            <Text style={styles.socialProofTitle}>Join thousands transforming their faith</Text>
+            <Text style={styles.socialProofTitle}>Únete a miles transformando su fe</Text>
             <View style={styles.socialProofStats}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>50,000+</Text>
-                <Text style={styles.statLabel}>Lives Touched</Text>
+                <Text style={styles.statLabel}>Vidas Tocadas</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>1M+</Text>
-                <Text style={styles.statLabel}>Prayers Tracked</Text>
+                <Text style={styles.statLabel}>Oraciones</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>98%</Text>
-                <Text style={styles.statLabel}>Feel Closer to God</Text>
+                <Text style={styles.statLabel}>Más Cerca de Dios</Text>
               </View>
             </View>
           </View>
 
           <Text style={styles.welcomeDescription}>
-            In just 2 minutes, we'll personalize Daily Bread to match your unique spiritual journey and goals.
-            This isn't just setup—it's the beginning of your transformation. ✨
+            En solo 2 minutos, personalizaremos Santa Biblia para que coincida con tu viaje espiritual y metas únicas.
+            Esto no es solo configuración—es el comienzo de tu transformación. ✨
           </Text>
         </Animated.View>
       </ScrollView>
@@ -612,7 +612,7 @@ const WelcomeScreen = ({ onNext }: { onNext: () => void }) => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <Text style={styles.nextButtonText}>Start My Transformation</Text>
+          <Text style={styles.nextButtonText}>Comenzar Mi Transformación</Text>
           <ArrowRight size={22} color="white" />
         </LinearGradient>
       </TouchableOpacity>
@@ -727,16 +727,16 @@ const FeatureQuestionnaireScreen = ({
   // User journey insights for each feature
   const getUserInsight = (featureId: string) => {
     const insights = {
-      bible: "💫 Users who complete Bible reading plans daily report 85% higher spiritual satisfaction",
-      prayer: "🙏 People who track prayers see 73% more answered prayers within 30 days",
-      mood: "🧠 Mood tracking reveals that spiritual practices improve emotional well-being by 67%",
-      quiz: "🎯 Bible quiz participants increase their scripture knowledge by 45% in just 2 weeks",
-      ai: "🤖 AI-powered Bible chat provides personalized insights that deepen understanding by 89%",
-      dream: "🌙 Dream interpretation helps users find meaning and guidance in 91% of cases",
-      gratitude: "✨ Daily gratitude practice increases joy and contentment by 78%",
-      notes: "📝 Study notes help users retain spiritual insights 3x longer",
+      bible: "💫 Usuarios que completan planes de lectura bíblica diariamente reportan un 85% más de satisfacción espiritual",
+      prayer: "🙏 Personas que rastrean oraciones ven un 73% más de oraciones contestadas en 30 días",
+      mood: "🧠 El seguimiento del ánimo revela que las prácticas espirituales mejoran el bienestar emocional en un 67%",
+      quiz: "🎯 Participantes de quizzes bíblicos aumentan su conocimiento de las escrituras en un 45% en solo 2 semanas",
+      ai: "🤖 El chat bíblico con IA proporciona ideas personalizadas que profundizan el entendimiento en un 89%",
+      dream: "🌙 La interpretación de sueños ayuda a los usuarios a encontrar significado y guía en el 91% de los casos",
+      gratitude: "✨ La práctica diaria de gratitud aumenta la alegría y el contentamiento en un 78%",
+      notes: "📝 Las notas de estudio ayudan a los usuarios a retener ideas espirituales 3 veces más tiempo",
     };
-    return insights[featureId as keyof typeof insights] || "✨ This feature will transform your spiritual journey";
+    return insights[featureId as keyof typeof insights] || "✨ Esta característica transformará tu viaje espiritual";
   };
 
   const insight = getUserInsight(currentFeature.id);
@@ -753,7 +753,7 @@ const FeatureQuestionnaireScreen = ({
           />
         </View>
         <Text style={styles.progressText}>
-          {currentFeatureIndex + 1} of {featureCategories.length} • {Math.round(((currentFeatureIndex + 1) / featureCategories.length) * 100)}% Complete
+          {currentFeatureIndex + 1} de {featureCategories.length} • {Math.round(((currentFeatureIndex + 1) / featureCategories.length) * 100)}% Completo
         </Text>
       </Animated.View>
 
@@ -805,11 +805,11 @@ const FeatureQuestionnaireScreen = ({
               />
             </Animated.View>
           </LinearGradient>
-          
+
           <Text style={styles.featureQuestionTitle}>{currentFeature.title}</Text>
           <Text style={styles.featureQuestionBenefit}>{currentFeature.benefit}</Text>
           <Text style={styles.featureQuestionEmotional}>{currentFeature.emotional}</Text>
-          
+
           {/* User Insight */}
           <View style={styles.userInsightContainer}>
             <Text style={styles.userInsight}>{insight}</Text>
@@ -819,15 +819,15 @@ const FeatureQuestionnaireScreen = ({
         {/* Dynamic Feature Preview */}
         <Animated.View style={styles.featurePreviewSection}>
           <View style={styles.featurePreviewCard}>
-            <Text style={styles.featurePreviewTitle}>What you'll experience:</Text>
+            <Text style={styles.featurePreviewTitle}>Lo que experimentarás:</Text>
             {selectedFeatures.includes(currentFeature.id) ? (
               <View style={styles.activeFeatureBadge}>
                 <currentFeature.icon size={16} color="white" />
-                <Text style={styles.activeFeatureText}>Enabled for your journey</Text>
+                <Text style={styles.activeFeatureText}>Habilitado para tu viaje</Text>
               </View>
             ) : (
               <View style={styles.disabledFeatureBadge}>
-                <Text style={styles.disabledFeatureText}>Optional - but highly recommended!</Text>
+                <Text style={styles.disabledFeatureText}>Opcional - ¡pero altamente recomendado!</Text>
               </View>
             )}
           </View>
@@ -851,7 +851,7 @@ const FeatureQuestionnaireScreen = ({
             ]}
           >
             <Text style={styles.questionText}>{question.question}</Text>
-            
+
             <View style={styles.optionsContainer}>
               {question.options.map((option, oIndex) => {
                 const isSelected = featureAnswers[question.id] === option.value;
@@ -912,9 +912,9 @@ const FeatureQuestionnaireScreen = ({
 
         {/* Motivation Section */}
         <View style={styles.motivationCard}>
-          <Text style={styles.motivationTitle}>You're doing great! 🌟</Text>
+          <Text style={styles.motivationTitle}>¡Vas muy bien! 🌟</Text>
           <Text style={styles.motivationText}>
-            Every answer helps us personalize your spiritual journey. We're almost done creating your perfect experience.
+            Cada respuesta nos ayuda a personalizar tu viaje espiritual. Ya casi terminamos de crear tu experiencia perfecta.
           </Text>
         </View>
       </ScrollView>
@@ -928,7 +928,7 @@ const FeatureQuestionnaireScreen = ({
           }}
           activeOpacity={0.8}
         >
-          <Text style={styles.skipButtonText}>Skip for now</Text>
+          <Text style={styles.skipButtonText}>Saltar por ahora</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -964,8 +964,8 @@ const FeatureQuestionnaireScreen = ({
           >
             <Text style={styles.nextButtonText}>
               {currentFeatureIndex === featureCategories.length - 1
-                ? '✨ Complete My Journey'
-                : 'Continue My Journey'}
+                ? '✨ Completar Mi Viaje'
+                : 'Continuar Mi Viaje'}
             </Text>
             <ChevronRight size={20} color="white" />
           </LinearGradient>
@@ -1032,7 +1032,7 @@ const CompletionScreen = ({
     ]).start();
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
+
     // Show personalized message after animation
     setTimeout(() => setShowPersonalizedMessage(true), 1200);
   }, []);
@@ -1044,24 +1044,24 @@ const CompletionScreen = ({
   // Generate personalized welcome message based on answers
   const generatePersonalizedMessage = () => {
     const messages = [];
-    
+
     if (answers.bible?.frequency === 'daily') {
-      messages.push("🌅 Your daily Bible reading routine will transform your mornings");
+      messages.push("🌅 Tu rutina diaria de lectura bíblica transformará tus mañanas");
     }
     if (answers.prayer?.frequency === 'multiple-daily' || answers.prayer?.frequency === 'daily') {
-      messages.push("🙏 Your prayer life will deepen with consistent tracking");
+      messages.push("🙏 Tu vida de oración se profundizará con un seguimiento constante");
     }
     if (answers.mood?.interest === 'very') {
-      messages.push("🧠 You'll discover powerful connections between your spiritual and emotional wellness");
+      messages.push("🧠 Descubrirás conexiones poderosas entre tu bienestar espiritual y emocional");
     }
     if (answers.ai?.usage === 'no-interest') {
-      messages.push("🤖 Get ready to be amazed by AI-powered Bible insights!");
+      messages.push("🤖 ¡Prepárate para asombrarte con ideas bíblicas impulsadas por IA!");
     }
-    
+
     return messages.length > 0 ? messages : [
-      "✨ Every feature has been personalized just for your spiritual journey",
-      "🎯 Your unique preferences will guide your daily growth",
-      "💫 Watch as Daily Bread adapts to your rhythm and schedule"
+      "✨ Cada característica ha sido personalizada solo para tu viaje espiritual",
+      "🎯 Tus preferencias únicas guiarán tu crecimiento diario",
+      "💫 Mira cómo Santa Biblia se adapta a tu ritmo y horario"
     ];
   };
 
@@ -1111,7 +1111,7 @@ const CompletionScreen = ({
                 <View style={styles.completionIconGlow} />
               </LinearGradient>
             </Animated.View>
-            
+
             {/* Floating celebration elements */}
             {[...Array(8)].map((_, i) => (
               <Animated.View
@@ -1134,21 +1134,21 @@ const CompletionScreen = ({
           </Animated.View>
 
           <Text style={styles.completionTitle}>
-            Welcome to Your New Life! 🎉
+            ¡Bienvenido a Tu Nueva Vida! 🎉
           </Text>
-          
+
           <Text style={styles.completionSubtitle}>
             {hasStrongFoundation
-              ? "You've built an incredible foundation for spiritual growth!"
-              : "Your personalized spiritual companion is ready to transform your faith journey"
+              ? "¡Has construido una base increíble para el crecimiento espiritual!"
+              : "Tu compañero espiritual personalizado está listo para transformar tu viaje de fe"
             }
           </Text>
 
           {/* Completion Achievement */}
           <View style={styles.achievementCard}>
-            <Text style={styles.achievementTitle}>🎯 Setup Complete!</Text>
+            <Text style={styles.achievementTitle}>🎯 ¡Configuración Completa!</Text>
             <Text style={styles.achievementStats}>
-              {featureCount} powerful features enabled • {completionPercentage}% personalized
+              {featureCount} características poderosas habilitadas • {completionPercentage}% personalizado
             </Text>
             <View style={styles.progressRing}>
               <View style={[
@@ -1161,7 +1161,7 @@ const CompletionScreen = ({
           {/* Personalized Benefits Preview */}
           {showPersonalizedMessage && (
             <Animated.View style={styles.personalizedBenefitsCard}>
-              <Text style={styles.personalizedBenefitsTitle}>✨ Your Personalized Benefits:</Text>
+              <Text style={styles.personalizedBenefitsTitle}>✨ Tus Beneficios Personalizados:</Text>
               {personalizedMessages.map((message, index) => (
                 <Animated.View
                   key={index}
@@ -1191,7 +1191,7 @@ const CompletionScreen = ({
           <View style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
               <Gem size={28} color={Colors.primary[600]} />
-              <Text style={styles.summaryTitle}>Your Customized Features</Text>
+              <Text style={styles.summaryTitle}>Tus Características Personalizadas</Text>
             </View>
 
             <View style={styles.summaryFeatures}>
@@ -1225,7 +1225,7 @@ const CompletionScreen = ({
                   <View style={styles.summaryFeatureContent}>
                     <Text style={styles.summaryFeatureTitle}>{feature?.title}</Text>
                     <Text style={styles.summaryFeatureDetails}>
-                      ✨ Optimized for your journey
+                      ✨ Optimizado para tu viaje
                     </Text>
                   </View>
                 </Animated.View>
@@ -1235,35 +1235,35 @@ const CompletionScreen = ({
 
           {/* Enhanced Next Steps with Emotional Impact */}
           <View style={styles.nextStepsCard}>
-            <Text style={styles.nextStepsTitle}>🚀 Your Transformation Starts Now</Text>
+            <Text style={styles.nextStepsTitle}>🚀 Tu Transformación Comienza Ahora</Text>
             <Text style={styles.nextStepsSubtitle}>
-              Here's what makes your journey special:
+              Aquí está lo que hace tu viaje especial:
             </Text>
             <View style={styles.nextStepsList}>
               <View style={styles.nextStepItem}>
                 <Compass size={24} color={Colors.primary[600]} />
                 <View style={styles.nextStepContent}>
-                  <Text style={styles.nextStepTitle}>Explore Your Dashboard</Text>
+                  <Text style={styles.nextStepTitle}>Explora Tu Panel</Text>
                   <Text style={styles.nextStepDescription}>
-                    Everything is arranged just for you
+                    Todo está organizado solo para ti
                   </Text>
                 </View>
               </View>
               <View style={styles.nextStepItem}>
                 <Clock size={24} color={Colors.warning[500]} />
                 <View style={styles.nextStepContent}>
-                  <Text style={styles.nextStepTitle}>Start Your First Reading</Text>
+                  <Text style={styles.nextStepTitle}>Inicia Tu Primera Lectura</Text>
                   <Text style={styles.nextStepDescription}>
-                    Your personalized Bible plan awaits
+                    Tu plan bíblico personalizado te espera
                   </Text>
                 </View>
               </View>
               <View style={styles.nextStepItem}>
                 <Star size={24} color={Colors.success[500]} />
                 <View style={styles.nextStepContent}>
-                  <Text style={styles.nextStepTitle}>Track Your Growth</Text>
+                  <Text style={styles.nextStepTitle}>Rastrea Tu Crecimiento</Text>
                   <Text style={styles.nextStepDescription}>
-                    Watch your faith flourish daily
+                    Mira cómo tu fe florece diariamente
                   </Text>
                 </View>
               </View>
@@ -1272,12 +1272,12 @@ const CompletionScreen = ({
 
           {/* Encouragement Message */}
           <View style={styles.encouragementCard}>
-            <Text style={styles.encouragementTitle}>💪 Your Faith Journey Just Got REAL!</Text>
+            <Text style={styles.encouragementTitle}>💪 ¡Tu Viaje de Fe Se Volvió REAL!</Text>
             <Text style={styles.encouragementText}>
-              You didn't just download an app today - you started a transformation.
-              Every answer you gave was a declaration of your commitment to growth.
-              Get ready to witness God's faithfulness in ways that'll leave you speechless.
-              Your spiritual breakthrough begins NOW! 🚀
+              No solo descargaste una app hoy - comenzaste una transformación.
+              Cada respuesta que diste fue una declaración de tu compromiso con el crecimiento.
+              Prepárate para presenciar la fidelidad de Dios de maneras que te dejarán sin palabras.
+              ¡Tu avance espiritual comienza AHORA! 🚀
             </Text>
           </View>
         </Animated.View>
@@ -1312,7 +1312,7 @@ const CompletionScreen = ({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <Text style={styles.completeButtonText}>Start My Transformation</Text>
+          <Text style={styles.completeButtonText}>Comenzar Mi Transformación</Text>
           <Zap size={22} color="white" />
         </LinearGradient>
       </TouchableOpacity>

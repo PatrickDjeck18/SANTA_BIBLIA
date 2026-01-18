@@ -37,8 +37,6 @@ import {
   RefreshCw,
 } from 'lucide-react-native';
 import { useEnhancedQuiz } from '@/hooks/useEnhancedQuiz';
-import { AdManager } from '../lib/adMobService';
-import { ADS_CONFIG } from '../lib/adsConfig';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -49,9 +47,6 @@ interface QuizStats {
   score: number;
   timeElapsed: number;
 }
-
-// Real AdMob Rewarded Ad Service
-const rewardedAdService = AdManager.getRewarded(ADS_CONFIG.ADMOB.REWARDED_ID);
 
 export default function BibleQuizEnhancedScreen() {
   const {
@@ -65,14 +60,14 @@ export default function BibleQuizEnhancedScreen() {
     stats,
     loading
   } = useEnhancedQuiz();
-  
+
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const scoreAnim = useRef(new Animated.Value(0)).current;
-  
+
   // State
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -87,9 +82,6 @@ export default function BibleQuizEnhancedScreen() {
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showRewardAdButton, setShowRewardAdButton] = useState(false);
-  const [isAdLoading, setIsAdLoading] = useState(false);
-  const [extraTimeUsed, setExtraTimeUsed] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionData, setCompletionData] = useState<any>(null);
 
@@ -148,11 +140,6 @@ export default function BibleQuizEnhancedScreen() {
   useEffect(() => {
     if (!quizState.isActive || showResult) return;
 
-    // Show reward ad button when time is running low and not already used
-    if (timeRemaining <= 10 && !extraTimeUsed && !showRewardAdButton) {
-      setShowRewardAdButton(true);
-    }
-
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
@@ -164,29 +151,7 @@ export default function BibleQuizEnhancedScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quizState.isActive, showResult, currentQuestion, timeRemaining, extraTimeUsed, showRewardAdButton]);
-
-  // Handle watching reward ad for extra time
-  const handleWatchRewardAd = async () => {
-    setIsAdLoading(true);
-    try {
-      const result = await rewardedAdService.showAd();
-      if (result.success) {
-        // Add 15 seconds extra time
-        setTimeRemaining(prev => prev + 15);
-        setExtraTimeUsed(true);
-        setShowRewardAdButton(false);
-        Alert.alert('Extra Time!', 'You gained 15 seconds extra time!', [{ text: 'OK' }]);
-      } else {
-        Alert.alert('Ad Error', 'Failed to load the ad. Please try again.', [{ text: 'OK' }]);
-      }
-    } catch (error) {
-      console.error('Error showing rewarded ad:', error);
-      Alert.alert('Ad Error', 'Failed to load the ad. Please try again.', [{ text: 'OK' }]);
-    } finally {
-      setIsAdLoading(false);
-    }
-  };
+  }, [quizState.isActive, showResult, currentQuestion, timeRemaining]);
 
   const initializeQuiz = async () => {
     try {
@@ -194,14 +159,14 @@ export default function BibleQuizEnhancedScreen() {
       setError(null);
       setStartTime(Date.now());
       console.log('Initializing enhanced quiz...');
-      
+
       // Use enhanced quiz with learning optimization
       await startQuiz({
         gameMode: 'learning', // Use learning mode for better question variety
         questionCount: 15,
         timePerQuestion: 30
       });
-      
+
       setTimeRemaining(30);
       setQuizStats({
         totalQuestions: 15,
@@ -220,10 +185,10 @@ export default function BibleQuizEnhancedScreen() {
 
   const handleTimeout = () => {
     if (selectedAnswer !== null) return;
-    
+
     setSelectedAnswer(-1); // -1 indicates timeout
     setShowResult(true);
-    
+
     setTimeout(() => {
       handleNextQuestion();
     }, 2000);
@@ -234,7 +199,7 @@ export default function BibleQuizEnhancedScreen() {
 
     setSelectedAnswer(answerIndex);
     setShowResult(true);
-    
+
     const isCorrect = answerIndex === currentQuestion?.correctAnswer;
     const timeBonus = Math.floor((timeRemaining / 30) * 50);
     const basePoints = isCorrect ? 100 : 0;
@@ -368,43 +333,43 @@ export default function BibleQuizEnhancedScreen() {
 
   const getAnswerStyle = (index: number) => {
     if (!showResult) return styles.optionButton;
-    
+
     if (index === currentQuestion?.correctAnswer) {
       return [styles.optionButton, styles.correctOption];
     }
-    
+
     if (selectedAnswer === index && selectedAnswer !== currentQuestion?.correctAnswer) {
       return [styles.optionButton, styles.incorrectOption];
     }
-    
+
     return [styles.optionButton, styles.disabledOption];
   };
 
   const getAnswerTextStyle = (index: number) => {
     if (!showResult) return styles.optionText;
-    
+
     if (index === currentQuestion?.correctAnswer) {
       return [styles.optionText, styles.correctText];
     }
-    
+
     if (selectedAnswer === index && selectedAnswer !== currentQuestion?.correctAnswer) {
       return [styles.optionText, styles.incorrectText];
     }
-    
+
     return [styles.optionText, styles.disabledText];
   };
 
   const renderResultIcon = (index: number) => {
     if (!showResult) return null;
-    
+
     if (index === currentQuestion?.correctAnswer) {
       return <CheckCircle size={24} color="#10B981" />;
     }
-    
+
     if (selectedAnswer === index && selectedAnswer !== currentQuestion?.correctAnswer) {
       return <XCircle size={24} color="#EF4444" />;
     }
-    
+
     return null;
   };
 
@@ -478,7 +443,7 @@ export default function BibleQuizEnhancedScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
+
       <LinearGradient
         colors={Colors.gradients.spiritualLight}
         style={StyleSheet.absoluteFillObject}
@@ -492,12 +457,12 @@ export default function BibleQuizEnhancedScreen() {
         >
           <ArrowLeft size={24} color={Colors.neutral[600]} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerTitle}>
           <Text style={styles.headerTitleText}>Enhanced Bible Quiz</Text>
           {renderEnhancedFeatures()}
         </View>
-        
+
         <View style={styles.headerStats}>
           <Trophy size={20} color={Colors.warning[500]} />
           <Text style={styles.headerScore}>{stats.totalScore}</Text>
@@ -525,7 +490,7 @@ export default function BibleQuizEnhancedScreen() {
       </View>
 
       {/* Question Card */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -581,10 +546,12 @@ export default function BibleQuizEnhancedScreen() {
                 {
                   opacity: fadeAnim,
                   transform: [
-                    { translateY: slideAnim.interpolate({
-                      inputRange: [0, 50],
-                      outputRange: [0, index * 10]
-                    }) }
+                    {
+                      translateY: slideAnim.interpolate({
+                        inputRange: [0, 50],
+                        outputRange: [0, index * 10]
+                      })
+                    }
                   ]
                 }
               ]}
@@ -610,25 +577,7 @@ export default function BibleQuizEnhancedScreen() {
           ))}
         </View>
 
-        {/* Extra Time Button */}
-        {showRewardAdButton && (
-          <Animated.View style={[styles.extraTimeContainer, { opacity: fadeAnim }]}>
-            <TouchableOpacity
-              style={styles.extraTimeButton}
-              onPress={handleWatchRewardAd}
-              disabled={isAdLoading}
-            >
-              {isAdLoading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <>
-                  <Zap size={20} color="white" />
-                  <Text style={styles.extraTimeText}>Get 15s Extra Time</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        )}
+
 
         {/* Current Stats */}
         <View style={styles.currentStats}>

@@ -244,7 +244,6 @@ function RootLayoutContent() {
           <Stack.Screen name="privacy-policy" />
           <Stack.Screen name="terms-of-service" />
           <Stack.Screen name="dream-result" />
-          <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bible-study-notes" />
           <Stack.Screen name="+not-found" />
         </Stack>

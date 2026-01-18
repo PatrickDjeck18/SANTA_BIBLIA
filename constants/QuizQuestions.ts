@@ -33,68 +33,68 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   // CHARACTERS - Easy
   {
     id: 'char_001',
-    question: 'Who was the first man created by God?',
-    options: ['Noah', 'Abraham', 'Adam', 'Moses'],
+    question: '¿Quién fue el primer hombre creado por Dios?',
+    options: ['Noé', 'Abraham', 'Adán', 'Moisés'],
     correctAnswer: 2,
     category: 'characters',
     difficulty: 'easy',
-    verse: 'Genesis 2:7',
-    explanation: 'God formed man from the dust of the ground and breathed into his nostrils the breath of life.',
+    verse: 'Génesis 2:7',
+    explanation: 'Dios formó al hombre del polvo de la tierra y sopló en su nariz aliento de vida.',
     testament: 'old'
   },
   {
     id: 'char_002',
-    question: 'Who built the ark to survive the great flood?',
-    options: ['Moses', 'Noah', 'Abraham', 'David'],
+    question: '¿Quién construyó el arca para sobrevivir al gran diluvio?',
+    options: ['Moisés', 'Noé', 'Abraham', 'David'],
     correctAnswer: 1,
     category: 'characters',
     difficulty: 'easy',
-    verse: 'Genesis 6:14',
-    explanation: 'God commanded Noah to build an ark of gopher wood to save his family and the animals.',
+    verse: 'Génesis 6:14',
+    explanation: 'Dios le ordenó a Noé construir un arca de madera de gofer para salvar a su familia y a los animales.',
     testament: 'old'
   },
   {
     id: 'char_003',
-    question: 'Who was known as the "Father of Faith"?',
-    options: ['Isaac', 'Jacob', 'Abraham', 'Moses'],
+    question: '¿Quién fue conocido como el "Padre de la Fe"?',
+    options: ['Isaac', 'Jacob', 'Abraham', 'Moisés'],
     correctAnswer: 2,
     category: 'characters',
     difficulty: 'easy',
-    verse: 'Romans 4:16',
-    explanation: 'Abraham believed God and it was counted to him as righteousness.',
+    verse: 'Romanos 4:16',
+    explanation: 'Abraham creyó a Dios y le fue contado por justicia.',
     testament: 'both'
   },
   {
     id: 'char_004',
-    question: 'Who was the strongest man in the Bible?',
-    options: ['David', 'Goliath', 'Samson', 'Joshua'],
+    question: '¿Quién fue el hombre más fuerte de la Biblia?',
+    options: ['David', 'Goliat', 'Sansón', 'Josué'],
     correctAnswer: 2,
     category: 'characters',
     difficulty: 'easy',
-    verse: 'Judges 16:17',
-    explanation: 'Samson\'s strength came from his uncut hair, which was part of his Nazirite vow.',
+    verse: 'Jueces 16:17',
+    explanation: 'La fuerza de Sansón provenía de su cabello sin cortar, que era parte de su voto nazareo.',
     testament: 'old'
   },
   {
     id: 'char_005',
-    question: 'Who was Jesus\' mother?',
-    options: ['Martha', 'Mary', 'Elizabeth', 'Ruth'],
+    question: '¿Quién fue la madre de Jesús?',
+    options: ['Marta', 'María', 'Elisabet', 'Rut'],
     correctAnswer: 1,
     category: 'characters',
     difficulty: 'easy',
-    verse: 'Luke 1:27',
-    explanation: 'Mary was a virgin betrothed to Joseph when the angel Gabriel announced she would bear Jesus.',
+    verse: 'Lucas 1:27',
+    explanation: 'María era una virgen desposada con José cuando el ángel Gabriel anunció que daría a luz a Jesús.',
     testament: 'new'
   },
   {
     id: 'char_006',
-    question: 'Who was swallowed by a great fish?',
-    options: ['Peter', 'Jonah', 'Paul', 'Daniel'],
+    question: '¿Quién fue tragado por un gran pez?',
+    options: ['Pedro', 'Jonás', 'Pablo', 'Daniel'],
     correctAnswer: 1,
     category: 'characters',
     difficulty: 'easy',
-    verse: 'Jonah 1:17',
-    explanation: 'Jonah spent three days and three nights in the belly of a great fish after running from God.',
+    verse: 'Jonás 1:17',
+    explanation: 'Jonás pasó tres días y tres noches en el vientre de un gran pez después de huir de Dios.',
     testament: 'old'
   },
   {
@@ -1331,9 +1331,9 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     explanation: 'Isaiah is the most quoted prophet in the New Testament.',
     testament: 'both'
   },
-  
+
   // ==================== NEW EXPANDED QUESTIONS ====================
-  
+
   // MORE CHARACTERS - Easy
   {
     id: 'char_031',
@@ -1732,7 +1732,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 
   // ==================== EVEN MORE QUESTIONS ====================
-  
+
   // MORE PARABLES - Easy
   {
     id: 'parable_006',
@@ -1962,7 +1962,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 
   // ==================== EXPANDED QUESTION DATABASE ====================
-  
+
   // CHARACTERS - Additional Questions (50 more)
   {
     id: 'char_051',
@@ -4616,7 +4616,7 @@ export const getRandomQuestions = (
   }
 ): QuizQuestion[] => {
   let questions = [...QUIZ_QUESTIONS];
-  
+
   if (filters) {
     if (filters.category) {
       questions = questions.filter(q => q.category === filters.category);
@@ -4628,7 +4628,7 @@ export const getRandomQuestions = (
       questions = questions.filter(q => q.testament === filters.testament || q.testament === 'both');
     }
   }
-  
+
   // Shuffle and return requested count
   const shuffled = questions.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
@@ -4651,75 +4651,75 @@ export interface LevelConfig {
 export const LEVEL_SYSTEM: LevelConfig[] = [
   {
     level: 1,
-    name: 'Seeker',
-    description: 'Beginning your Bible journey',
+    name: 'Buscador',
+    description: 'Comenzando tu viaje bíblico',
     requiredScore: 0,
     difficulty: 'easy',
     questionsCount: 10,
     timePerQuestion: 45,
     badge: '🌱',
     color: '#10B981',
-    unlockMessage: 'Welcome to your Bible learning journey!'
+    unlockMessage: '¡Bienvenido a tu viaje de aprendizaje bíblico!'
   },
   {
     level: 2,
-    name: 'Student',
-    description: 'Learning the fundamentals',
+    name: 'Estudiante',
+    description: 'Aprendiendo los fundamentos',
     requiredScore: 150,
     difficulty: 'easy',
     questionsCount: 15,
     timePerQuestion: 40,
     badge: '📖',
     color: '#06B6D4',
-    unlockMessage: 'You\'re growing in knowledge!'
+    unlockMessage: '¡Estás creciendo en conocimiento!'
   },
   {
     level: 3,
-    name: 'Disciple',
-    description: 'Following the teachings',
+    name: 'Discípulo',
+    description: 'Siguiendo las enseñanzas',
     requiredScore: 350,
     difficulty: 'medium',
     questionsCount: 20,
     timePerQuestion: 35,
     badge: '🎓',
     color: '#8B5CF6',
-    unlockMessage: 'Your dedication is showing!'
+    unlockMessage: '¡Tu dedicación se está notando!'
   },
   {
     level: 4,
-    name: 'Teacher',
-    description: 'Ready to share knowledge',
+    name: 'Maestro',
+    description: 'Listo para compartir conocimiento',
     requiredScore: 600,
     difficulty: 'medium',
     questionsCount: 25,
     timePerQuestion: 30,
     badge: '👨‍🏫',
     color: '#F59E0B',
-    unlockMessage: 'You can now teach others!'
+    unlockMessage: '¡Ahora puedes enseñar a otros!'
   },
   {
     level: 5,
-    name: 'Scholar',
-    description: 'Deep understanding achieved',
+    name: 'Erudito',
+    description: 'Entendimiento profundo logrado',
     requiredScore: 1000,
     difficulty: 'hard',
     questionsCount: 30,
     timePerQuestion: 25,
     badge: '🦉',
     color: '#EF4444',
-    unlockMessage: 'You\'ve become a Bible Scholar!'
+    unlockMessage: '¡Te has convertido en un Erudito Bíblico!'
   },
   {
     level: 6,
-    name: 'Master',
-    description: 'Mastery of Scripture',
+    name: 'Maestro',
+    description: 'Maestría de las Escrituras',
     requiredScore: 1500,
     difficulty: 'hard',
     questionsCount: 35,
     timePerQuestion: 20,
     badge: '👑',
     color: '#A855F7',
-    unlockMessage: 'You\'ve mastered the Word!'
+    unlockMessage: '¡Has dominado la Palabra!'
   }
 ];
 
@@ -4744,13 +4744,13 @@ export const getNextLevel = (totalScore: number): LevelConfig | null => {
 export const getProgressToNextLevel = (totalScore: number): number => {
   const currentLevel = getCurrentLevel(totalScore);
   const nextLevel = getNextLevel(totalScore);
-  
+
   if (!nextLevel) return 100;
-  
+
   const currentLevelScore = currentLevel.requiredScore;
   const nextLevelScore = nextLevel.requiredScore;
   const progress = ((totalScore - currentLevelScore) / (nextLevelScore - currentLevelScore)) * 100;
-  
+
   return Math.min(100, Math.max(0, progress));
 };
 
@@ -4762,7 +4762,7 @@ export const getQuestionsForLevel = (
   }
 ): QuizQuestion[] => {
   const difficultyFilter = level.difficulty === 'mixed' ? undefined : level.difficulty;
-  
+
   return getRandomQuestions(level.questionsCount, {
     difficulty: difficultyFilter,
     ...filters

@@ -46,9 +46,6 @@ interface QuizStats {
   timeElapsed: number;
 }
 
-// Real AdMob Rewarded Ad Service
-const rewardedAdService = AdManager.getRewarded(ADS_CONFIG.ADMOB.REWARDED_ID);
-
 export default function BibleQuizScreen() {
   const { showInterstitialAd } = useInterstitialAds('quiz');
   const {
@@ -139,15 +136,9 @@ export default function BibleQuizScreen() {
       useNativeDriver: false,
     }).start();
   }, [progress.percentage]);
-
   // Timer effect
   useEffect(() => {
     if (!quizState.isActive || showResult) return;
-
-    // Show reward ad button when time is running low and not already used
-    if (timeRemaining <= 10 && !extraTimeUsed && !showRewardAdButton) {
-      setShowRewardAdButton(true);
-    }
 
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
@@ -160,29 +151,7 @@ export default function BibleQuizScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quizState.isActive, showResult, currentQuestion, timeRemaining, extraTimeUsed, showRewardAdButton]);
-
-  // Handle watching reward ad for extra time
-  const handleWatchRewardAd = async () => {
-    setIsAdLoading(true);
-    try {
-      const result = await rewardedAdService.showAd();
-      if (result.success) {
-        // Add 15 seconds extra time
-        setTimeRemaining(prev => prev + 15);
-        setExtraTimeUsed(true);
-        setShowRewardAdButton(false);
-        Alert.alert('Extra Time!', 'You gained 15 seconds extra time!', [{ text: 'OK' }]);
-      } else {
-        Alert.alert('Ad Error', 'Failed to load the ad. Please try again.', [{ text: 'OK' }]);
-      }
-    } catch (error) {
-      console.error('Error showing rewarded ad:', error);
-      Alert.alert('Ad Error', 'Failed to load the ad. Please try again.', [{ text: 'OK' }]);
-    } finally {
-      setIsAdLoading(false);
-    }
-  };
+  }, [quizState.isActive, showResult, currentQuestion, timeRemaining]);
 
   const initializeQuiz = async () => {
     try {
@@ -206,7 +175,7 @@ export default function BibleQuizScreen() {
       });
     } catch (err) {
       console.error('Error initializing quiz:', err);
-      setError('Failed to load quiz questions. Please try again.');
+      setError('Error al cargar preguntas. Por favor intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }
@@ -319,11 +288,11 @@ export default function BibleQuizScreen() {
     await completeQuiz(finalScore, timeTaken);
 
     const getGradeInfo = () => {
-      if (accuracy >= 90) return { grade: 'A+', color: '#10B981', emoji: '🏆', message: 'Outstanding!' };
-      if (accuracy >= 80) return { grade: 'A', color: '#059669', emoji: '🌟', message: 'Excellent!' };
-      if (accuracy >= 70) return { grade: 'B', color: '#0D9488', emoji: '👏', message: 'Great job!' };
-      if (accuracy >= 60) return { grade: 'C', color: '#F59E0B', emoji: '👍', message: 'Good work!' };
-      return { grade: 'D', color: '#EF4444', emoji: '📚', message: 'Keep studying!' };
+      if (accuracy >= 90) return { grade: 'A+', color: '#10B981', emoji: '🏆', message: '¡Sobresaliente!' };
+      if (accuracy >= 80) return { grade: 'A', color: '#059669', emoji: '🌟', message: '¡Excelente!' };
+      if (accuracy >= 70) return { grade: 'B', color: '#0D9488', emoji: '👏', message: '¡Gran trabajo!' };
+      if (accuracy >= 60) return { grade: 'C', color: '#F59E0B', emoji: '👍', message: '¡Bien hecho!' };
+      return { grade: 'D', color: '#EF4444', emoji: '📚', message: '¡Sigue estudiando!' };
     };
 
     const getLevelInfo = () => {
@@ -411,7 +380,7 @@ export default function BibleQuizScreen() {
           style={StyleSheet.absoluteFillObject}
         />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading Quiz Questions...</Text>
+          <Text style={styles.loadingText}>Cargando Preguntas...</Text>
         </View>
       </SafeAreaView>
     );
@@ -427,7 +396,7 @@ export default function BibleQuizScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={initializeQuiz}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -443,10 +412,10 @@ export default function BibleQuizScreen() {
         />
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>
-            {quizState.isCompleted ? 'Quiz completed!' : 'No questions available. Please try again.'}
+            {quizState.isCompleted ? '¡Quiz completado!' : 'No hay preguntas disponibles. Intenta de nuevo.'}
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={initializeQuiz}>
-            <Text style={styles.retryButtonText}>Play Again</Text>
+            <Text style={styles.retryButtonText}>Jugar de Nuevo</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -497,61 +466,61 @@ export default function BibleQuizScreen() {
             style={styles.modalHeader}
           >
             <Text style={styles.modalTitle}>
-              {isLevelUp ? '🎉 Level Up!' : 'Quiz Complete!'} {gradeInfo.emoji}
+              {isLevelUp ? '🎉 ¡Subiste de Nivel!' : '¡Quiz Completado!'} {gradeInfo.emoji}
             </Text>
             <Text style={styles.modalSubtitle}>
-              {isLevelUp ? 'Amazing progress!' : 'Great job on completing the quiz!'}
+              {isLevelUp ? '¡Progreso asombroso!' : '¡Gran trabajo completando el quiz!'}
             </Text>
           </LinearGradient>
 
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {/* Score Summary - Mobile optimized */}
             <View style={styles.scoreSection}>
-              <Text style={styles.sectionTitle}>Final Score</Text>
+              <Text style={styles.sectionTitle}>Puntaje Final</Text>
               <View style={styles.scoreContainer}>
                 <Text style={styles.finalScore}>{finalScore}</Text>
-                <Text style={styles.scoreLabel}>points earned</Text>
+                <Text style={styles.scoreLabel}>puntos ganados</Text>
               </View>
             </View>
 
             {/* Performance Stats - Improved mobile layout */}
             <View style={styles.statsSection}>
-              <Text style={styles.sectionTitle}>Performance</Text>
+              <Text style={styles.sectionTitle}>Rendimiento</Text>
               <View style={styles.statsGrid}>
                 <View style={styles.statItemModal}>
                   <View style={styles.statIconContainer}>
                     <Target size={20} color={Colors.primary[600]} />
                   </View>
                   <Text style={styles.statValue}>{accuracy}%</Text>
-                  <Text style={styles.statLabel}>Accuracy</Text>
+                  <Text style={styles.statLabel}>Precisión</Text>
                 </View>
                 <View style={styles.statItemModal}>
                   <View style={styles.statIconContainer}>
                     <CheckCircle size={20} color={Colors.success[600]} />
                   </View>
                   <Text style={styles.statValue}>{quizStats.correctAnswers}</Text>
-                  <Text style={styles.statLabel}>Correct</Text>
+                  <Text style={styles.statLabel}>Correctas</Text>
                 </View>
                 <View style={styles.statItemModal}>
                   <View style={styles.statIconContainer}>
                     <Clock size={20} color={Colors.warning[600]} />
                   </View>
                   <Text style={styles.statValue}>{Math.floor(timeTaken / 60)}:{(timeTaken % 60).toString().padStart(2, '0')}</Text>
-                  <Text style={styles.statLabel}>Time</Text>
+                  <Text style={styles.statLabel}>Tiempo</Text>
                 </View>
                 <View style={styles.statItemModal}>
                   <View style={styles.statIconContainer}>
                     <Zap size={20} color={Colors.error[600]} />
                   </View>
                   <Text style={styles.statValue}>{quizStats.currentStreak}</Text>
-                  <Text style={styles.statLabel}>Best Streak</Text>
+                  <Text style={styles.statLabel}>Mejor Racha</Text>
                 </View>
               </View>
             </View>
 
             {/* Grade Section - Mobile friendly */}
             <View style={styles.gradeSection}>
-              <Text style={styles.sectionTitle}>Grade</Text>
+              <Text style={styles.sectionTitle}>Calificación</Text>
               <View style={styles.gradeContainer}>
                 <View style={[styles.gradeBadge, { backgroundColor: gradeInfo.color + '20' }]}>
                   <Text style={[styles.gradeText, { color: gradeInfo.color }]}>
@@ -564,7 +533,7 @@ export default function BibleQuizScreen() {
 
             {/* Level Progress - Updated with correct data */}
             <View style={styles.levelSection}>
-              <Text style={styles.sectionTitle}>Level Progress</Text>
+              <Text style={styles.sectionTitle}>Progreso de Nivel</Text>
 
               <View style={styles.levelInfo}>
                 <View style={styles.levelBadge}>
@@ -573,7 +542,7 @@ export default function BibleQuizScreen() {
                 </View>
                 <View style={styles.levelProgressContainer}>
                   <Text style={styles.levelProgressText}>
-                    Level {currentLevelData.level}
+                    Nivel {currentLevelData.level}
                   </Text>
                   <Text style={styles.levelXPText}>
                     {newTotalScore} XP
@@ -598,8 +567,8 @@ export default function BibleQuizScreen() {
                 {nextLevelData && (
                   <Text style={styles.nextLevelText}>
                     {isLevelUp
-                      ? `🎉 Congratulations! You've advanced to ${nextLevelData.name}!`
-                      : `${nextLevelData.requiredScore - newTotalScore} XP to ${nextLevelData.name}`
+                      ? `🎉 ¡Felicidades! ¡Has avanzado a ${nextLevelData.name}!`
+                      : `${nextLevelData.requiredScore - newTotalScore} XP para ${nextLevelData.name}`
                     }
                   </Text>
                 )}
@@ -622,7 +591,7 @@ export default function BibleQuizScreen() {
               activeOpacity={0.8}
             >
               <Play size={20} color={Colors.neutral[50]} />
-              <Text style={styles.actionButtonText}>Play Again</Text>
+              <Text style={styles.actionButtonText}>Jugar de Nuevo</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -635,7 +604,7 @@ export default function BibleQuizScreen() {
               activeOpacity={0.8}
             >
               <ArrowLeft size={20} color={Colors.neutral[700]} />
-              <Text style={styles.menuButtonText}>Back to Menu</Text>
+              <Text style={styles.menuButtonText}>Volver al Menú</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -672,7 +641,7 @@ export default function BibleQuizScreen() {
               <ArrowLeft size={20} color={AppTheme.accent.primary} />
             </TouchableOpacity>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.heroTitle}>Bible Quiz</Text>
+              <Text style={styles.heroTitle}>Quiz Bíblico</Text>
             </View>
             <View style={styles.heroActions}>
               {/* Space for future actions */}
@@ -719,7 +688,7 @@ export default function BibleQuizScreen() {
           />
         </View>
         <Text style={styles.progressText}>
-          Question {progress.current} of {progress.total}
+          Pregunta {progress.current} de {progress.total}
         </Text>
       </View>
 

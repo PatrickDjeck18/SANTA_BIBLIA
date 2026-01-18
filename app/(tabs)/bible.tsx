@@ -349,7 +349,7 @@ export default function BibleScreen() {
 
     try {
       await Speech.speak(textToSpeak, {
-        language: 'en',
+        language: 'es',
         rate: speechRate,
         onDone: () => {
           // Check if still playing (user might have stopped)
@@ -398,7 +398,7 @@ export default function BibleScreen() {
 
     try {
       await Speech.speak(textToSpeak, {
-        language: 'en',
+        language: 'es',
         rate: speechRate,
         onDone: () => {
           // Check if still playing
@@ -535,7 +535,7 @@ export default function BibleScreen() {
         </View>
         <View style={styles.bookItemText}>
           <Text style={styles.bookItemName}>{item.name}</Text>
-          <Text style={styles.bookItemChapters}>{item.chapters} chapters</Text>
+          <Text style={styles.bookItemChapters}>{item.chapters} capítulos</Text>
         </View>
         <ChevronRight size={18} color={THEME.textMuted} />
       </View>
@@ -559,11 +559,11 @@ export default function BibleScreen() {
       <View style={styles.chapterGridContainer}>
         <View style={styles.chapterProgressRow}>
           <Text style={styles.chapterProgressText}>
-            {totalChapters} Chapters Available
+            {totalChapters} Capítulos Disponibles
           </Text>
           <View style={styles.chapterProgressBadge}>
             <BookOpen size={12} color={THEME.accent} />
-            <Text style={styles.chapterProgressBadgeText}>Start Reading</Text>
+            <Text style={styles.chapterProgressBadgeText}>Comenzar a Leer</Text>
           </View>
         </View>
         <View style={[styles.chapterGrid, { gap }]}>
@@ -624,7 +624,7 @@ export default function BibleScreen() {
           {/* Tap hint */}
           <View style={styles.tapHint}>
             <Highlighter size={14} color={THEME.textMuted} />
-            <Text style={styles.tapHintText}>Tap any verse to highlight or add notes</Text>
+            <Text style={styles.tapHintText}>Toca cualquier versículo para resaltar o añadir notas</Text>
           </View>
 
           {/* Verses Content */}
@@ -723,13 +723,13 @@ export default function BibleScreen() {
       {isSearching ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={THEME.accent} />
-          <Text style={styles.loadingText}>Searching...</Text>
+          <Text style={styles.loadingText}>Buscando...</Text>
         </View>
       ) : searchResults.length === 0 ? (
         <View style={styles.emptyState}>
           <Search size={48} color={THEME.textMuted} />
-          <Text style={styles.emptyStateText}>No results found</Text>
-          <Text style={styles.emptyStateSubtext}>Try a different search term</Text>
+          <Text style={styles.emptyStateText}>No se encontraron resultados</Text>
+          <Text style={styles.emptyStateSubtext}>Intenta con un término diferente</Text>
         </View>
       ) : (
         <FlatList
@@ -779,8 +779,8 @@ export default function BibleScreen() {
           </TouchableOpacity>
         ) : (
           <Text style={styles.headerTitle}>
-            {viewMode === 'books' && 'Holy Bible'}
-            {viewMode === 'search' && 'Search Results'}
+            {viewMode === 'books' && 'Santa Biblia'}
+            {viewMode === 'search' && 'Resultados de Búsqueda'}
           </Text>
         )}
 
@@ -803,7 +803,7 @@ export default function BibleScreen() {
             <Search size={18} color={THEME.textMuted} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search the Bible..."
+              placeholder="Buscar en la Biblia..."
               placeholderTextColor={THEME.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -835,7 +835,7 @@ export default function BibleScreen() {
                 styles.testamentButtonText,
                 selectedTestament === testament && styles.testamentButtonTextActive,
               ]}>
-                {testament === 'all' ? 'All Books' : testament === 'old' ? 'Old Testament' : 'New Testament'}
+                {testament === 'all' ? 'Todos' : testament === 'old' ? 'Antiguo Testamento' : 'Nuevo Testamento'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -867,18 +867,18 @@ export default function BibleScreen() {
               <Text style={styles.bookHeaderTitle}>{selectedBook?.name}</Text>
               <View style={styles.bookMetaRow}>
                 <View style={styles.bookMetaBadge}>
-                  <Text style={styles.bookMetaBadgeText}>{selectedBook?.chapters} Chapters</Text>
+                  <Text style={styles.bookMetaBadgeText}>{selectedBook?.chapters} Capítulos</Text>
                 </View>
                 <View style={[styles.bookMetaBadge, styles.bookMetaBadgeSecondary]}>
                   <Text style={[styles.bookMetaBadgeText, styles.bookMetaBadgeTextSecondary]}>{selectedBook?.category}</Text>
                 </View>
               </View>
               <Text style={styles.bookTestamentLabel}>
-                {selectedBook?.testament === 'old' ? 'Old Testament' : 'New Testament'}
+                {selectedBook?.testament === 'old' ? 'Antiguo Testamento' : 'Nuevo Testamento'}
               </Text>
             </View>
 
-            <Text style={styles.selectChapterLabel}>SELECT A CHAPTER</Text>
+            <Text style={styles.selectChapterLabel}>SELECCIONA UN CAPÍTULO</Text>
             {renderChapterGrid()}
           </ScrollView>
         )}
@@ -911,7 +911,7 @@ export default function BibleScreen() {
             <View style={styles.highlightSection}>
               <View style={styles.sectionHeader}>
                 <Highlighter size={16} color={THEME.textSecondary} />
-                <Text style={styles.sectionLabel}>HIGHLIGHT</Text>
+                <Text style={styles.sectionLabel}>RESALTAR</Text>
               </View>
               <View style={styles.colorOptions}>
                 {HIGHLIGHT_COLORS.map(colorOption => (
@@ -938,11 +938,11 @@ export default function BibleScreen() {
             <View style={styles.noteSection}>
               <View style={styles.sectionHeader}>
                 <MessageSquare size={16} color={THEME.textSecondary} />
-                <Text style={styles.sectionLabel}>NOTE</Text>
+                <Text style={styles.sectionLabel}>NOTA</Text>
               </View>
               <TextInput
                 style={styles.noteInput}
-                placeholder="Add your notes here..."
+                placeholder="Añade tus notas aquí..."
                 placeholderTextColor={THEME.textMuted}
                 value={noteText}
                 onChangeText={setNoteText}
@@ -954,7 +954,7 @@ export default function BibleScreen() {
             {/* Save Button */}
             <TouchableOpacity style={styles.saveNoteBtn} onPress={saveNote}>
               <Check size={20} color="#FFFFFF" />
-              <Text style={styles.saveNoteBtnText}>Save</Text>
+              <Text style={styles.saveNoteBtnText}>Guardar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -971,7 +971,7 @@ export default function BibleScreen() {
           <View style={styles.bookSelectorModal}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Book</Text>
+              <Text style={styles.modalTitle}>Seleccionar Libro</Text>
               <TouchableOpacity onPress={() => setShowBookSelector(false)}>
                 <X size={24} color={THEME.text} />
               </TouchableOpacity>
@@ -992,7 +992,7 @@ export default function BibleScreen() {
                     styles.bookSelectorFilterText,
                     selectedTestament === testament && styles.bookSelectorFilterTextActive,
                   ]}>
-                    {testament === 'all' ? 'All' : testament === 'old' ? 'Old' : 'New'}
+                    {testament === 'all' ? 'Todos' : testament === 'old' ? 'AT' : 'NT'}
                   </Text>
                 </TouchableOpacity>
               ))}

@@ -19,9 +19,7 @@
     },
     "production": {
       "autoIncrement": true,
-      "android": {
-        "credentialsSource": "local"
-      },
+      "android": {},
       "ios": {
         "buildConfiguration": "Release",
         "simulator": false

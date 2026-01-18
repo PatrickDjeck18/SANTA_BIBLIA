@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text, ScrollView, Alert } from 'react-native';
 import BannerAdComponent from './BannerAd';
 import InterstitialAdComponent from './InterstitialAdComponent';
-import RewardedAdComponent from './RewardedAdComponent';
 import { useAds } from '../hooks/useAds';
 
 /**
@@ -10,9 +9,8 @@ import { useAds } from '../hooks/useAds';
  * This is for demonstration purposes - integrate these patterns into your actual screens
  */
 const AdExample: React.FC = () => {
-  const { showInterstitialAd, showRewardedAd } = useAds();
+  const { showInterstitialAd } = useAds();
   const [interstitialResult, setInterstitialResult] = useState<string>('');
-  const [rewardedResult, setRewardedResult] = useState<string>('');
 
   const handleInterstitialAd = async () => {
     try {
@@ -23,24 +21,10 @@ const AdExample: React.FC = () => {
     }
   };
 
-  const handleRewardedAd = async () => {
-    try {
-      const result = await showRewardedAd('bible_chat');
-      if (result.success) {
-        setRewardedResult(`Reward earned: ${JSON.stringify(result.reward)}`);
-        Alert.alert('Reward Earned!', 'You have earned a reward for watching the ad.');
-      } else {
-        setRewardedResult('Failed to earn reward');
-      }
-    } catch (error) {
-      setRewardedResult(`Error: ${error}`);
-    }
-  };
-
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>AdMob Integration Example</Text>
-      
+
       {/* Banner Ad Example */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Banner Ad</Text>
@@ -50,7 +34,7 @@ const AdExample: React.FC = () => {
       {/* Interstitial Ad Example */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Interstitial Ad</Text>
-        <InterstitialAdComponent 
+        <InterstitialAdComponent
           placement="home"
           onAdShown={() => setInterstitialResult('Interstitial ad shown')}
           onAdFailed={(error) => setInterstitialResult(`Failed: ${error}`)}
@@ -58,20 +42,7 @@ const AdExample: React.FC = () => {
         <Text style={styles.resultText}>{interstitialResult}</Text>
       </View>
 
-      {/* Rewarded Ad Example */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Rewarded Ad</Text>
-        <RewardedAdComponent 
-          placement="bible_chat"
-          buttonText="Watch Ad for Reward"
-          onRewardEarned={(reward) => {
-            setRewardedResult(`Reward earned: ${JSON.stringify(reward)}`);
-            Alert.alert('Reward Earned!', 'You have earned a reward for watching the ad.');
-          }}
-          onAdFailed={(error) => setRewardedResult(`Failed: ${error}`)}
-        />
-        <Text style={styles.resultText}>{rewardedResult}</Text>
-      </View>
+
 
       {/* Programmatic Ad Examples */}
       <View style={styles.section}>
@@ -80,13 +51,10 @@ const AdExample: React.FC = () => {
           You can also control ads programmatically using the useAds hook:
         </Text>
         <Text style={styles.codeText}>
-          {`const { showInterstitialAd, showRewardedAd } = useAds();
+          {`const { showInterstitialAd } = useAds();
 
 // Show interstitial ad
-await showInterstitialAd('home');
-
-// Show rewarded ad
-const result = await showRewardedAd('bible_chat');`}
+await showInterstitialAd('home');`}
         </Text>
       </View>
     </ScrollView>

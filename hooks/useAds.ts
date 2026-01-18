@@ -20,7 +20,7 @@ export const useAds = () => {
   const loadPurchaseInfo = useCallback(async () => {
     try {
       setAdsState(prev => ({ ...prev, isLoading: true }));
-      
+
       // Since RevenueCat is removed, all users will see ads
       const showAds = true;
       const isPremium = false;
@@ -65,30 +65,6 @@ export const useAds = () => {
     }
   }, [adsState.isPremium]);
 
-  // Show rewarded ad if user is not premium
-  const showRewardedAd = useCallback(async (placement: keyof typeof AD_PLACEMENTS.REWARDED) => {
-    if (adsState.isPremium) return { success: true, reward: { type: 'premium', amount: 1 } };
-
-    try {
-      // Check if AdMob is available
-      if (!AdManager.isAvailable()) {
-        console.warn('AdMob not available on this platform');
-        return { success: false };
-      }
-
-      const adId = Platform.select({
-        ios: ADS_CONFIG.ADMOB.IOS_REWARDED_ID,
-        android: ADS_CONFIG.ADMOB.REWARDED_ID,
-        default: ADS_CONFIG.ADMOB.REWARDED_ID,
-      });
-      const rewarded = AdManager.getRewarded(adId || ADS_CONFIG.ADMOB.REWARDED_ID);
-      return await rewarded.showAd();
-    } catch (error) {
-      console.error('Error showing rewarded ad:', error);
-      return { success: false };
-    }
-  }, [adsState.isPremium]);
-
   // Purchase premium to remove ads (disabled since RevenueCat is removed)
   const purchasePremium = useCallback(async () => {
     console.log('Premium purchases are not available');
@@ -104,7 +80,6 @@ export const useAds = () => {
   return {
     ...adsState,
     showInterstitialAd,
-    showRewardedAd,
     purchasePremium,
     restorePurchases,
     reloadPurchaseInfo: loadPurchaseInfo,

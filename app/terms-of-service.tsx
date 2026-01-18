@@ -34,16 +34,16 @@ export default function TermsOfServiceScreen() {
         {/* Header */}
         <View style={styles.headerContainer}>
           <ModernHeader
-            title="Terms of Service"
+            title="Términos de Servicio"
             variant="simple"
             showBackButton={true}
             showReaderButton={false}
             onBackPress={handleBack}
-            readerText="Terms of Service. User agreement and service terms. Learn about your rights and responsibilities when using Daily Faith."
+            readerText="Términos de Servicio. Acuerdo de usuario y términos de servicio. Conoce tus derechos y responsabilidades al usar Santa Biblia."
           />
         </View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -59,14 +59,14 @@ export default function TermsOfServiceScreen() {
                   <FileText size={32} color={Colors.primary[600]} />
                 </View>
                 <View style={styles.introContent}>
-                  <Text style={styles.introTitle}>Terms of Service</Text>
+                  <Text style={styles.introTitle}>Términos de Servicio</Text>
                   <Text style={styles.introSubtitle}>
-                    Last updated: {new Date().toLocaleDateString()}
+                    Última actualización: {new Date().toLocaleDateString()}
                   </Text>
                 </View>
               </View>
               <Text style={styles.introText}>
-                Welcome to Daily Faith! These Terms of Service govern your use of our spiritual companion app. By using our service, you agree to these terms.
+                ¡Bienvenido a Santa Biblia! Estos Términos de Servicio rigen el uso de nuestra aplicación de compañerismo espiritual. Al usar nuestro servicio, aceptas estos términos.
               </Text>
             </LinearGradient>
           </View>
@@ -77,17 +77,17 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <CheckCircle size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Acceptance of Terms</Text>
+              <Text style={styles.sectionTitle}>Aceptación de Términos</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                By accessing or using Daily Faith, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our service.
+                Al acceder o usar Santa Biblia, aceptas estar sujeto a estos Términos de Servicio y nuestra Política de Privacidad. Si no estás de acuerdo con estos términos, por favor no uses nuestro servicio.
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• You must be at least 13 years old to use our service</Text>
-                <Text style={styles.listItem}>• You are responsible for maintaining account security</Text>
-                <Text style={styles.listItem}>• You agree to provide accurate information</Text>
-                <Text style={styles.listItem}>• You understand these terms may be updated</Text>
+                <Text style={styles.listItem}>• Debes tener al menos 13 años para usar nuestro servicio</Text>
+                <Text style={styles.listItem}>• Eres responsable de mantener la seguridad de tu cuenta</Text>
+                <Text style={styles.listItem}>• Aceptas proporcionar información precisa</Text>
+                <Text style={styles.listItem}>• Entiendes que estos términos pueden ser actualizados</Text>
               </View>
             </View>
           </View>
@@ -98,19 +98,19 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <Users size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Service Description</Text>
+              <Text style={styles.sectionTitle}>Descripción del Servicio</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                Daily Faith is a spiritual companion app that provides:
+                Santa Biblia es una aplicación de compañerismo espiritual que proporciona:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Bible reading plans and study tools</Text>
-                <Text style={styles.listItem}>• Prayer journal and tracking features</Text>
-                <Text style={styles.listItem}>• Dream interpretation with AI assistance</Text>
-                <Text style={styles.listItem}>• Mood tracking and spiritual insights</Text>
-                <Text style={styles.listItem}>• Bible quizzes and educational content</Text>
-                <Text style={styles.listItem}>• Community features and sharing</Text>
+                <Text style={styles.listItem}>• Planes de lectura bíblica y herramientas de estudio</Text>
+                <Text style={styles.listItem}>• Diario de oración y funciones de seguimiento</Text>
+                <Text style={styles.listItem}>• Interpretación de sueños con asistencia de IA</Text>
+                <Text style={styles.listItem}>• Seguimiento de ánimo y perspectivas espirituales</Text>
+                <Text style={styles.listItem}>• Cuestionarios bíblicos y contenido educativo</Text>
+                <Text style={styles.listItem}>• Funciones comunitarias y compartir</Text>
               </View>
             </View>
           </View>
@@ -121,19 +121,19 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <Shield size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>User Responsibilities</Text>
+              <Text style={styles.sectionTitle}>Responsabilidades del Usuario</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                As a user of Daily Faith, you agree to:
+                Como usuario de Santa Biblia, aceptas:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Use the service for lawful purposes only</Text>
-                <Text style={styles.listItem}>• Respect other users and maintain appropriate conduct</Text>
-                <Text style={styles.listItem}>• Not share inappropriate or offensive content</Text>
-                <Text style={styles.listItem}>• Protect your account credentials</Text>
-                <Text style={styles.listItem}>• Report any security concerns immediately</Text>
-                <Text style={styles.listItem}>• Comply with all applicable laws and regulations</Text>
+                <Text style={styles.listItem}>• Usar el servicio solo para fines legales</Text>
+                <Text style={styles.listItem}>• Respetar a otros usuarios y mantener una conducta apropiada</Text>
+                <Text style={styles.listItem}>• No compartir contenido inapropiado u ofensivo</Text>
+                <Text style={styles.listItem}>• Proteger las credenciales de tu cuenta</Text>
+                <Text style={styles.listItem}>• Reportar cualquier problema de seguridad inmediatamente</Text>
+                <Text style={styles.listItem}>• Cumplir con todas las leyes y regulaciones aplicables</Text>
               </View>
             </View>
           </View>
@@ -144,19 +144,19 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <AlertTriangle size={24} color={Colors.warning[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Prohibited Uses</Text>
+              <Text style={styles.sectionTitle}>Usos Prohibidos</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                You may not use Daily Faith for:
+                No puedes usar Santa Biblia para:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Illegal activities or harmful purposes</Text>
-                <Text style={styles.listItem}>• Harassment, abuse, or intimidation</Text>
-                <Text style={styles.listItem}>• Spreading misinformation or false teachings</Text>
-                <Text style={styles.listItem}>• Attempting to hack or compromise security</Text>
-                <Text style={styles.listItem}>• Commercial use without permission</Text>
-                <Text style={styles.listItem}>• Violating intellectual property rights</Text>
+                <Text style={styles.listItem}>• Actividades ilegales o propósitos dañinos</Text>
+                <Text style={styles.listItem}>• Acoso, abuso o intimidación</Text>
+                <Text style={styles.listItem}>• Difundir desinformación o falsas enseñanzas</Text>
+                <Text style={styles.listItem}>• Intentar hackear o comprometer la seguridad</Text>
+                <Text style={styles.listItem}>• Uso comercial sin permiso</Text>
+                <Text style={styles.listItem}>• Violar derechos de propiedad intelectual</Text>
               </View>
             </View>
           </View>
@@ -167,18 +167,18 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <Scale size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Intellectual Property</Text>
+              <Text style={styles.sectionTitle}>Propiedad Intelectual</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                Daily Faith and its content are protected by intellectual property laws:
+                Santa Biblia y su contenido están protegidos por leyes de propiedad intelectual:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• We own the app, software, and original content</Text>
-                <Text style={styles.listItem}>• Bible text is used under appropriate licenses</Text>
-                <Text style={styles.listItem}>• You retain ownership of your personal content</Text>
-                <Text style={styles.listItem}>• You grant us license to use your content for service provision</Text>
-                <Text style={styles.listItem}>• You may not copy or redistribute our content</Text>
+                <Text style={styles.listItem}>• Somos dueños de la app, software y contenido original</Text>
+                <Text style={styles.listItem}>• El texto bíblico se usa bajo licencias apropiadas</Text>
+                <Text style={styles.listItem}>• Conservas la propiedad de tu contenido personal</Text>
+                <Text style={styles.listItem}>• Nos otorgas licencia para usar tu contenido para el servicio</Text>
+                <Text style={styles.listItem}>• No puedes copiar o redistribuir nuestro contenido</Text>
               </View>
             </View>
           </View>
@@ -189,18 +189,18 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <Shield size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Privacy and Data Protection</Text>
+              <Text style={styles.sectionTitle}>Privacidad y Protección de Datos</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We are committed to protecting your privacy and spiritual data:
+                Estamos comprometidos a proteger tu privacidad y datos espirituales:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• Your spiritual content is encrypted and secure</Text>
-                <Text style={styles.listItem}>• We never sell your personal information</Text>
-                <Text style={styles.listItem}>• You control your data and can export it anytime</Text>
-                <Text style={styles.listItem}>• We comply with GDPR and other privacy regulations</Text>
-                <Text style={styles.listItem}>• See our Privacy Policy for detailed information</Text>
+                <Text style={styles.listItem}>• Tu contenido espiritual está encriptado y seguro</Text>
+                <Text style={styles.listItem}>• Nunca vendemos tu información personal</Text>
+                <Text style={styles.listItem}>• Controlas tus datos y puedes exportarlos cuando quieras</Text>
+                <Text style={styles.listItem}>• Cumplimos con GDPR y otras regulaciones de privacidad</Text>
+                <Text style={styles.listItem}>• Ve nuestra Política de Privacidad para más información</Text>
               </View>
             </View>
           </View>
@@ -211,20 +211,20 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <CheckCircle size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Service Availability</Text>
+              <Text style={styles.sectionTitle}>Disponibilidad del Servicio</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We strive to provide reliable service, but cannot guarantee:
+                Nos esforzamos por proporcionar un servicio confiable, pero no podemos garantizar:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• 100% uptime or availability</Text>
-                <Text style={styles.listItem}>• Uninterrupted access to all features</Text>
-                <Text style={styles.listItem}>• Compatibility with all devices</Text>
-                <Text style={styles.listItem}>• Immediate response to technical issues</Text>
+                <Text style={styles.listItem}>• 100% de tiempo de actividad o disponibilidad</Text>
+                <Text style={styles.listItem}>• Acceso ininterrumpido a todas las funciones</Text>
+                <Text style={styles.listItem}>• Compatibilidad con todos los dispositivos</Text>
+                <Text style={styles.listItem}>• Respuesta inmediata a problemas técnicos</Text>
               </View>
               <Text style={styles.sectionText}>
-                We will notify users of planned maintenance and work to resolve issues promptly.
+                Notificaremos a los usuarios sobre mantenimiento planificado y trabajaremos para resolver problemas prontamente.
               </Text>
             </View>
           </View>
@@ -235,18 +235,18 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <AlertTriangle size={24} color={Colors.warning[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Limitation of Liability</Text>
+              <Text style={styles.sectionTitle}>Limitación de Responsabilidad</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                Daily Faith is provided "as is" without warranties:
+                Santa Biblia se proporciona "tal cual" sin garantías:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• We do not guarantee spiritual outcomes</Text>
-                <Text style={styles.listItem}>• AI interpretations are for guidance only</Text>
-                <Text style={styles.listItem}>• We are not liable for indirect damages</Text>
-                <Text style={styles.listItem}>• Our liability is limited to service fees paid</Text>
-                <Text style={styles.listItem}>• You use the service at your own risk</Text>
+                <Text style={styles.listItem}>• No garantizamos resultados espirituales</Text>
+                <Text style={styles.listItem}>• Las interpretaciones de IA son solo para guía</Text>
+                <Text style={styles.listItem}>• No somos responsables por daños indirectos</Text>
+                <Text style={styles.listItem}>• Nuestra responsabilidad se limita a las tarifas pagadas</Text>
+                <Text style={styles.listItem}>• Haces uso del servicio bajo tu propio riesgo</Text>
               </View>
             </View>
           </View>
@@ -257,20 +257,20 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <AlertTriangle size={24} color={Colors.warning[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Account Termination</Text>
+              <Text style={styles.sectionTitle}>Terminación de Cuenta</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We may terminate or suspend your account if:
+                Podemos terminar o suspender tu cuenta si:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• You violate these terms of service</Text>
-                <Text style={styles.listItem}>• You engage in prohibited activities</Text>
-                <Text style={styles.listItem}>• You fail to pay required fees</Text>
-                <Text style={styles.listItem}>• We discontinue the service</Text>
+                <Text style={styles.listItem}>• Violas estos términos de servicio</Text>
+                <Text style={styles.listItem}>• Participas en actividades prohibidas</Text>
+                <Text style={styles.listItem}>• No pagas las tarifas requeridas</Text>
+                <Text style={styles.listItem}>• Discontinuamos el servicio</Text>
               </View>
               <Text style={styles.sectionText}>
-                You may terminate your account at any time through the app settings.
+                Puedes terminar tu cuenta en cualquier momento desde los ajustes de la app.
               </Text>
             </View>
           </View>
@@ -281,17 +281,17 @@ export default function TermsOfServiceScreen() {
               <View style={styles.sectionIcon}>
                 <FileText size={24} color={Colors.primary[600]} />
               </View>
-              <Text style={styles.sectionTitle}>Changes to Terms</Text>
+              <Text style={styles.sectionTitle}>Cambios en los Términos</Text>
             </View>
             <View style={styles.sectionContent}>
               <Text style={styles.sectionText}>
-                We may update these terms from time to time:
+                Podemos actualizar estos términos ocasionalmente:
               </Text>
               <View style={styles.listContainer}>
-                <Text style={styles.listItem}>• We will notify users of significant changes</Text>
-                <Text style={styles.listItem}>• Continued use constitutes acceptance</Text>
-                <Text style={styles.listItem}>• You can review terms anytime in the app</Text>
-                <Text style={styles.listItem}>• Contact us if you have questions about changes</Text>
+                <Text style={styles.listItem}>• Notificaremos a los usuarios cambios significativos</Text>
+                <Text style={styles.listItem}>• El uso continuo constituye aceptación</Text>
+                <Text style={styles.listItem}>• Puedes revisar los términos cuando quieras en la app</Text>
+                <Text style={styles.listItem}>• Contáctanos si tienes preguntas sobre los cambios</Text>
               </View>
             </View>
           </View>
@@ -306,19 +306,19 @@ export default function TermsOfServiceScreen() {
                 <View style={styles.contactIcon}>
                   <FileText size={24} color={Colors.primary[600]} />
                 </View>
-                <Text style={styles.contactTitle}>Questions About Terms</Text>
+                <Text style={styles.contactTitle}>Preguntas Sobre Términos</Text>
               </View>
               <Text style={styles.contactText}>
-                If you have questions about these Terms of Service, please contact us:
+                Si tienes preguntas sobre estos Términos de Servicio, contáctanos:
               </Text>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactItem}>Email: legal@dailyfaith.me</Text>
-                <Text style={styles.contactItem}>Support: support@dailyfaith.me</Text>
-                <Text style={styles.contactItem}>Response Time: We typically respond within 48 hours</Text>
-                <Text style={styles.contactItem}>Website: https://dailyfaith.me</Text>
+                <Text style={styles.contactItem}>Soporte: support@dailyfaith.me</Text>
+                <Text style={styles.contactItem}>Tiempo de Respuesta: Típicamente respondemos en 48 horas</Text>
+                <Text style={styles.contactItem}>Sitio Web: https://dailyfaith.me</Text>
               </View>
               <Text style={styles.contactFooter}>
-                These terms are governed by applicable laws and any disputes will be resolved through appropriate legal channels.
+                Estos términos se rigen por las leyes aplicables y cualquier disputa se resolverá a través de los canales legales apropiados.
               </Text>
             </LinearGradient>
           </View>
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  
+
   // Introduction Card
   introCard: {
     marginTop: 20,

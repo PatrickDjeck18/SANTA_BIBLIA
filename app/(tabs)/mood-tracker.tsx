@@ -145,25 +145,25 @@ const MoodChart = ({ data }: { data: MoodEntry[] }) => {
     return (
       <View style={styles.chartContainer}>
         <View style={styles.chartHeader}>
-          <Text style={styles.chartTitle}>Mood Trends</Text>
+          <Text style={styles.chartTitle}>Tendencias de Ánimo</Text>
           <View style={styles.periodToggle}>
             <TouchableOpacity
               style={[styles.periodTab, period === 'weekly' && styles.periodTabActive]}
               onPress={() => setPeriod('weekly')}
             >
-              <Text style={[styles.periodTabText, period === 'weekly' && styles.periodTabTextActive]}>Week</Text>
+              <Text style={[styles.periodTabText, period === 'weekly' && styles.periodTabTextActive]}>Semana</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.periodTab, period === 'monthly' && styles.periodTabActive]}
               onPress={() => setPeriod('monthly')}
             >
-              <Text style={[styles.periodTabText, period === 'monthly' && styles.periodTabTextActive]}>Month</Text>
+              <Text style={[styles.periodTabText, period === 'monthly' && styles.periodTabTextActive]}>Mes</Text>
             </TouchableOpacity>
           </View>
         </View>
         <View style={styles.chartEmptyState}>
           <Text style={styles.chartEmptyEmoji}>📊</Text>
-          <Text style={styles.chartEmptyText}>Log at least 2 moods to see trends</Text>
+          <Text style={styles.chartEmptyText}>Registra al menos 2 estados de ánimo para ver tendencias</Text>
         </View>
       </View>
     );
@@ -201,17 +201,17 @@ const MoodChart = ({ data }: { data: MoodEntry[] }) => {
 
   // Calculate average mood
   const avgMood = points.reduce((sum, p) => sum + p.value, 0) / points.length;
-  const avgMoodLabel = avgMood >= 4 ? 'Great' : avgMood >= 3 ? 'Good' : avgMood >= 2 ? 'Okay' : 'Low';
+  const avgMoodLabel = avgMood >= 4 ? 'Excelente' : avgMood >= 3 ? 'Bien' : avgMood >= 2 ? 'Regular' : 'Bajo';
   const avgMoodColor = avgMood >= 4 ? '#22C55E' : avgMood >= 3 ? '#F59E0B' : avgMood >= 2 ? '#94A3B8' : '#EF4444';
 
   return (
     <View style={styles.chartContainer}>
       <View style={styles.chartHeader}>
         <View>
-          <Text style={styles.chartTitle}>Mood Trends</Text>
+          <Text style={styles.chartTitle}>Tendencias de Ánimo</Text>
           <View style={styles.avgMoodRow}>
             <View style={[styles.avgMoodDot, { backgroundColor: avgMoodColor }]} />
-            <Text style={styles.avgMoodText}>Avg: {avgMoodLabel}</Text>
+            <Text style={styles.avgMoodText}>Prom: {avgMoodLabel}</Text>
           </View>
         </View>
         <View style={styles.periodToggle}>
@@ -219,13 +219,13 @@ const MoodChart = ({ data }: { data: MoodEntry[] }) => {
             style={[styles.periodTab, period === 'weekly' && styles.periodTabActive]}
             onPress={() => setPeriod('weekly')}
           >
-            <Text style={[styles.periodTabText, period === 'weekly' && styles.periodTabTextActive]}>Week</Text>
+            <Text style={[styles.periodTabText, period === 'weekly' && styles.periodTabTextActive]}>Semana</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.periodTab, period === 'monthly' && styles.periodTabActive]}
             onPress={() => setPeriod('monthly')}
           >
-            <Text style={[styles.periodTabText, period === 'monthly' && styles.periodTabTextActive]}>Month</Text>
+            <Text style={[styles.periodTabText, period === 'monthly' && styles.periodTabTextActive]}>Mes</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -420,11 +420,11 @@ export default function MoodTrackerScreen() {
       if (error) {
         throw new Error(error.message || 'Failed to delete mood entry');
       }
-      Alert.alert('Success', 'Mood entry deleted');
+      Alert.alert('Éxito', 'Estado de ánimo eliminado');
       setDeleteModalVisible(false);
       setEntryToDelete(null);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to delete');
+      Alert.alert('Error', error.message || 'Error al eliminar');
       setDeleteModalVisible(false);
       setEntryToDelete(null);
     }
@@ -483,13 +483,13 @@ export default function MoodTrackerScreen() {
       const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
       if (isToday) {
-        return `Today at ${time}`;
+        return `Hoy a las ${time}`;
       }
 
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
       if (entryDay.getTime() === yesterday.getTime()) {
-        return `Yesterday at ${time}`;
+        return `Ayer a las ${time}`;
       }
 
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ` at ${time}`;
@@ -547,7 +547,7 @@ export default function MoodTrackerScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={AppTheme.accent.primary} />
-          <Text style={styles.loadingText}>Loading your mood journey...</Text>
+          <Text style={styles.loadingText}>Cargando tu viaje emocional...</Text>
         </View>
       </View>
     );
@@ -564,7 +564,7 @@ export default function MoodTrackerScreen() {
             <View style={styles.userAvatar}>
               <Smile size={20} color="#EA580C" />
             </View>
-            <Text style={styles.headerTitle}>Mood Journal</Text>
+            <Text style={styles.headerTitle}>Diario de Ánimo</Text>
           </View>
 
           <View style={styles.headerActions}>
@@ -586,12 +586,12 @@ export default function MoodTrackerScreen() {
           {showCalendar ? (
             <>
               <X size={14} color="#EA580C" />
-              <Text style={styles.viewCalendarText}>CLOSE CALENDAR</Text>
+              <Text style={styles.viewCalendarText}>CERRAR CALENDARIO</Text>
             </>
           ) : (
             <>
               <CalendarDays size={14} color="#EA580C" />
-              <Text style={styles.viewCalendarText}>VIEW CALENDAR</Text>
+              <Text style={styles.viewCalendarText}>VER CALENDARIO</Text>
             </>
           )}
         </TouchableOpacity>
@@ -669,7 +669,7 @@ export default function MoodTrackerScreen() {
         ) : (
           /* Week Selector */
           <View style={styles.weekSelector}>
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => {
+            {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => {
               const currentDay = new Date().getDay();
               const uiDayIndex = currentDay === 0 ? 6 : currentDay - 1;
               const isActive = index === uiDayIndex;
@@ -724,12 +724,12 @@ export default function MoodTrackerScreen() {
             <View style={styles.statCardNew}>
               <Text style={styles.statEmojiNew}>🔥</Text>
               <Text style={styles.statValueNew}>{stats.streak}</Text>
-              <Text style={styles.statLabelNew}>Streak</Text>
+              <Text style={styles.statLabelNew}>Racha</Text>
             </View>
             <View style={styles.statCardNew}>
               <Text style={styles.statEmojiNew}>📊</Text>
               <Text style={styles.statValueNew}>{stats.thisWeek}</Text>
-              <Text style={styles.statLabelNew}>This Week</Text>
+              <Text style={styles.statLabelNew}>Esta Semana</Text>
             </View>
           </View>
 
@@ -763,7 +763,7 @@ export default function MoodTrackerScreen() {
           {/* Mood History */}
           <View style={styles.historySection}>
             <Text style={styles.sectionTitle}>
-              {selectedDate ? 'MOODS FOR SELECTED DATE' : 'RECENT MOODS'}
+              {selectedDate ? 'ÁNIMOS DEL DÍA SELECCIONADO' : 'ÁNIMOS RECIENTES'}
             </Text>
 
             {filteredMoodHistory.length === 0 ? (
@@ -772,19 +772,19 @@ export default function MoodTrackerScreen() {
                   {selectedDate ? '📅' : '✨'}
                 </Text>
                 <Text style={styles.emptyTitle}>
-                  {selectedDate ? 'No moods on this day' : 'Start Your Journey'}
+                  {selectedDate ? 'Sin ánimos este día' : 'Comienza Tu Viaje'}
                 </Text>
                 <Text style={styles.emptySubtitle}>
                   {selectedDate
-                    ? 'Try selecting a different date'
-                    : 'Tap + to log your first mood'}
+                    ? 'Intenta seleccionar otra fecha'
+                    : 'Toca + para registrar tu primer estado de ánimo'}
                 </Text>
                 {selectedDate && (
                   <TouchableOpacity
                     style={styles.emptyButton}
                     onPress={() => setSelectedDate(null)}
                   >
-                    <Text style={styles.emptyButtonText}>Show All</Text>
+                    <Text style={styles.emptyButtonText}>Mostrar Todo</Text>
                   </TouchableOpacity>
                 )}
               </View>

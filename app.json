@@ -8,9 +8,9 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#000000",
-          "image": "./assets/icon.png",
+          "image": "./assets/images/icon.png",
           "dark": {
-            "image": "./assets/icon.png",
+            "image": "./assets/images/icon.png",
             "backgroundColor": "#000000"
           },
           "imageWidth": 200
@@ -19,10 +19,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "iosAppId": "ca-app-pub-4253750298784159~6004098078",
-          "androidAppId": "ca-app-pub-4253750298784159~6198188122",
-          "android_app_id": "ca-app-pub-4253750298784159~6198188122",
-          "ios_app_id": "ca-app-pub-4253750298784159~6004098078"
+          "iosAppId": "ca-app-pub-4253750298784159~7540303349",
+          "androidAppId": "ca-app-pub-4253750298784159~8000480101"
         }
       ],
       [
@@ -50,20 +48,25 @@
         }
       ]
     ],
-    "name": "KJV Bible",
-    "slug": "daily-faith",
-    "version": "1.2.3",
+    "name": "Santa Biblia",
+    "slug": "santa-biblia",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "daily-faith",
+    "scheme": "santa-biblia",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dailybread.dailyfaithbible",
-      "buildNumber": "14",
+      "bundleIdentifier": "com.daily.santa.biblia",
+      "buildNumber": "1",
       "infoPlist": {
-        "CFBundleDisplayName": "KJV Bible",
+        "CFBundleDisplayName": "Santa Biblia",
         "NSUserNotificationsUsageDescription": "We'll send you daily morning reminders to read your Bible verse and start your day with God's word.",
         "NSUserTrackingUsageDescription": "This app uses tracking to deliver personalized ads and improve your experience.",
         "SKAdNetworkItems": [
@@ -273,16 +276,16 @@
       "deepseekApiKey": "sk-0f724d9ce2c34b24bd446adcbf26118f",
       "router": {},
       "eas": {
-        "projectId": "28cfa921-c1c8-4b94-8c4d-6b03b4fd263d"
+        "projectId": "2db19012-4ec4-4c7d-ac74-b04729bc5db8"
       }
     },
     "experiments": {
       "typedRoutes": true
     },
     "android": {
-      "package": "com.dailybread.dailyfaithbible",
-      "applicationLabel": "Bible KJV",
-      "versionCode": 11,
+      "package": "com.daily.santa.biblia",
+      "applicationLabel": "Santa Biblia",
+      "versionCode": 3,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
