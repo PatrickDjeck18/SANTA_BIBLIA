@@ -64,7 +64,7 @@ export default function NoteViewerScreen() {
       if (note) {
         setCurrentNote(note);
       } else {
-        Alert.alert('Error', 'Note not found', [
+        Alert.alert('Error', 'Nota no encontrada', [
           { text: 'OK', onPress: () => router.back() }
         ]);
       }
@@ -131,13 +131,14 @@ export default function NoteViewerScreen() {
         setCurrentNote(noteToSave);
         setIsEditing(false);
         await refetch();
-        Alert.alert('Success', 'Note saved successfully!');
+        await refetch();
+        Alert.alert('Éxito', '¡Nota guardada con éxito!');
       } else {
-        Alert.alert('Error', 'Failed to save note');
+        Alert.alert('Error', 'Error al guardar la nota');
       }
     } catch (error) {
       console.error('Error saving note:', error);
-      Alert.alert('Error', 'Failed to save note');
+      Alert.alert('Error', 'Error al guardar la nota');
     } finally {
       setIsTransitioning(false);
     }
@@ -147,25 +148,25 @@ export default function NoteViewerScreen() {
     if (!currentNote) return;
 
     Alert.alert(
-      'Delete Note',
-      `Are you sure you want to delete "${currentNote.title || 'Untitled Note'}"? This action cannot be undone.`,
+      'Eliminar nota',
+      `¿Estás seguro de que deseas eliminar "${currentNote.title || 'Nota sin título'}"? Esta acción no se puede deshacer.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Eliminar',
           style: 'destructive',
           onPress: async () => {
             try {
               const success = await deleteNote(currentNote.id);
               if (success) {
-                Alert.alert('Success', 'Note deleted successfully!');
+                Alert.alert('Éxito', '¡Nota eliminada con éxito!');
                 router.back();
               } else {
-                Alert.alert('Error', 'Failed to delete note');
+                Alert.alert('Error', 'Error al eliminar la nota');
               }
             } catch (error) {
               console.error('Error deleting note:', error);
-              Alert.alert('Error', 'Failed to delete note');
+              Alert.alert('Error', 'Error al eliminar la nota');
             }
           },
         },
@@ -215,13 +216,13 @@ export default function NoteViewerScreen() {
   ];
 
   const categories = [
-    { id: 'reflection', label: 'Reflection', icon: '🤔', color: Colors.primary[500] },
-    { id: 'prayer', label: 'Prayer', icon: '🙏', color: Colors.success[500] },
-    { id: 'study', label: 'Study', icon: '📚', color: Colors.warning[500] },
-    { id: 'journal', label: 'Journal', icon: '📝', color: Colors.secondary[500] },
-    { id: 'insight', label: 'Insight', icon: '💡', color: Colors.cardColors.secondaryPurple },
-    { id: 'gratitude', label: 'Gratitude', icon: '🙌', color: Colors.cardColors.goldenLight },
-    { id: 'other', label: 'Other', icon: '📄', color: Colors.neutral[500] },
+    { id: 'reflection', label: 'Reflexión', icon: '🤔', color: Colors.primary[500] },
+    { id: 'prayer', label: 'Oración', icon: '🙏', color: Colors.success[500] },
+    { id: 'study', label: 'Estudio', icon: '📚', color: Colors.warning[500] },
+    { id: 'journal', label: 'Diario', icon: '📝', color: Colors.secondary[500] },
+    { id: 'insight', label: 'Pensamiento', icon: '💡', color: Colors.cardColors.secondaryPurple },
+    { id: 'gratitude', label: 'Gratitud', icon: '🙌', color: Colors.cardColors.goldenLight },
+    { id: 'other', label: 'Otro', icon: '📄', color: Colors.neutral[500] },
   ];
 
 
@@ -229,15 +230,14 @@ export default function NoteViewerScreen() {
     try {
       const jsDate = new Date(date);
       const now = new Date();
-      const diffTime = Math.abs(now.getTime() - jsDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays === 1) return 'Today';
-      if (diffDays === 2) return 'Yesterday';
-      if (diffDays <= 7) return `${diffDays - 1} days ago`;
+      if (diffDays === 1) return "Hoy";
+      if (diffDays === 2) return 'Ayer';
+      if (diffDays <= 7) return `Hace ${diffDays - 1} días`;
       return jsDate.toLocaleDateString();
     } catch (error) {
-      return 'Unknown';
+      return 'Desconocido';
     }
   };
 
@@ -256,7 +256,7 @@ export default function NoteViewerScreen() {
         <BackgroundGradient variant="warm">
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={AppTheme.accent.primary} />
-            <Text style={styles.loadingText}>Loading note...</Text>
+            <Text style={styles.loadingText}>Cargando nota...</Text>
           </View>
         </BackgroundGradient>
       </View>
@@ -268,16 +268,16 @@ export default function NoteViewerScreen() {
       <View style={styles.container}>
         <BackgroundGradient variant="warm">
           <ModernHeader
-            title="Note Not Found"
+            title="Nota no encontrada"
             variant="simple"
             showBackButton={true}
             showReaderButton={false}
             onBackPress={safeBack}
           />
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>The requested note could not be found.</Text>
+            <Text style={styles.errorText}>No se pudo encontrar la nota solicitada.</Text>
             <TouchableOpacity style={styles.backButton} onPress={safeBack}>
-              <Text style={styles.backButtonText}>Go Back</Text>
+              <Text style={styles.backButtonText}>Volver</Text>
             </TouchableOpacity>
           </View>
         </BackgroundGradient>
@@ -291,7 +291,7 @@ export default function NoteViewerScreen() {
 
       <BackgroundGradient variant="warm">
         <ModernHeader
-          title={isEditing ? 'Edit Note' : 'Detail View'}
+          title={isEditing ? 'Editar nota' : 'Vista detallada'}
           variant="simple"
           showBackButton={true}
           showReaderButton={false}
@@ -322,7 +322,7 @@ export default function NoteViewerScreen() {
                     styles.noteTitleInput,
                     !isEditing && styles.nonEditableInput
                   ]}
-                  placeholder="Note Title"
+                  placeholder="Título de la nota"
                   value={currentNote.title || ''}
                   onChangeText={(text) => updateNoteField('title', text)}
                   editable={isEditing}
@@ -334,7 +334,7 @@ export default function NoteViewerScreen() {
               {/* Category Selection */}
               {isEditing && (
                 <View style={styles.propertySection}>
-                  <Text style={styles.propertyLabel}>Category</Text>
+                  <Text style={styles.propertyLabel}>Categoría</Text>
                   <TouchableOpacity
                     style={styles.categoryButton}
                     onPress={() => setShowCategoryPicker(!showCategoryPicker)}
@@ -373,7 +373,7 @@ export default function NoteViewerScreen() {
 
               <View style={styles.contentSection}>
                 <View style={styles.contentHeader}>
-                  <Text style={styles.contentLabel}>Content</Text>
+                  <Text style={styles.contentLabel}>Contenido</Text>
                   {isEditing && (
                     <TouchableOpacity
                       style={styles.emojiButton}
@@ -396,7 +396,7 @@ export default function NoteViewerScreen() {
                       !isEditing && styles.nonEditableInput
                     ]}
                     multiline
-                    placeholder="Start writing your note..."
+                    placeholder="Comienza a escribir tu nota..."
                     value={currentNote.content || ''}
                     onChangeText={(text) => updateNoteField('content', text)}
                     editable={isEditing}
@@ -438,7 +438,7 @@ export default function NoteViewerScreen() {
 
               <View style={styles.noteMeta}>
                 <Text style={styles.noteDate}>
-                  Last updated: {formatDate(currentNote.updated_at)}
+                  Última actualización: {formatDate(currentNote.updated_at)}
                 </Text>
                 <Text style={styles.noteTime}>
                   {formatTime(currentNote.updated_at)}
@@ -451,7 +451,7 @@ export default function NoteViewerScreen() {
                   onPress={handleDeleteNote}
                 >
                   <Trash2 size={20} color={AppTheme.gradients.danger[0]} />
-                  <Text style={styles.deleteButtonText}>Delete Note</Text>
+                  <Text style={styles.deleteButtonText}>Eliminar nota</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -465,7 +465,7 @@ export default function NoteViewerScreen() {
                 onPress={editNote}
               >
                 <Edit3 size={20} color="white" />
-                <Text style={styles.editButtonText}>Edit Note</Text>
+                <Text style={styles.editButtonText}>Editar nota</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -482,7 +482,7 @@ export default function NoteViewerScreen() {
                 }}
               >
                 <X size={20} color={Colors.neutral[600]} />
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -495,7 +495,7 @@ export default function NoteViewerScreen() {
                 ) : (
                   <>
                     <Save size={20} color="white" />
-                    <Text style={styles.saveButtonText}>Save</Text>
+                    <Text style={styles.saveButtonText}>Guardar</Text>
                   </>
                 )}
               </TouchableOpacity>

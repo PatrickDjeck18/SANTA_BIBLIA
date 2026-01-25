@@ -55,13 +55,13 @@ interface Note {
 
 // Background color options
 const backgroundOptions = [
-  { id: 'default', name: 'Default', type: 'color', value: '#FFFFFF' },
-  { id: 'warm', name: 'Warm', type: 'color', value: '#FFF8E1' },
-  { id: 'cool', name: 'Cool', type: 'color', value: '#E3F2FD' },
-  { id: 'nature', name: 'Nature', type: 'color', value: '#E8F5E8' },
-  { id: 'sunset', name: 'Sunset', type: 'gradient', value: ['#FF6B6B', '#FFE66D'] },
-  { id: 'ocean', name: 'Ocean', type: 'gradient', value: ['#4ECDC4', '#44A08D'] },
-  { id: 'spiritual', name: 'Spiritual', type: 'gradient', value: ['#667eea', '#764ba2'] },
+  { id: 'default', name: 'Defecto', type: 'color', value: '#FFFFFF' },
+  { id: 'warm', name: 'Cálido', type: 'color', value: '#FFF8E1' },
+  { id: 'cool', name: 'Fresco', type: 'color', value: '#E3F2FD' },
+  { id: 'nature', name: 'Naturaleza', type: 'color', value: '#E8F5E8' },
+  { id: 'sunset', name: 'Atardecer', type: 'gradient', value: ['#FF6B6B', '#FFE66D'] },
+  { id: 'ocean', name: 'Océano', type: 'gradient', value: ['#4ECDC4', '#44A08D'] },
+  { id: 'spiritual', name: 'Espiritual', type: 'gradient', value: ['#667eea', '#764ba2'] },
 ];
 
 export default function NoteTakerScreen() {
@@ -140,7 +140,7 @@ export default function NoteTakerScreen() {
 
   const saveInlineNote = async () => {
     if (!editingTitle.trim() || !editingContent.trim()) {
-      Alert.alert('Missing Information', 'Please fill in both title and content.');
+      Alert.alert('Información faltante', 'Por favor completa el título y el contenido.');
       return;
     }
 
@@ -170,7 +170,7 @@ export default function NoteTakerScreen() {
       cancelInlineEdit();
     } catch (error) {
       console.error('Error saving note:', error);
-      Alert.alert('Error', 'Failed to save note. Please try again.');
+      Alert.alert('Error', 'Error al guardar la nota. Por favor intenta de nuevo.');
     }
   };
 
@@ -180,13 +180,13 @@ export default function NoteTakerScreen() {
       await saveNotes(updatedNotes);
       setShowDeleteModal(false);
       setNoteToDelete(null);
-      
+
       if (editingNoteId === noteId) {
         cancelInlineEdit();
       }
     } catch (error) {
       console.error('Error deleting note:', error);
-      Alert.alert('Error', 'Failed to delete note. Please try again.');
+      Alert.alert('Error', 'Error al eliminar la nota. Por favor intenta de nuevo.');
     }
   };
 
@@ -224,10 +224,10 @@ export default function NoteTakerScreen() {
           </View>
           <View style={styles.noteInfo}>
             <Text style={styles.noteTitle} numberOfLines={1}>
-              {note.title || 'Untitled Note'}
+              {note.title || 'Nota sin título'}
             </Text>
             <Text style={styles.notePreview} numberOfLines={2}>
-              {note.content || 'No content'}
+              {note.content || 'Sin contenido'}
             </Text>
           </View>
         </View>
@@ -249,7 +249,7 @@ export default function NoteTakerScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      
+
       {note.tags && note.tags.length > 0 && (
         <View style={styles.noteTags}>
           {note.tags.slice(0, 3).map((tag, tagIndex) => (
@@ -287,10 +287,10 @@ export default function NoteTakerScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       <BackgroundGradient />
-      
+
       {/* Hero Header */}
       <HeaderCard
-        title="Notes"
+        title="Notas"
         showBackButton={true}
         onBackPress={() => router.back()}
         rightActions={
@@ -310,7 +310,7 @@ export default function NoteTakerScreen() {
           <Search size={20} color={Colors.neutral[400]} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search notes..."
+            placeholder="Buscar notas..."
             placeholderTextColor={Colors.neutral[400]}
             value={searchText}
             onChangeText={setSearchText}
@@ -322,18 +322,18 @@ export default function NoteTakerScreen() {
       <View style={styles.notesContainer}>
         {loading ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Loading notes...</Text>
+            <Text style={styles.emptyText}>Cargando notas...</Text>
           </View>
         ) : filteredNotes.length === 0 ? (
           <View style={styles.emptyState}>
             <FileText size={64} color={Colors.neutral[300]} />
             <Text style={styles.emptyTitle}>
-              {searchText ? 'No notes found' : 'No notes yet'}
+              {searchText ? 'No se encontraron notas' : 'No hay notas todavía'}
             </Text>
             <Text style={styles.emptySubtitle}>
-              {searchText 
-                ? 'Try adjusting your search terms'
-                : 'Start capturing your thoughts and reflections'
+              {searchText
+                ? 'Intenta ajustar tus términos de búsqueda'
+                : 'Comienza a capturar tus pensamientos y reflexiones'
               }
             </Text>
             {!searchText && (
@@ -342,7 +342,7 @@ export default function NoteTakerScreen() {
                 onPress={createNewNote}
               >
                 <Plus size={20} color="white" />
-                <Text style={styles.createFirstButtonText}>Create First Note</Text>
+                <Text style={styles.createFirstButtonText}>Crear primera nota</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -363,7 +363,7 @@ export default function NoteTakerScreen() {
         <View style={styles.inlineEditor}>
           <View style={styles.editorHeader}>
             <Text style={styles.editorTitle}>
-              {editingNoteId ? 'Edit Note' : 'New Note'}
+              {editingNoteId ? 'Editar nota' : 'Nueva nota'}
             </Text>
             <View style={styles.editorActions}>
               <TouchableOpacity
@@ -380,21 +380,21 @@ export default function NoteTakerScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          
+
           <ScrollView style={styles.editorContent}>
             <TextInput
               style={styles.editorTitleInput}
-              placeholder="Note title..."
+              placeholder="Título de la nota..."
               placeholderTextColor={Colors.neutral[400]}
               value={editingTitle}
               onChangeText={setEditingTitle}
               multiline
               maxLength={100}
             />
-            
+
             <TextInput
               style={styles.editorContentInput}
-              placeholder="Start writing your note..."
+              placeholder="Comienza a escribir tu nota..."
               placeholderTextColor={Colors.neutral[400]}
               value={editingContent}
               onChangeText={setEditingContent}
@@ -410,17 +410,17 @@ export default function NoteTakerScreen() {
       {showDeleteModal && (
         <View style={styles.deleteModalOverlay}>
           <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>Delete Note</Text>
+            <Text style={styles.deleteModalTitle}>Eliminar nota</Text>
             <Text style={styles.deleteModalMessage}>
-              Are you sure you want to delete "{noteToDelete?.title || 'Untitled Note'}"? 
-              This action cannot be undone.
+              ¿Estás seguro de que deseas eliminar "{noteToDelete?.title || 'Nota sin título'}"?
+              Esta acción no se puede deshacer.
             </Text>
             <View style={styles.deleteModalButtons}>
               <TouchableOpacity
                 style={styles.deleteModalCancelButton}
                 onPress={() => setShowDeleteModal(false)}
               >
-                <Text style={styles.deleteModalCancelText}>Cancel</Text>
+                <Text style={styles.deleteModalCancelText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.deleteModalDeleteButton}
@@ -430,7 +430,7 @@ export default function NoteTakerScreen() {
                   }
                 }}
               >
-                <Text style={styles.deleteModalDeleteText}>Delete</Text>
+                <Text style={styles.deleteModalDeleteText}>Eliminar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  
+
   // Hero Header
   hero: {
     paddingTop: Platform.OS === 'ios' ? 60 : 24,

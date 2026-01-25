@@ -14,7 +14,7 @@ export const useAppRating = () => {
     // Function to manually request review (e.g. from settings)
     const rateApp = async () => {
         // For manual "Rate Us" buttons, it's better to open the store page directly
-        const androidPackageName = 'com.dailybread.dailyfaithbible';
+        const androidPackageName = 'com.daily.santa.biblia';
         const iosAppId = '6752252289';
 
         if (Platform.OS === 'android') {

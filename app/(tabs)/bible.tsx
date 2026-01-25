@@ -21,6 +21,7 @@ import {
   ActivityIndicator,
   Modal,
   useWindowDimensions,
+  Share,
 } from 'react-native';
 import {
   Book,
@@ -504,6 +505,29 @@ export default function BibleScreen() {
     });
   }, [selectedVerse, getVerseKey]);
 
+  // Share Verse Function
+  const handleShareVerse = useCallback(async () => {
+    if (!selectedVerse || !chapterData || !selectedBook) return;
+
+    // Find the full verse object
+    const verseObj = chapterData.verses.find(v => v.verse === selectedVerse);
+    if (!verseObj) return;
+
+    const iosUrl = 'https://apps.apple.com/app/id6757971912';
+    const androidUrl = 'https://play.google.com/store/apps/details?id=com.daily.santa.biblia';
+
+    const message = `"${verseObj.text}"\n\n${selectedBook.name} ${selectedChapter}:${selectedVerse}\n\nLee más en la app Santa Biblia:\niOS: ${iosUrl}\nAndroid: ${androidUrl}`;
+
+    try {
+      await Share.share({
+        message,
+        title: 'Compartir Versículo',
+      });
+    } catch (error) {
+      console.error('Error sharing verse:', error);
+    }
+  }, [selectedVerse, chapterData, selectedBook, selectedChapter]);
+
   // Load saved highlights and notes
   useEffect(() => {
     const loadSavedData = async () => {
@@ -932,6 +956,31 @@ export default function BibleScreen() {
                   <X size={16} color={THEME.textMuted} />
                 </TouchableOpacity>
               </View>
+            </View>
+
+            {/* Actions Section (Share) */}
+            <View style={{ marginBottom: 24 }}>
+              <View style={styles.sectionHeader}>
+                <Share2 size={16} color={THEME.textSecondary} />
+                <Text style={styles.sectionLabel}>ACCIONES</Text>
+              </View>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  backgroundColor: THEME.backgroundLight,
+                  padding: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: THEME.border
+                }}
+                onPress={handleShareVerse}
+              >
+                <Share2 size={18} color={THEME.accent} />
+                <Text style={{ fontSize: 15, fontWeight: '600', color: THEME.text }}>Compartir Versículo</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Note Section */}

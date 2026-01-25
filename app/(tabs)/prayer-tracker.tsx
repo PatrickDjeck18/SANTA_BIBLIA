@@ -527,23 +527,7 @@ export default function PrayerTrackerScreen() {
         {/* Main Content Card */}
         <View style={styles.mainCard}>
           {/* Stats Row */}
-          <View style={styles.statsRowNew}>
-            <View style={styles.statCardNew}>
-              <Text style={styles.statEmojiNew}>🔥</Text>
-              <Text style={styles.statValueNew}>{stats.streak}</Text>
-              <Text style={styles.statLabelNew}>Racha</Text>
-            </View>
-            <View style={styles.statCardNew}>
-              <Text style={styles.statEmojiNew}>🙏</Text>
-              <Text style={styles.statValueNew}>{stats.sessionCount}</Text>
-              <Text style={styles.statLabelNew}>Sesiones</Text>
-            </View>
-            <View style={styles.statCardNew}>
-              <Text style={styles.statEmojiNew}>⏱️</Text>
-              <Text style={styles.statValueNew}>{stats.totalMinutes}</Text>
-              <Text style={styles.statLabelNew}>Minutos</Text>
-            </View>
-          </View>
+
 
           {/* Timer Card */}
           <View style={styles.timerCard}>
@@ -803,32 +787,7 @@ const styles = StyleSheet.create({
     minHeight: 500,
     ...Shadows.md,
   },
-  statsRowNew: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  statCardNew: {
-    flex: 1,
-    backgroundColor: '#FAF5EF',
-    borderRadius: 16,
-    padding: Spacing.md,
-    alignItems: 'center',
-  },
-  statEmojiNew: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  statValueNew: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#EA580C',
-  },
-  statLabelNew: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
-  },
+
   heroCard: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 32,

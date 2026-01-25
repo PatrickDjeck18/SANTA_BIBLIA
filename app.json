@@ -50,7 +50,7 @@
     ],
     "name": "Santa Biblia",
     "slug": "santa-biblia",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "santa-biblia",
@@ -64,7 +64,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.daily.santa.biblia",
-      "buildNumber": "1",
+      "buildNumber": "5",
       "infoPlist": {
         "CFBundleDisplayName": "Santa Biblia",
         "NSUserNotificationsUsageDescription": "We'll send you daily morning reminders to read your Bible verse and start your day with God's word.",
@@ -276,7 +276,7 @@
       "deepseekApiKey": "sk-0f724d9ce2c34b24bd446adcbf26118f",
       "router": {},
       "eas": {
-        "projectId": "2db19012-4ec4-4c7d-ac74-b04729bc5db8"
+        "projectId": "5e535ecc-b7ea-4c4f-8495-078e71cdc50c"
       }
     },
     "experiments": {
@@ -285,7 +285,7 @@
     "android": {
       "package": "com.daily.santa.biblia",
       "applicationLabel": "Santa Biblia",
-      "versionCode": 3,
+      "versionCode": 8,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
@@ -293,6 +293,6 @@
         "android.permission.INTERNET"
       ]
     },
-    "owner": "goodllc18"
+    "owner": "patrickdjeck"
   }
 }

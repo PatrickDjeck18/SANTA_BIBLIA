@@ -173,7 +173,7 @@ export default function NoteTakerScreen() {
       }
     } catch (error) {
       console.error('❌ Error saving note:', error);
-      Alert.alert('Error', 'Failed to save note');
+      Alert.alert('Error', 'Error al guardar la nota');
       return false;
     }
   };
@@ -183,15 +183,15 @@ export default function NoteTakerScreen() {
       const success = await deleteNote(noteId);
       if (success) {
         console.log('Note deleted successfully');
-        Alert.alert('Success', 'Note deleted successfully!');
+        Alert.alert('Éxito', '¡Nota eliminada con éxito!');
         return true;
       } else {
-        Alert.alert('Error', 'Failed to delete note');
+        Alert.alert('Error', 'Error al eliminar la nota');
         return false;
       }
     } catch (error) {
       console.error('Error deleting note:', error);
-      Alert.alert('Error', 'Failed to delete note');
+      Alert.alert('Error', 'Error al eliminar la nota');
       return false;
     }
   };
@@ -237,11 +237,11 @@ export default function NoteTakerScreen() {
         console.log('Note creation returned null - there might be an error');
       }
 
-      Alert.alert('Success', '📝 Note added successfully!');
+      Alert.alert('Éxito', '📝 ¡Nota agregada con éxito!');
     } catch (error: any) {
       console.error('Error adding note:', error);
       console.error('Error details:', error);
-      Alert.alert('Error', `Failed to add note: ${error.message || 'Unknown error'}`);
+      Alert.alert('Error', `Error al agregar la nota: ${error.message || 'Error desconocido'}`);
     }
   };
 
@@ -257,12 +257,12 @@ export default function NoteTakerScreen() {
       const diffTime = Math.abs(now.getTime() - jsDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays === 1) return 'Today';
-      if (diffDays === 2) return 'Yesterday';
-      if (diffDays <= 7) return `${diffDays - 1} days ago`;
+      if (diffDays === 1) return "Hoy";
+      if (diffDays === 2) return 'Ayer';
+      if (diffDays <= 7) return `Hace ${diffDays - 1} días`;
       return jsDate.toLocaleDateString();
     } catch (error) {
-      return 'Unknown';
+      return 'Desconocido';
     }
   };
 
@@ -302,10 +302,10 @@ export default function NoteTakerScreen() {
               </View>
               <View style={styles.noteInfo}>
                 <Text style={styles.noteTitle} numberOfLines={1}>
-                  {item.title || 'Untitled Note'}
+                  {item.title || 'Nota sin título'}
                 </Text>
                 <Text style={styles.notePreview} numberOfLines={2}>
-                  {item.content || 'No content'}
+                  {item.content || 'Sin contenido'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -348,12 +348,12 @@ export default function NoteTakerScreen() {
         {/* Header Container with proper styling */}
         <View style={styles.headerContainer}>
           <ModernHeader
-            title="Notes"
+            title="Notas"
             variant="simple"
             showBackButton={true}
             showReaderButton={false}
             onBackPress={safeBack}
-            readerText="Notes. Capture your thoughts and insights. Write down your spiritual reflections and important thoughts."
+            readerText="Notas. Capture sus pensamientos e inspiraciones. Escriba sus reflexiones espirituales y pensamientos importantes."
           />
         </View>
 
@@ -380,8 +380,8 @@ export default function NoteTakerScreen() {
                   <BarChart3 size={24} color={Colors.primary[500]} />
                 </View>
                 <View style={styles.statsTitleContainer}>
-                  <Text style={styles.statsTitle}>Note Statistics</Text>
-                  <Text style={styles.statsSubtitle}>Track your spiritual insights</Text>
+                  <Text style={styles.statsTitle}>Estadísticas</Text>
+                  <Text style={styles.statsSubtitle}>Sigue tus inspiraciones</Text>
                 </View>
               </View>
 
@@ -393,12 +393,12 @@ export default function NoteTakerScreen() {
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
                   <Text style={[styles.statNumber, { color: Colors.primary[500] }]}>{stats.recent}</Text>
-                  <Text style={styles.statLabel}>Recent</Text>
+                  <Text style={styles.statLabel}>Reciente</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
                   <Text style={[styles.statNumber, { color: Colors.warning[500] }]}>{stats.categories}</Text>
-                  <Text style={styles.statLabel}>Categories</Text>
+                  <Text style={styles.statLabel}>Categorías</Text>
                 </View>
               </View>
             </View>
@@ -410,7 +410,7 @@ export default function NoteTakerScreen() {
               <Search size={20} color={Colors.neutral[400]} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search notes..."
+                placeholder="Buscar notas..."
                 value={searchText}
                 onChangeText={setSearchText}
                 placeholderTextColor={Colors.neutral[400]}
@@ -438,18 +438,18 @@ export default function NoteTakerScreen() {
             {loading && filteredNotes.length === 0 ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={Colors.primary[500]} />
-                <Text style={styles.loadingText}>Loading notes...</Text>
+                <Text style={styles.loadingText}>Cargando notas...</Text>
               </View>
             ) : filteredNotes.length === 0 ? (
               <View style={styles.emptyState}>
                 <BookOpen size={48} color={Colors.neutral[400]} />
                 <Text style={styles.emptyTitle}>
-                  {searchText ? 'No notes found' : 'No notes yet'}
+                  {searchText ? 'No se encontraron notas' : 'No hay notas todavía'}
                 </Text>
                 <Text style={styles.emptySubtitle}>
                   {searchText
-                    ? 'Try adjusting your search terms'
-                    : 'Create your first note to get started'
+                    ? 'Intenta ajustar tu búsqueda'
+                    : 'Crea tu primera nota para comenzar'
                   }
                 </Text>
                 {!searchText && (
@@ -458,7 +458,7 @@ export default function NoteTakerScreen() {
                     onPress={createNewNote}
                   >
                     <Plus size={20} color="white" />
-                    <Text style={styles.createFirstButtonText}>Create Note</Text>
+                    <Text style={styles.createFirstButtonText}>Crear una Nota</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -515,17 +515,17 @@ export default function NoteTakerScreen() {
         >
           <View style={styles.deleteModalOverlay}>
             <View style={styles.deleteModalContent}>
-              <Text style={styles.deleteModalTitle}>Delete Note</Text>
+              <Text style={styles.deleteModalTitle}>Eliminar nota</Text>
               <Text style={styles.deleteModalMessage}>
-                Are you sure you want to delete "{noteToDelete?.title || 'Untitled Note'}"?
-                This action cannot be undone.
+                ¿Estás seguro de que deseas eliminar "{noteToDelete?.title || 'Nota sin título'}"?
+                Esta acción no se puede deshacer.
               </Text>
               <View style={styles.deleteModalButtons}>
                 <TouchableOpacity
                   style={styles.deleteModalCancelButton}
                   onPress={() => setShowDeleteModal(false)}
                 >
-                  <Text style={styles.deleteModalCancelText}>Cancel</Text>
+                  <Text style={styles.deleteModalCancelText}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.deleteModalDeleteButton}
@@ -535,7 +535,7 @@ export default function NoteTakerScreen() {
                     }
                   }}
                 >
-                  <Text style={styles.deleteModalDeleteText}>Delete</Text>
+                  <Text style={styles.deleteModalDeleteText}>Eliminar</Text>
                 </TouchableOpacity>
               </View>
             </View>

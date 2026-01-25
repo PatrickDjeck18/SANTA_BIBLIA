@@ -57,11 +57,11 @@ export default function SettingsScreen() {
 
   const handleShareApp = async () => {
     try {
-      const iosUrl = 'https://apps.apple.com/us/app/daily-faith-bible-kjv/id6752252289';
-      const androidUrl = 'https://play.google.com/store/apps/details?id=com.dailybread.dailyfaithbible';
+      const iosUrl = 'https://apps.apple.com/app/id6757971912';
+      const androidUrl = 'https://play.google.com/store/apps/details?id=com.daily.santa.biblia';
       const url = Platform.OS === 'ios' ? iosUrl : androidUrl;
       const message = Platform.OS === 'ios'
-        ? '¡Echa un vistazo a Santa Biblia! Descárgala aquí:'
+        ? `¡Echa un vistazo a Santa Biblia! Descárgala aquí: ${url}`
         : `¡Echa un vistazo a Santa Biblia! Descárgala aquí: ${url}`;
 
       await Share.share({

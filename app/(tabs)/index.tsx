@@ -198,64 +198,64 @@ export default function HomeScreen() {
       prayer: "Padre, alinea mis prioridades con Tus propósitos eternos. Amén."
     },
     {
-      quote: "God is most glorified in us when we are most satisfied in Him.",
+      quote: "Dios es más glorificado en nosotros cuando estamos más satisfechos en Él.",
       author: "John Piper",
-      prayer: "Lord, let my deepest satisfaction be found in knowing You. Amen."
+      prayer: "Señor, que mi satisfacción más profunda se encuentre en conocerte. Amén."
     },
     {
-      quote: "A man who was completely innocent offered himself as a sacrifice for the good of others. It was a perfect act.",
+      quote: "Un hombre que era completamente inocente se ofreció como sacrificio por el bien de los demás. Fue un acto perfecto.",
       author: "Mahatma Gandhi",
-      prayer: "Jesus, thank You for Your perfect sacrifice. Help me live sacrificially for others. Amen."
+      prayer: "Jesús, gracias por Tu sacrificio perfecto. Ayúdame a vivir sacrificándome por los demás. Amén."
     },
     {
-      quote: "God writes the gospel not in the Bible alone, but on trees and flowers and clouds and stars.",
+      quote: "Dios escribe el evangelio no solo en la Biblia, sino en los árboles y las flores, en las nubes y las estrellas.",
       author: "Martin Luther",
-      prayer: "Father, open my eyes to see Your glory in creation today. Amen."
+      prayer: "Padre, abre mis ojos para ver Tu gloria en la creación hoy. Amén."
     },
     {
-      quote: "There is not a single moment in which God does not present Himself under the cover of some pain to be endured, some consolation to be enjoyed, or some duty to be performed.",
+      quote: "No hay un solo momento en el que Dios no se presente bajo el manto de algún dolor que soportar, algún consuelo que disfrutar o algún deber que cumplir.",
       author: "Jean-Pierre de Caussade",
-      prayer: "Lord, help me recognize Your presence in every moment of this day. Amen."
+      prayer: "Señor, ayúdame a reconocer Tu presencia en cada momento de este día. Amén."
     },
     {
-      quote: "God does not give us everything we want, but He does fulfill His promises.",
+      quote: "Dios no nos da todo lo que queremos, pero sí cumple Sus promesas.",
       author: "Dietrich Bonhoeffer",
-      prayer: "Father, I trust in Your promises even when my prayers go unanswered. Amen."
+      prayer: "Padre, confío en Tus promesas incluso cuando mis oraciones no son respondidas. Amén."
     },
     {
-      quote: "The Christian life is not a constant high. I have my moments of deep discouragement.",
+      quote: "La vida cristiana no es un subidón constante. Tengo mis momentos de profundo desánimo.",
       author: "Billy Graham",
-      prayer: "Lord, thank You that it's okay to struggle. Meet me in my low moments. Amen."
+      prayer: "Señor, gracias porque está bien luchar. Encuéntrame en mis momentos bajos. Amén."
     },
     {
-      quote: "We are not makers of history. We are made by history.",
+      quote: "No somos hacedores de historia. Estamos hechos por la historia.",
       author: "Martin Luther King Jr.",
-      prayer: "God, use my life as part of Your great story of redemption. Amen."
+      prayer: "Dios, usa mi vida como parte de Tu gran historia de redención. Amén."
     },
     {
-      quote: "Be faithful in small things because it is in them that your strength lies.",
-      author: "Mother Teresa",
-      prayer: "Father, help me be faithful in the small responsibilities You've given me. Amen."
+      quote: "Sé fiel en las cosas pequeñas porque en ellas reside tu fuerza.",
+      author: "Madre Teresa",
+      prayer: "Padre, ayúdame a ser fiel en las pequeñas responsabilidades que me has dado. Amén."
     },
     {
-      quote: "I have held many things in my hands, and I have lost them all; but whatever I have placed in God's hands, that I still possess.",
+      quote: "He tenido muchas cosas en mis manos y las he perdido todas; pero todo lo que he puesto en las manos de Dios, eso todavía lo poseo.",
       author: "Martin Luther",
-      prayer: "Lord, I place everything I hold dear into Your faithful hands. Amen."
+      prayer: "Señor, pongo todo lo que es querido para mí en Tus manos fieles. Amén."
     },
     {
-      quote: "The measure of a life is not its duration, but its donation.",
+      quote: "La medida de una vida no es su duración, sino su donación.",
       author: "Corrie ten Boom",
-      prayer: "Father, help me live a life that gives rather than takes. Amen."
+      prayer: "Padre, ayúdame a vivir una vida que dé en lugar de tomar. Amén."
     },
     {
-      quote: "Let God's promises shine on your problems.",
+      quote: "Deja que las promesas de Dios brillen sobre tus problemas.",
       author: "Corrie ten Boom",
-      prayer: "Lord, let Your Word illuminate every dark situation I face today. Amen."
+      prayer: "Señor, deja que Tu Palabra ilumine cada situación oscura que enfrente hoy. Amén."
     },
     {
-      quote: "A room without books is like a body without a soul.",
+      quote: "Una habitación sin libros es como un cuerpo sin alma.",
       author: "Marcus Tullius Cicero",
-      prayer: "God, cultivate in me a love for wisdom and Your Word. Amen."
+      prayer: "Dios, cultiva en mí un amor por la sabiduría y Tu Palabra. Amén."
     },
   ], []);
 
@@ -312,29 +312,41 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  const DailyItemCard = ({
+  const QuickActionCard = ({
     icon,
     title,
-    meta,
+    subtitle,
     onPress,
-    delay = 0
+    gradientColors
   }: {
     icon: React.ReactNode,
     title: string,
-    meta: string,
+    subtitle: string,
     onPress: () => void,
-    delay?: number
+    gradientColors: readonly [string, string, ...string[]]
   }) => (
     <TouchableOpacity
-      style={styles.dailyItemCard}
+      style={styles.quickActionCard}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <View style={styles.dailyItemContent}>
-        <View style={styles.dailyItemIcon}>{icon}</View>
-        <Text style={styles.dailyItemTitle}>{title}</Text>
-      </View>
-      <Text style={styles.dailyItemMeta}>{meta}</Text>
+      <LinearGradient
+        colors={gradientColors}
+        style={styles.quickActionGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.quickActionIconContainer}>
+          {icon}
+        </View>
+        <View style={styles.quickActionContent}>
+          <Text style={styles.quickActionTitle}>{title}</Text>
+          <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+        </View>
+        <View style={styles.quickActionArrow}>
+          <ChevronRight size={16} color="#FFFFFF" />
+        </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 
@@ -432,34 +444,38 @@ export default function HomeScreen() {
             </View>
 
             {/* Daily Items List */}
-            <View style={styles.dailyItemsList}>
-              <DailyItemCard
-                icon={<BookOpen size={20} color={AppTheme.text.primary} />}
-                title="Pasaje"
-                meta=""
+            {/* Quick Actions Grid */}
+            <View style={styles.quickActionsGrid}>
+              <QuickActionCard
+                icon={<BookOpen size={22} color="#FFFFFF" />}
+                title="Santa Biblia"
+                subtitle="Lee la palabra"
                 onPress={() => router.push('/(tabs)/bible')}
+                gradientColors={['#F97316', '#EA580C']} // Orange
               />
 
-              <DailyItemCard
-                icon={<MessageCircle size={20} color={AppTheme.text.primary} />}
-                title="Notas de Estudio Bíblico"
-                meta=""
+              <QuickActionCard
+                icon={<MessageCircle size={22} color="#FFFFFF" />}
+                title="Notas"
+                subtitle="Tus reflexiones"
                 onPress={() => router.push('/bible-study-notes')}
+                gradientColors={['#8B5CF6', '#7C3AED']} // Purple
               />
 
-              <DailyItemCard
-                icon={<View style={{ transform: [{ rotate: '-45deg' }] }}><Users size={20} color={AppTheme.text.primary} /></View>} // Using Users as Hands placeholder
+              <QuickActionCard
+                icon={<Users size={22} color="#FFFFFF" />}
                 title="Oración"
-                meta=""
+                subtitle="Tiempo con Dios"
                 onPress={() => router.push('/(tabs)/prayer-tracker')}
+                gradientColors={['#10B981', '#059669']} // Emerald
               />
 
-              {/* Added Mood Tracker to fit the list style */}
-              <DailyItemCard
-                icon={<Play size={20} color={AppTheme.text.primary} />}
-                title="Estado de Ánimo"
-                meta=""
+              <QuickActionCard
+                icon={<Play size={22} color="#FFFFFF" />}
+                title="Ánimo"
+                subtitle="Rastreador diario"
                 onPress={() => router.push('/(tabs)/mood-tracker')}
+                gradientColors={['#F43F5E', '#E11D48']} // Rose
               />
             </View>
 
@@ -714,37 +730,50 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Daily List Items
-  dailyItemsList: {
-    gap: Spacing.md,
-  },
-  dailyItemCard: {
-    backgroundColor: '#FAF5EF',
-    borderRadius: 20,
-    padding: 16,
+  // Quick Actions Grid
+  quickActionsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  quickActionCard: {
+    width: (width - (Spacing.md * 2) - 34 - 12) / 2, // 32 horizontal padding + 12 gap / 2
+    borderRadius: 24,
+    ...Shadows.md,
+    overflow: 'hidden',
+  },
+  quickActionGradient: {
+    padding: 16,
+    height: 140, // Fixed height for consistency
     justifyContent: 'space-between',
   },
-  dailyItemContent: {
-    flexDirection: 'row',
+  quickActionIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
   },
-  dailyItemIcon: {
-    width: 24,
-    alignItems: 'center',
+  quickActionContent: {
+    marginTop: 8,
   },
-  dailyItemTitle: {
+  quickActionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
-  dailyItemMeta: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748B',
-    letterSpacing: 0.5,
+  quickActionSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  quickActionArrow: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    opacity: 0.8,
   },
 
   // Remove Ads Card Styles

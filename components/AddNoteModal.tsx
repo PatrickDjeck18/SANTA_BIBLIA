@@ -18,9 +18,9 @@ import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/
 import { Plus, X, Smile } from 'lucide-react-native';
 
 interface AddNoteModalProps {
-    isVisible: boolean;
-    onClose: () => void;
-    onAddNote: (title: string, content: string, category: string, priority: string) => void;
+  isVisible: boolean;
+  onClose: () => void;
+  onAddNote: (title: string, content: string, category: string, priority: string) => void;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -28,38 +28,38 @@ const isSmallScreen = screenWidth < 375;
 const isTablet = screenWidth >= 768;
 
 const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNote }) => {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [formCategory, setFormCategory] = useState('reflection');
-    const [formPriority, setFormPriority] = useState('medium');
-    const [keyboardVisible, setKeyboardVisible] = useState(false);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [formCategory, setFormCategory] = useState('reflection');
+  const [formPriority, setFormPriority] = useState('medium');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-    // Reset form when modal opens
-    useEffect(() => {
-        if (isVisible) {
-            setTitle('');
-            setContent('');
-            setFormCategory('reflection');
-            setFormPriority('medium');
-        }
-    }, [isVisible]);
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isVisible) {
+      setTitle('');
+      setContent('');
+      setFormCategory('reflection');
+      setFormPriority('medium');
+    }
+  }, [isVisible]);
 
   const categories = [
-    { id: 'reflection', label: 'Reflection', icon: '💭', color: Colors.secondary[500] },
-    { id: 'prayer', label: 'Prayer', icon: '✝️', color: Colors.success[500] },
-    { id: 'study', label: 'Study', icon: '📚', color: Colors.error[500] },
-    { id: 'journal', label: 'Journal', icon: '📖', color: Colors.primary[500] },
-    { id: 'insight', label: 'Insight', icon: '💡', color: Colors.warning[600] },
-    { id: 'gratitude', label: 'Gratitude', icon: '🙌', color: Colors.warning[500] },
-    { id: 'other', label: 'Other', icon: '📝', color: Colors.primary[500] },
+    { id: 'reflection', label: 'Reflexión', icon: '💭', color: Colors.secondary[500] },
+    { id: 'prayer', label: 'Oración', icon: '✝️', color: Colors.success[500] },
+    { id: 'study', label: 'Estudio', icon: '📚', color: Colors.error[500] },
+    { id: 'journal', label: 'Diario', icon: '📖', color: Colors.primary[500] },
+    { id: 'insight', label: 'Pensamiento', icon: '💡', color: Colors.warning[600] },
+    { id: 'gratitude', label: 'Gratitud', icon: '🙌', color: Colors.warning[500] },
+    { id: 'other', label: 'Otro', icon: '📝', color: Colors.primary[500] },
   ];
 
   const priorities = [
-    { id: 'low', label: 'Low', color: Colors.neutral[400], icon: '🟢' },
-    { id: 'medium', label: 'Medium', color: Colors.warning[500], icon: '🟡' },
-    { id: 'high', label: 'High', color: Colors.error[500], icon: '🟠' },
-    { id: 'urgent', label: 'Urgent', color: Colors.error[700], icon: '🔴' },
+    { id: 'low', label: 'Baja', color: Colors.neutral[400], icon: '🟢' },
+    { id: 'medium', label: 'Media', color: Colors.warning[500], icon: '🟡' },
+    { id: 'high', label: 'Alta', color: Colors.error[500], icon: '🟠' },
+    { id: 'urgent', label: 'Urgente', color: Colors.error[700], icon: '🔴' },
   ];
 
   const emojis = [
@@ -73,7 +73,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
 
   const handleAddNote = () => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a note title');
+      Alert.alert('Error', 'Por favor ingresa un título para la nota');
       return;
     }
 
@@ -95,7 +95,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
     >
       <SafeAreaView style={styles.modalContainer}>
         <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
-        
+
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoidingView}
@@ -109,7 +109,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
           >
             {/* Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Note</Text>
+              <Text style={styles.modalTitle}>Agregar nueva nota</Text>
               <TouchableOpacity style={styles.closeButton} onPress={onClose}>
                 <X size={24} color={Colors.neutral[600]} />
               </TouchableOpacity>
@@ -119,18 +119,18 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
             <View style={styles.formContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Note Title"
+                placeholder="Título de la nota"
                 value={title}
                 onChangeText={setTitle}
                 placeholderTextColor={Colors.neutral[400]}
                 returnKeyType="next"
                 blurOnSubmit={false}
               />
-              
+
               <View style={styles.contentContainer}>
                 <TextInput
                   style={styles.textArea}
-                  placeholder="Note Content (optional)"
+                  placeholder="Contenido de la nota (opcional)"
                   multiline
                   numberOfLines={4}
                   value={content}
@@ -146,8 +146,8 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
                   <Smile size={20} color={Colors.neutral[600]} />
                 </TouchableOpacity>
               </View>
-              
-              <Text style={styles.sectionTitle}>Category</Text>
+
+              <Text style={styles.sectionTitle}>Categoría</Text>
               <View style={styles.categoryGrid}>
                 {categories.map((category) => (
                   <TouchableOpacity
@@ -163,7 +163,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
                 ))}
               </View>
 
-              <Text style={styles.sectionTitle}>Priority</Text>
+              <Text style={styles.sectionTitle}>Prioridad</Text>
               <View style={styles.priorityGrid}>
                 {priorities.map((priority) => (
                   <TouchableOpacity
@@ -183,7 +183,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
                 style={styles.submitButton}
                 onPress={handleAddNote}
               >
-                <Text style={styles.submitButtonText}>Add Note</Text>
+                <Text style={styles.submitButtonText}>Agregar nota</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -200,7 +200,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
             <View style={styles.emojiModalOverlay}>
               <View style={styles.emojiModal}>
                 <View style={styles.emojiModalHeader}>
-                  <Text style={styles.emojiModalTitle}>Choose an emoji</Text>
+                  <Text style={styles.emojiModalTitle}>Elegir un emoji</Text>
                   <TouchableOpacity
                     style={styles.emojiCloseButton}
                     onPress={() => setShowEmojiPicker(false)}
@@ -213,7 +213,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isVisible, onClose, onAddNo
                     {emojis.map((emoji, index) => (
                       <TouchableOpacity
                         key={index}
-                        style={styles.emojiButton}
+                        style={styles.emojiGridItem}
                         onPress={() => insertEmoji(emoji)}
                       >
                         <Text style={styles.emojiText}>{emoji}</Text>
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
   },
-  emojiButton: {
+  emojiGridItem: {
     padding: 8,
     margin: 2,
     borderRadius: 8,

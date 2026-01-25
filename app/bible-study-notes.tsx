@@ -88,13 +88,14 @@ interface BibleNote {
 }
 
 // Default categories
+// Default categories
 const DEFAULT_CATEGORIES: NoteCategory[] = [
-    { id: 'sermon', name: 'Sermon Notes', emoji: '🎤', color: '#F97316', isCustom: false },
-    { id: 'study', name: 'Bible Study', emoji: '📖', color: '#8B5CF6', isCustom: false },
-    { id: 'prayer', name: 'Prayer Points', emoji: '🙏', color: '#EC4899', isCustom: false },
-    { id: 'devotional', name: 'Devotional', emoji: '✨', color: '#10B981', isCustom: false },
-    { id: 'questions', name: 'Questions', emoji: '❓', color: '#3B82F6', isCustom: false },
-    { id: 'insights', name: 'Insights', emoji: '💡', color: '#F59E0B', isCustom: false },
+    { id: 'sermon', name: 'Notas de sermón', emoji: '🎤', color: '#F97316', isCustom: false },
+    { id: 'study', name: 'Estudio bíblico', emoji: '📖', color: '#8B5CF6', isCustom: false },
+    { id: 'prayer', name: 'Pedidos de oración', emoji: '🙏', color: '#EC4899', isCustom: false },
+    { id: 'devotional', name: 'Devocional', emoji: '✨', color: '#10B981', isCustom: false },
+    { id: 'questions', name: 'Preguntas', emoji: '❓', color: '#3B82F6', isCustom: false },
+    { id: 'insights', name: 'Pensamientos', emoji: '💡', color: '#F59E0B', isCustom: false },
 ];
 
 // Safe colors matching other screens
@@ -202,7 +203,7 @@ export default function BibleStudyNotesScreen() {
             await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(updatedNotes));
             setNotes(updatedNotes);
         } catch (error) {
-            Alert.alert('Error', 'Failed to save notes');
+            Alert.alert('Erreur', 'Échec de l\'enregistrement des notes');
         }
     };
 
@@ -217,7 +218,7 @@ export default function BibleStudyNotesScreen() {
 
     const handleCreateCategory = () => {
         if (!newCategoryName.trim()) {
-            Alert.alert('Required', 'Please enter a category name');
+            Alert.alert('Requis', 'Veuillez entrer un nom de catégorie');
             return;
         }
 
@@ -247,17 +248,17 @@ export default function BibleStudyNotesScreen() {
     const handleDeleteCategory = (categoryId: string) => {
         const category = categories.find(c => c.id === categoryId);
         if (!category?.isCustom) {
-            Alert.alert('Cannot Delete', 'Default categories cannot be deleted');
+            Alert.alert('Imposible eliminar', 'Las categorías predeterminadas no pueden ser eliminadas');
             return;
         }
 
         Alert.alert(
-            'Delete Category',
-            `Delete "${category.name}"? Notes in this category will be moved to "Bible Study".`,
+            'Eliminar categoría',
+            `¿Eliminar "${category.name}"? Las notas de esta categoría se moverán a "Estudio bíblico".`,
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: 'Cancelar', style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: 'Eliminar',
                     style: 'destructive',
                     onPress: async () => {
                         // Move notes to Bible Study category
@@ -317,7 +318,7 @@ export default function BibleStudyNotesScreen() {
 
     const handleSaveNote = async () => {
         if (!title.trim()) {
-            Alert.alert('Required', 'Please enter a title for your note');
+            Alert.alert('Requis', 'Veuillez entrer un titre pour votre note');
             return;
         }
 
@@ -364,12 +365,12 @@ export default function BibleStudyNotesScreen() {
     const handleDeleteNote = (noteId: string) => {
         if (Platform.OS === 'ios') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert(
-            'Delete Note',
-            'Are you sure you want to delete this note?',
+            'Supprimer la note',
+            'Êtes-vous sûr de vouloir supprimer cette note ?',
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: 'Annuler', style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: 'Supprimer',
                     style: 'destructive',
                     onPress: async () => {
                         const updatedNotes = notes.filter(n => n.id !== noteId);
@@ -428,7 +429,7 @@ export default function BibleStudyNotesScreen() {
                     setAttachedVerses([...attachedVerses, newVerse]);
                     if (Platform.OS === 'ios') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 } else {
-                    Alert.alert('Already Attached', 'This verse is already attached to your note.');
+                    Alert.alert('Déjà attaché', 'Ce verset est déjà attaché à votre note.');
                 }
 
                 setShowVersePickerModal(false);
@@ -494,12 +495,12 @@ export default function BibleStudyNotesScreen() {
         if (versePickerStep === 'book') {
             return (
                 <View style={styles.versePickerContent}>
-                    <Text style={styles.versePickerTitle}>Select a Book</Text>
+                    <Text style={styles.versePickerTitle}>Sélectionner un livre</Text>
                     <View style={styles.verseSearchContainer}>
                         <Search size={18} color={safeColors.neutral[400]} />
                         <TextInput
                             style={styles.verseSearchInput}
-                            placeholder="Search books..."
+                            placeholder="Rechercher des livres..."
                             placeholderTextColor={safeColors.neutral[400]}
                             value={verseSearchQuery}
                             onChangeText={setVerseSearchQuery}
@@ -520,7 +521,7 @@ export default function BibleStudyNotesScreen() {
                                 </View>
                                 <View style={styles.bookInfo}>
                                     <Text style={styles.bookName}>{item.name}</Text>
-                                    <Text style={styles.bookMeta}>{item.chapters} chapters • {item.testament === 'old' ? 'Old Testament' : 'New Testament'}</Text>
+                                    <Text style={styles.bookMeta}>{item.chapters} chapitres • {item.testament === 'old' ? 'Ancien Testament' : 'Nouveau Testament'}</Text>
                                 </View>
                                 <ChevronRight size={18} color={safeColors.neutral[400]} />
                             </TouchableOpacity>
@@ -538,7 +539,7 @@ export default function BibleStudyNotesScreen() {
                         <ArrowLeft size={18} color={safeColors.primary[600]} />
                         <Text style={styles.backButtonText}>{selectedBook.name}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.versePickerTitle}>Select Chapter</Text>
+                    <Text style={styles.versePickerTitle}>Sélectionner un chapitre</Text>
                     <View style={styles.chapterGrid}>
                         {chapters.map(chapter => (
                             <TouchableOpacity
@@ -563,7 +564,7 @@ export default function BibleStudyNotesScreen() {
                         <ArrowLeft size={18} color={safeColors.primary[600]} />
                         <Text style={styles.backButtonText}>{selectedBook.name} {selectedChapter}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.versePickerTitle}>Select Verse</Text>
+                    <Text style={styles.versePickerTitle}>Sélectionner un verset</Text>
                     {loadingVerse ? (
                         <ActivityIndicator size="large" color={safeColors.primary[600]} style={{ marginTop: 40 }} />
                     ) : (
@@ -620,7 +621,7 @@ export default function BibleStudyNotesScreen() {
                                 <View style={styles.subtitleIcon}>
                                     <Edit3 size={14} color={safeColors.primary[600]} />
                                 </View>
-                                <Text style={styles.heroSubtitle}>Your spiritual insights & reflections</Text>
+                                <Text style={styles.heroSubtitle}>Tus pensamientos y reflexiones espirituales</Text>
                             </View>
                         </View>
                     </View>
@@ -652,7 +653,7 @@ export default function BibleStudyNotesScreen() {
                             </LinearGradient>
                             <View>
                                 <Text style={styles.statNumber}>{stats.total}</Text>
-                                <Text style={styles.statLabel}>Total Notes</Text>
+                                <Text style={styles.statLabel}>Total de notas</Text>
                             </View>
                         </View>
                         <View style={styles.statCard}>
@@ -666,7 +667,7 @@ export default function BibleStudyNotesScreen() {
                             </LinearGradient>
                             <View>
                                 <Text style={styles.statNumber}>{stats.thisWeek}</Text>
-                                <Text style={styles.statLabel}>This Week</Text>
+                                <Text style={styles.statLabel}>Esta semana</Text>
                             </View>
                         </View>
                         <View style={styles.statCard}>
@@ -680,7 +681,7 @@ export default function BibleStudyNotesScreen() {
                             </LinearGradient>
                             <View>
                                 <Text style={styles.statNumber}>{stats.withVerses}</Text>
-                                <Text style={styles.statLabel}>With Verses</Text>
+                                <Text style={styles.statLabel}>Con versículos</Text>
                             </View>
                         </View>
                     </Animated.View>
@@ -690,7 +691,7 @@ export default function BibleStudyNotesScreen() {
                         <Search size={20} color={safeColors.neutral[400]} style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search notes, tags, or verses..."
+                            placeholder="Buscar notas, etiquetas o versículos..."
                             placeholderTextColor={safeColors.neutral[400]}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -724,7 +725,7 @@ export default function BibleStudyNotesScreen() {
                                 <Text style={[
                                     styles.categoryChipText,
                                     selectedFilterCategory === 'all' && styles.categoryChipTextActive
-                                ]}>All Notes</Text>
+                                ]}>Todas las notas</Text>
                             </TouchableOpacity>
 
                             {/* Category chips */}
@@ -758,7 +759,7 @@ export default function BibleStudyNotesScreen() {
                                 onPress={() => setShowCategoryModal(true)}
                             >
                                 <FolderPlus size={16} color={safeColors.primary[600]} />
-                                <Text style={styles.addCategoryText}>New</Text>
+                                <Text style={styles.addCategoryText}>Nuevo</Text>
                             </TouchableOpacity>
                         </ScrollView>
                     </Animated.View>
@@ -767,14 +768,14 @@ export default function BibleStudyNotesScreen() {
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionTitleRow}>
                             <Text style={styles.sectionTitle}>
-                                {selectedFilterCategory === 'all' ? 'All Notes' : getCategoryById(selectedFilterCategory)?.name || 'Notes'}
+                                {selectedFilterCategory === 'all' ? 'Todas las notas' : getCategoryById(selectedFilterCategory)?.name || 'Notas'}
                             </Text>
                             <View style={styles.noteCountBadge}>
                                 <Text style={styles.noteCountText}>{filteredNotes.length}</Text>
                             </View>
                         </View>
                         {filteredNotes.length > 0 && (
-                            <Text style={styles.sectionSubtitle}>Tap a note to view or edit</Text>
+                            <Text style={styles.sectionSubtitle}>Toca una nota para ver o editar</Text>
                         )}
                     </View>
 
@@ -783,21 +784,21 @@ export default function BibleStudyNotesScreen() {
                         {loading ? (
                             <View style={styles.loadingContainer}>
                                 <ActivityIndicator size="large" color={safeColors.primary[600]} />
-                                <Text style={styles.loadingText}>Loading your notes...</Text>
+                                <Text style={styles.loadingText}>Cargando tus notas...</Text>
                             </View>
                         ) : filteredNotes.length === 0 ? (
                             <Animated.View style={[styles.emptyState, { opacity: fadeAnim }]}>
                                 <View style={styles.emptyIconContainer}>
                                     <Edit3 size={48} color={safeColors.neutral[300]} />
                                 </View>
-                                <Text style={styles.emptyTitle}>No notes found</Text>
+                                <Text style={styles.emptyTitle}>No se encontraron notas</Text>
                                 <Text style={styles.emptySubtitle}>
-                                    {searchQuery ? "Try a different search term" : "Tap the + button to create your first note"}
+                                    {searchQuery ? "Intenta otro término de búsqueda" : "Toca el botón + para crear tu primera nota"}
                                 </Text>
                                 {!searchQuery && (
                                     <TouchableOpacity style={styles.emptyActionButton} onPress={handleOpenAdd}>
                                         <Plus size={20} color="#FFFFFF" />
-                                        <Text style={styles.emptyActionText}>Create Note</Text>
+                                        <Text style={styles.emptyActionText}>Crear una nota</Text>
                                     </TouchableOpacity>
                                 )}
                             </Animated.View>
@@ -852,7 +853,7 @@ export default function BibleStudyNotesScreen() {
                                                         <View style={styles.attachedVersesPreview}>
                                                             <LinkIcon size={11} color={safeColors.secondary[600]} />
                                                             <Text style={styles.attachedVersesText} numberOfLines={1}>
-                                                                {note.attachedVerses.length} verse{note.attachedVerses.length > 1 ? 's' : ''}
+                                                                {note.attachedVerses.length} versículo{note.attachedVerses.length > 1 ? 's' : ''}
                                                             </Text>
                                                         </View>
                                                     )}
@@ -933,7 +934,7 @@ export default function BibleStudyNotesScreen() {
                         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>
-                                    {editingNote ? 'Edit Note' : 'New Note'}
+                                    {editingNote ? 'Editar nota' : 'Nueva nota'}
                                 </Text>
                                 <TouchableOpacity onPress={resetForm} style={styles.closeModalBtn}>
                                     <X size={24} color={safeColors.neutral[600]} />
@@ -942,10 +943,10 @@ export default function BibleStudyNotesScreen() {
 
                             <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.inputLabel}>Title</Text>
+                                    <Text style={styles.inputLabel}>Título</Text>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Note Title"
+                                        placeholder="Título de la nota"
                                         placeholderTextColor={safeColors.neutral[400]}
                                         value={title}
                                         onChangeText={setTitle}
@@ -955,7 +956,7 @@ export default function BibleStudyNotesScreen() {
 
                                 {/* Category Selection */}
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.inputLabel}>Category</Text>
+                                    <Text style={styles.inputLabel}>Categoría</Text>
                                     <ScrollView
                                         horizontal
                                         showsHorizontalScrollIndicator={false}
@@ -990,12 +991,12 @@ export default function BibleStudyNotesScreen() {
                                 </View>
 
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.inputLabel}>Scripture Reference (Optional)</Text>
+                                    <Text style={styles.inputLabel}>Referencia bíblica (Opcional)</Text>
                                     <View style={styles.referenceInputContainer}>
                                         <BookOpen size={18} color={safeColors.neutral[400]} style={{ marginRight: 8 }} />
                                         <TextInput
                                             style={[styles.input, { borderWidth: 0, paddingLeft: 0, flex: 1, backgroundColor: 'transparent' }]}
-                                            placeholder="e.g. Psalm 23:1"
+                                            placeholder="ex: Psaume 23:1"
                                             placeholderTextColor={safeColors.neutral[400]}
                                             value={reference}
                                             onChangeText={setReference}
@@ -1006,10 +1007,10 @@ export default function BibleStudyNotesScreen() {
                                 {/* Attached Verses Section */}
                                 <View style={styles.inputGroup}>
                                     <View style={styles.attachedVersesHeader}>
-                                        <Text style={styles.inputLabel}>Attached Verses</Text>
+                                        <Text style={styles.inputLabel}>Versículos adjuntos</Text>
                                         <TouchableOpacity style={styles.attachVerseBtn} onPress={openVersePicker}>
                                             <Plus size={16} color="#FFFFFF" />
-                                            <Text style={styles.attachVerseBtnText}>Add Verse</Text>
+                                            <Text style={styles.attachVerseBtnText}>Agregar versículo</Text>
                                         </TouchableOpacity>
                                     </View>
                                     {attachedVerses.length > 0 ? (
@@ -1032,16 +1033,16 @@ export default function BibleStudyNotesScreen() {
                                     ) : (
                                         <View style={styles.noVersesContainer}>
                                             <BookMarked size={24} color={safeColors.neutral[300]} />
-                                            <Text style={styles.noVersesText}>No verses attached yet</Text>
+                                            <Text style={styles.noVersesText}>Ningún versículo adjunto por el momento</Text>
                                         </View>
                                     )}
                                 </View>
 
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.inputLabel}>Your Thoughts</Text>
+                                    <Text style={styles.inputLabel}>Tus pensamientos</Text>
                                     <TextInput
                                         style={[styles.input, styles.textArea]}
-                                        placeholder="Write your study notes here..."
+                                        placeholder="Escribe tus notas de estudio aquí..."
                                         placeholderTextColor={safeColors.neutral[400]}
                                         value={content}
                                         onChangeText={setContent}
@@ -1051,11 +1052,11 @@ export default function BibleStudyNotesScreen() {
                                 </View>
 
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.inputLabel}>Tags</Text>
+                                    <Text style={styles.inputLabel}>Etiquetas</Text>
                                     <View style={styles.tagInputRow}>
                                         <TextInput
                                             style={[styles.input, { flex: 1 }]}
-                                            placeholder="Add tag..."
+                                            placeholder="Agregar etiqueta..."
                                             placeholderTextColor={safeColors.neutral[400]}
                                             value={tagInput}
                                             onChangeText={setTagInput}
@@ -1093,7 +1094,7 @@ export default function BibleStudyNotesScreen() {
                                         end={{ x: 1, y: 0 }}
                                     >
                                         <Save size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                        <Text style={styles.saveButtonText}>Save Note</Text>
+                                        <Text style={styles.saveButtonText}>Guardar nota</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
                             </View>
@@ -1112,7 +1113,7 @@ export default function BibleStudyNotesScreen() {
                 <View style={styles.modalContainer}>
                     <View style={styles.versePickerModalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Attach Verse</Text>
+                            <Text style={styles.modalTitle}>Adjuntar un versículo</Text>
                             <TouchableOpacity onPress={() => setShowVersePickerModal(false)} style={styles.closeModalBtn}>
                                 <X size={24} color={safeColors.neutral[600]} />
                             </TouchableOpacity>
@@ -1132,7 +1133,7 @@ export default function BibleStudyNotesScreen() {
                 <View style={styles.categoryModalOverlay}>
                     <View style={styles.categoryModalContent}>
                         <View style={styles.categoryModalHeader}>
-                            <Text style={styles.categoryModalTitle}>Create Category</Text>
+                            <Text style={styles.categoryModalTitle}>Crear una categoría</Text>
                             <TouchableOpacity
                                 onPress={() => setShowCategoryModal(false)}
                                 style={styles.closeModalBtn}
@@ -1151,15 +1152,15 @@ export default function BibleStudyNotesScreen() {
                                         onChangeText={(text) => setNewCategoryEmoji(text.slice(-2))}
                                         maxLength={2}
                                     />
-                                    <Text style={styles.emojiHint}>Choose an emoji</Text>
+                                    <Text style={styles.emojiHint}>Elegir un emoji</Text>
                                 </View>
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.inputLabel}>Category Name</Text>
+                                <Text style={styles.inputLabel}>Nombre de la categoría</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="e.g., Sermon Series"
+                                    placeholder="ej: Serie de sermones"
                                     placeholderTextColor={safeColors.neutral[400]}
                                     value={newCategoryName}
                                     onChangeText={setNewCategoryName}
@@ -1177,7 +1178,7 @@ export default function BibleStudyNotesScreen() {
                                     end={{ x: 1, y: 0 }}
                                 >
                                     <FolderPlus size={18} color="#FFFFFF" />
-                                    <Text style={styles.createCategoryBtnText}>Create Category</Text>
+                                    <Text style={styles.createCategoryBtnText}>Crear una categoría</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
