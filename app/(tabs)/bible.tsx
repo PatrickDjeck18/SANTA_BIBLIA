@@ -22,6 +22,8 @@ import {
   Modal,
   useWindowDimensions,
   Share,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import {
   Book,
@@ -53,6 +55,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { AppTheme } from '@/constants/AppTheme';
 import { useInterstitialAds } from '@/hooks/useInterstitialAds';
+import BannerAd from '@/components/BannerAd';
 
 import { BIBLE_BOOKS, BibleBookInfo } from '@/constants/BibleBooks';
 import {
@@ -119,6 +122,13 @@ export default function BibleScreen() {
   const [showTextSizeModal, setShowTextSizeModal] = useState(false);
   const [showBookSelector, setShowBookSelector] = useState(false);
 
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({
+    message: '',
+    visible: false
+  });
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Highlight color options
   const HIGHLIGHT_COLORS = [
     { id: 'yellow', color: '#FEF3C7', name: 'Yellow' },
@@ -155,6 +165,31 @@ export default function BibleScreen() {
   useEffect(() => {
     AsyncStorage.setItem('bible_text_size', textSize.toString());
   }, [textSize]);
+
+  // Handle app state changes for background audio playback
+  const appStateRef = useRef(AppState.currentState);
+  const wasPlayingBeforeBackground = useRef(false);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      // When app goes to background, remember if we were playing
+      if (appStateRef.current === 'active' && nextAppState === 'background') {
+        wasPlayingBeforeBackground.current = isPlayingRef.current;
+      }
+
+      // When app comes back to foreground, restore playback if needed
+      if (appStateRef.current === 'background' && nextAppState === 'active') {
+        // Audio should have continued in background, nothing to restore
+        wasPlayingBeforeBackground.current = false;
+      }
+
+      appStateRef.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // Stop speech on unmount
   useEffect(() => {
@@ -218,16 +253,48 @@ export default function BibleScreen() {
     setIsPlaying(false);
   }, [selectedBook]);
 
+  // Show toast notification
+  const showToast = useCallback((message: string) => {
+    // Clear existing timeout
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
+    setToast({ message, visible: true });
+
+    // Auto hide after 2 seconds
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(prev => ({ ...prev, visible: false }));
+    }, 2000);
+  }, []);
+
   // Navigate chapters
   const goToPrevChapter = useCallback(() => {
-    if (!selectedBook || selectedChapter <= 1) return;
+    if (!selectedBook || selectedChapter <= 1) {
+      showToast('Primer capítulo');
+      return;
+    }
     handleChapterSelect(selectedChapter - 1);
-  }, [selectedBook, selectedChapter, handleChapterSelect]);
+    showToast(`Capítulo ${selectedChapter - 1}`);
+  }, [selectedBook, selectedChapter, handleChapterSelect, showToast]);
 
   const goToNextChapter = useCallback(() => {
-    if (!selectedBook || selectedChapter >= selectedBook.chapters) return;
+    if (!selectedBook || selectedChapter >= selectedBook.chapters) {
+      showToast('Último capítulo');
+      return;
+    }
     handleChapterSelect(selectedChapter + 1);
-  }, [selectedBook, selectedChapter, handleChapterSelect]);
+    showToast(`Capítulo ${selectedChapter + 1}`);
+  }, [selectedBook, selectedChapter, handleChapterSelect, showToast]);
+
+  // Cleanup toast timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle back navigation
   const handleBack = useCallback(() => {
@@ -622,41 +689,13 @@ export default function BibleScreen() {
         </View>
 
         {/* Reading Card */}
-        <View style={styles.readingCard}>
-          {/* Top Right Controls: Audio + Close */}
-          <View style={styles.topRightControls}>
-            <TouchableOpacity style={styles.audioIconBtn} onPress={togglePlayPause}>
-              {isPlaying ? (
-                <Pause size={20} color={THEME.accent} />
-              ) : (
-                <Play size={20} color={THEME.accent} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.closeButton} onPress={handleBack}>
-              <X size={20} color={THEME.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Reference Header */}
-          <View style={styles.referenceHeader}>
-            <BookOpen size={16} color={THEME.textSecondary} />
-            <Text style={styles.referenceText}>
-              {selectedBook.name} {selectedChapter}:1-{chapterData.verses.length}
-            </Text>
-          </View>
-
-          {/* Tap hint */}
-          <View style={styles.tapHint}>
-            <Highlighter size={14} color={THEME.textMuted} />
-            <Text style={styles.tapHintText}>Toca cualquier versículo para resaltar o añadir notas</Text>
-          </View>
-
+        <View style={[styles.readingCard, { flex: 1.2 }]}>
           {/* Verses Content */}
           <ScrollView
             ref={scrollViewRef}
             style={styles.versesScroll}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
           >
             {chapterData.verses.map((verse, index) => {
               const verseKey = getVerseKey(verse.verse);
@@ -709,34 +748,6 @@ export default function BibleScreen() {
           </ScrollView>
         </View>
 
-        {/* Chapter Navigation with Text Size Controls */}
-        <View style={styles.chapterNavigation}>
-          <TouchableOpacity
-            style={[styles.chapterNavButton, selectedChapter <= 1 && styles.chapterNavButtonDisabled]}
-            onPress={goToPrevChapter}
-            disabled={selectedChapter <= 1}
-          >
-            <ChevronLeft size={24} color={selectedChapter > 1 ? THEME.accent : THEME.textMuted} />
-          </TouchableOpacity>
-
-          <View style={styles.textSizeControls}>
-            <TouchableOpacity style={styles.textSizeBtn} onPress={decreaseTextSize}>
-              <Minus size={18} color={THEME.text} />
-            </TouchableOpacity>
-            <Text style={styles.textSizeValue}>{textSize}</Text>
-            <TouchableOpacity style={styles.textSizeBtn} onPress={increaseTextSize}>
-              <Plus size={18} color={THEME.text} />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.chapterNavButton, selectedChapter >= selectedBook.chapters && styles.chapterNavButtonDisabled]}
-            onPress={goToNextChapter}
-            disabled={selectedChapter >= selectedBook.chapters}
-          >
-            <ChevronRight size={24} color={selectedChapter < selectedBook.chapters ? THEME.accent : THEME.textMuted} />
-          </TouchableOpacity>
-        </View>
       </View>
     );
   };
@@ -808,16 +819,53 @@ export default function BibleScreen() {
           </Text>
         )}
 
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={() => viewMode === 'search' ? handleBack() : setViewMode('search')}
-        >
-          {viewMode === 'search' ? (
-            <X size={24} color={THEME.accent} />
-          ) : (
-            <Search size={24} color={THEME.accent} />
-          )}
-        </TouchableOpacity>
+        {/* Header Controls: Chapter Nav + Audio + Text Size when reading */}
+        {viewMode === 'reading' && selectedBook ? (
+          <View style={styles.headerControls}>
+            {/* Previous Chapter */}
+            <TouchableOpacity
+              style={[styles.headerChapterNavBtn, selectedChapter <= 1 && styles.headerChapterNavBtnDisabled]}
+              onPress={goToPrevChapter}
+              disabled={selectedChapter <= 1}
+            >
+              <ChevronLeft size={20} color={selectedChapter > 1 ? THEME.accent : THEME.textMuted} />
+            </TouchableOpacity>
+
+            {/* Audio Play/Pause */}
+            <TouchableOpacity style={styles.headerControlBtn} onPress={togglePlayPause}>
+              {isPlaying ? (
+                <Pause size={18} color={THEME.accent} />
+              ) : (
+                <Play size={18} color={THEME.accent} />
+              )}
+            </TouchableOpacity>
+
+            {/* Text Size */}
+            <TouchableOpacity style={styles.headerControlBtn} onPress={() => setShowTextSizeModal(true)}>
+              <Type size={18} color={THEME.accent} />
+            </TouchableOpacity>
+
+            {/* Next Chapter */}
+            <TouchableOpacity
+              style={[styles.headerChapterNavBtn, selectedChapter >= selectedBook.chapters && styles.headerChapterNavBtnDisabled]}
+              onPress={goToNextChapter}
+              disabled={selectedChapter >= selectedBook.chapters}
+            >
+              <ChevronRight size={20} color={selectedChapter < selectedBook.chapters ? THEME.accent : THEME.textMuted} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => viewMode === 'search' ? handleBack() : setViewMode('search')}
+          >
+            {viewMode === 'search' ? (
+              <X size={24} color={THEME.accent} />
+            ) : (
+              <Search size={24} color={THEME.accent} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Search Bar */}
@@ -1075,7 +1123,7 @@ export default function BibleScreen() {
                     ]}>
                       {item.name}
                     </Text>
-                    <Text style={styles.bookSelectorItemChapters}>{item.chapters} chapters</Text>
+                    <Text style={styles.bookSelectorItemChapters}>{item.chapters} capítulos</Text>
                   </View>
                   {selectedBook?.id === item.id && (
                     <Check size={18} color={THEME.accent} />
@@ -1086,6 +1134,72 @@ export default function BibleScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Text Size Modal */}
+      <Modal
+        visible={showTextSizeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTextSizeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.textSizeModal}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Tamaño de Texto</Text>
+              <TouchableOpacity onPress={() => setShowTextSizeModal(false)}>
+                <X size={24} color={THEME.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Preview Text */}
+            <View style={styles.textSizePreview}>
+              <Text style={[styles.textSizePreviewText, { fontSize: textSize }]}>
+                "Porque de tal manera amó Dios al mundo, que ha dado a su Hijo unigénito..."
+              </Text>
+            </View>
+
+            {/* Text Size Slider */}
+            <View style={styles.textSizeSliderContainer}>
+              <Text style={styles.textSizeLabel}>A</Text>
+              <View style={styles.textSizeButtons}>
+                <TouchableOpacity style={styles.textSizeSliderBtn} onPress={decreaseTextSize}>
+                  <Minus size={24} color={THEME.text} />
+                </TouchableOpacity>
+                <View style={styles.textSizeValueContainer}>
+                  <Text style={styles.textSizeValueLarge}>{textSize}</Text>
+                  <Text style={styles.textSizeUnit}>pt</Text>
+                </View>
+                <TouchableOpacity style={styles.textSizeSliderBtn} onPress={increaseTextSize}>
+                  <Plus size={24} color={THEME.text} />
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.textSizeLabel, { fontSize: 20 }]}>A</Text>
+            </View>
+
+            {/* Done Button */}
+            <TouchableOpacity
+              style={styles.saveNoteBtn}
+              onPress={() => setShowTextSizeModal(false)}
+            >
+              <Check size={20} color="#FFFFFF" />
+              <Text style={styles.saveNoteBtnText}>Listo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Toast Notification */}
+      {toast.visible && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toastContent}>
+            <Text style={styles.toastText}>{toast.message}</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Banner Ad */}
+      <BannerAd placement="bible" />
     </SafeAreaView>
   );
 }
@@ -1099,12 +1213,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 8,
+    height: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 56 : 56,
   },
   backButton: {
     padding: 4,
+    width: 40,
+  },
+  headerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'flex-end',
+  },
+  headerControlBtn: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: THEME.accentLight,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerChapterNavBtn: {
+    padding: 6,
+    borderRadius: 10,
+    backgroundColor: THEME.backgroundLight,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerChapterNavBtnDisabled: {
+    opacity: 0.4,
+    backgroundColor: THEME.backgroundLight,
   },
   headerTitle: {
     fontSize: 18,
@@ -1166,25 +1312,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   booksList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   bookItem: {
     backgroundColor: THEME.card,
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: 16,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: THEME.border,
+    marginHorizontal: 4,
   },
   bookItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
+    padding: 18,
+    gap: 14,
   },
   bookItemIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1192,13 +1339,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bookItemName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: THEME.text,
-    marginBottom: 2,
+    marginBottom: 3,
   },
   bookItemChapters: {
-    fontSize: 13,
+    fontSize: 14,
     color: THEME.textSecondary,
   },
   chaptersContainer: {
@@ -1382,16 +1529,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: THEME.accentLight,
   },
-  referenceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
-  },
-  referenceText: {
-    fontSize: 14,
-    color: THEME.textSecondary,
-  },
   versesScroll: {
     flex: 1,
   },
@@ -1442,11 +1579,6 @@ const styles = StyleSheet.create({
   },
   textSizeButton: {
     padding: 8,
-  },
-  textSizeLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: THEME.textSecondary,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1525,20 +1657,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   // Highlight & Note Styles
-  tapHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: THEME.highlight,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  tapHintText: {
-    fontSize: 12,
-    color: THEME.textMuted,
-  },
   verseContainer: {
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -1781,5 +1899,95 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.textMuted,
     marginTop: 2,
+  },
+  // Text Size Modal Styles
+  textSizeModal: {
+    backgroundColor: THEME.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  textSizePreview: {
+    backgroundColor: THEME.backgroundLight,
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  textSizePreviewText: {
+    color: THEME.text,
+    textAlign: 'center',
+    lineHeight: 28,
+  },
+  textSizeSliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  textSizeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.textSecondary,
+  },
+  textSizeButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  textSizeSliderBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: THEME.backgroundLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  textSizeValueContainer: {
+    alignItems: 'center',
+  },
+  textSizeValueLarge: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  textSizeUnit: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  // Toast Notification Styles
+  toastContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 100 : 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    pointerEvents: 'none',
+  },
+  toastContent: {
+    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    minWidth: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  toastText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
